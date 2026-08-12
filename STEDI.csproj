@@ -41,6 +41,9 @@
   
   <ItemGroup>
     <InternalsVisibleTo Include="STEDIUnitTests" />
+    <InternalsVisibleTo Include="RODIS.Core.Tests" />
+    <InternalsVisibleTo Include="RODIS.Advanced" />
+    <InternalsVisibleTo Include="RODIS.Advanced.Tests" />
   </ItemGroup>
 
 </Project>
