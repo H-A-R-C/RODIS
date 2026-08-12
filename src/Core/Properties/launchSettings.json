@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "STEDI": {
+      "commandName": "Project",
+      "commandLineArgs": "-RunSTEDIValueOfInformationMonteCarlo \"S:\\3_Projects\\MDB00017\\5_Technical\\01 Investigations\\06_Uncertainty framework\\02_InvestigationRuns\\2_410705\\STEDI_MCPhaseARun_410705.json\""
+    }
+  }
+}
