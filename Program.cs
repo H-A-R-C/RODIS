@@ -22,8 +22,6 @@ namespace STEDI
             {
                 new RunSTEDI(),
                 new RunSTEDILegacyVersion(),
-                new RunSTEDIMonteCarlo(),
-                new RunSTEDIValueOfInformationMonteCarlo(),
                 new GenerateRandomValues(),
             });
 

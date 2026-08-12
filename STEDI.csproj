@@ -35,6 +35,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+    <Compile Remove="examples/**/*.cs" />
+  </ItemGroup>
+  
+  <ItemGroup>
     <InternalsVisibleTo Include="STEDIUnitTests" />
   </ItemGroup>
 
