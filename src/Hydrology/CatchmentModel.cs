@@ -281,68 +281,59 @@ namespace RODIS.ModelRun
         /// <summary>
         /// Initialises the RODIS model with information from an array of legacy RODIS model dam nodes and legacy RODIS model settings.
         /// </summary>
-        /// <param name="legacyRODISDamNodes">Array of legacy RODIS model farm dam and water body nodes.</param>
+        /// <param name="legacyRODISDamNodes">Array of legacy RODIS model farm dam and water body nodes. Must already be in upstream-to-downstream
+        /// (topological) order, with NextDownstreamIdentifier referencing another node's Identifier (1-based) or 0 for the catchment outlet.</param>
         /// <param name="settings">Overall settings of legacy RODIS model.</param>
-        public void Initialise(LegacyRODISDamNode[] legacyRODISDamNodes, RODISSettings settings) 
+        public void Initialise(LegacyRODISDamNode[] legacyRODISDamNodes, RODISSettings settings)
         {
-            this.CalculateUnimpactedGivenObserved =settings.CalculateUnimpactedGivenObserved;
-
+            this.CalculateUnimpactedGivenObserved = settings.CalculateUnimpactedGivenObserved;
             List<WaterBodyModelNode> waterBodyNodesList = new List<WaterBodyModelNode>();
             List<SubcatchmentInflowModel> uniformInflowSubcatchmentList = new List<SubcatchmentInflowModel>();
             List<ConfluenceModelNode> confluenceNodesList = new List<ConfluenceModelNode>();
             List<StraightThroughRoutingLink> straightThroughRoutingLinkList = new List<StraightThroughRoutingLink>();
             List<FarmDamRepeatingMonthlyDemandModel> repeatingMonthlyDemandList = new List<FarmDamRepeatingMonthlyDemandModel>();
             List<FarmDamTimeSeriesDemandModel> timeSeriesDemandList = new List<FarmDamTimeSeriesDemandModel>();
-
             List<ModelElementTypeIndex> calculationOrderList = new List<ModelElementTypeIndex>();
-
             HashSet<string> reportingGroupsHashSet = new HashSet<string>();
 
-            List<int> legacyIndexForWaterBody = new List<int>();
-            List<int> legacyIndexForUniformSubcatchmentInflow = new List<int>();
-            List<int> legacyIndexForConfluence = new List<int>();
-            List<int> legacyIndexSTRouting = new List<int>();
-            List<int> legacyIndexRMonthlyDemand = new List<int>();
-            List<int> legacyIndexTSDemand = new List<int>();
-
-            for (int i = legacyRODISDamNodes.Length - 1; i >= 0; i--)
+            // -- Pass 1: classify each node (water body vs confluence), assign its per-array IDs, and build the typed model objects. --
+            // Forward order matches the array's assumed topological (upstream-first) layout, matching the existing NextDownstreamIdentifier - 1 indexing convention used below.
+            for (int i = 0; i < legacyRODISDamNodes.Length; i++)
             {
-                if (legacyRODISDamNodes[i].TotalCatchmentAreaKM2 > 0)
+                LegacyRODISDamNode node = legacyRODISDamNodes[i];
+                if (node.IntermediateCatchmentAreaKM2 > 0)
                 {
-                    uniformInflowSubcatchmentList.Add(legacyRODISDamNodes[i].GetSubcatchmentInflowModel(this.IsLegacyRODISCalculationMethods));
-                    calculationOrderList.Add(legacyRODISDamNodes[i].GetTypeIndexForSubcatchment());
-                    legacyIndexForUniformSubcatchmentInflow.Add(legacyRODISDamNodes[i].Identifier);
+                    node.SubcatchmentInflowID = uniformInflowSubcatchmentList.Count;
+                    uniformInflowSubcatchmentList.Add(node.GetSubcatchmentInflowModel(this.IsLegacyRODISCalculationMethods));
                 }
 
-                // If over-ride setting is set to true, recalculate volume of water body from it's surface area
-                if (settings.RecalculateDamVolumesFromSurfaceAreas 
-                    && legacyRODISDamNodes[i].nodeModelType == ModelElementType.WaterBodyNode
-                    && legacyRODISDamNodes[i].SurfaceAreaM2 > 0)
+                // If over-ride setting is set to true, recalculate volume of water body from its surface area
+                if (settings.RecalculateDamVolumesFromSurfaceAreas && node.SurfaceAreaM2 > 0)
                 {
-                    double recalculatedVolume = settings.EvaluateSurfaceAreaVolumeEquation(legacyRODISDamNodes[i].SurfaceAreaM2);
+                    double recalculatedVolume = settings.EvaluateSurfaceAreaVolumeEquation(node.SurfaceAreaM2);
                     if (double.IsNormal(recalculatedVolume))
                     {
-                        legacyRODISDamNodes[i].VolumeML = recalculatedVolume;
+                        node.VolumeML = recalculatedVolume;
                     }
                 }
 
-                if (legacyRODISDamNodes[i].SurfaceAreaM2 > 0 && legacyRODISDamNodes[i].VolumeML > 0)
+                if (node.SurfaceAreaM2 > 0 && node.VolumeML > 0)
                 {
+                    node.nodeModelType = ModelElementType.WaterBodyNode;
+                    node.WaterBodyNodeID = waterBodyNodesList.Count;
                     ModelElementType demandNodeType = settings.GetDemandModelType(2);
-
-                    string demandGroupIndex = settings.GetGroupDemandModelIndexByVolume(legacyRODISDamNodes[i].VolumeML, demandNodeType);
-
+                    string demandGroupIndex = settings.GetGroupDemandModelIndexByVolume(node.VolumeML, demandNodeType);
                     if (string.IsNullOrEmpty(demandGroupIndex))
                     {
                         // Add demands by demand group
-                        demandGroupIndex = settings.GetRepeatingMonthlyDemandModelIndex(legacyRODISDamNodes[i]);
+                        demandGroupIndex = settings.GetRepeatingMonthlyDemandModelIndex(node);
                         if (!string.IsNullOrEmpty(demandGroupIndex))
                         {
                             demandNodeType = ModelElementType.RepeatingMonthlyDemand;
                         }
                         else
                         {
-                            demandGroupIndex = settings.GetTimeSeriesDemandModelIndex(legacyRODISDamNodes[i]);
+                            demandGroupIndex = settings.GetTimeSeriesDemandModelIndex(node);
                             if (!string.IsNullOrEmpty(demandGroupIndex))
                             {
                                 demandNodeType = ModelElementType.TimeSeriesDemand;
@@ -358,63 +349,90 @@ namespace RODIS.ModelRun
                     {
                         if (demandNodeType == ModelElementType.RepeatingMonthlyDemand)
                         {
-                            repeatingMonthlyDemandList.Add(this.GetRepeatingMonthlyDemandModel(legacyRODISDamNodes[i], settings, demandGroupIndex));
-                            calculationOrderList.Add(legacyRODISDamNodes[i].GetTypeIndexForRepeatingMonthlyDemand());
-                            legacyIndexRMonthlyDemand.Add(legacyRODISDamNodes[i].Identifier);
+                            node.RepeatingMonthlyDemandID = repeatingMonthlyDemandList.Count;
+                            repeatingMonthlyDemandList.Add(this.GetRepeatingMonthlyDemandModel(node, settings, demandGroupIndex));
                         }
-                        else
+                        else if (demandNodeType == ModelElementType.TimeSeriesDemand)
                         {
-                            if (demandNodeType == ModelElementType.TimeSeriesDemand)
-                            {
-                                timeSeriesDemandList.Add(this.GetTimeSeriesDemandModel(legacyRODISDamNodes[i], settings, demandGroupIndex));
-                                calculationOrderList.Add(legacyRODISDamNodes[i].GetTypeIndexForTimeSeriesDemand());
-                                legacyIndexTSDemand.Add(legacyRODISDamNodes[i].Identifier);
-                            }
+                            node.TimeSeriesDemandID = timeSeriesDemandList.Count;
+                            timeSeriesDemandList.Add(this.GetTimeSeriesDemandModel(node, settings, demandGroupIndex));
                         }
                     }
                     else
                     {
                         throw new InvalidDataException(
-                            $"Node {legacyRODISDamNodes[i].Identifier}: demand group '{legacyRODISDamNodes[i].DemandGroup}' "
+                            $"Node {node.Identifier}: demand group '{node.DemandGroup}' "
                             + "is not defined in the scenario settings. Check demand group names in the JSON file.");
                     }
 
-                    waterBodyNodesList.Add(legacyRODISDamNodes[i].GetWaterBodyModelNode());
-
-                    double surfaceAreaVolumeExponent = this.FitSurfaceAreaVolumeExponent(settings, legacyRODISDamNodes[i].VolumeML);
-
+                    waterBodyNodesList.Add(node.GetWaterBodyModelNode());
+                    double surfaceAreaVolumeExponent = this.FitSurfaceAreaVolumeExponent(settings, node.VolumeML);
                     waterBodyNodesList.Last().VolumeSurfaceAreaRelationshipExponent = surfaceAreaVolumeExponent;
-                    legacyIndexForWaterBody.Add(legacyRODISDamNodes[i].Identifier);
-                } 
+                }
                 else
                 {
                     // Surface area or volume are 0 or negative, so this is a confluence not a water body node
-                    confluenceNodesList.Add(legacyRODISDamNodes[i].GetConfluenceModelNode());
-                    legacyIndexForConfluence.Add(legacyRODISDamNodes[i].Identifier);
+                    node.nodeModelType = ModelElementType.ConfluenceNode;
+                    node.ConfluenceNodeID = confluenceNodesList.Count;
+                    confluenceNodesList.Add(node.GetConfluenceModelNode());
                 }
 
-                calculationOrderList.Add(legacyRODISDamNodes[i].GetTypeIndexForNode());
-
-                if (string.IsNullOrEmpty(legacyRODISDamNodes[i].ResultsGroup.Trim()))
+                if (string.IsNullOrEmpty(node.ResultsGroup.Trim()))
                 {
-                    legacyRODISDamNodes[i].ResultsGroup = "null";
+                    node.ResultsGroup = "null";
                 }
 
-                reportingGroupsHashSet.Add(legacyRODISDamNodes[i].ResultsGroup);
-
-                if (i > 0)
+                reportingGroupsHashSet.Add(node.ResultsGroup);
+                if (node.NextDownstreamIdentifier > 0)
                 {
-                    // Add a link downstream of all nodes except the last one, which is the catchment outlet
-                    straightThroughRoutingLinkList.Add(legacyRODISDamNodes[i].GetStraightThroughRoutingLinkModel());
+                    // This node has a downstream connection (i.e. it is not the catchment outlet) - it gets a routing link.
+                    node.StraightThroughRoutingLinkID = straightThroughRoutingLinkList.Count;
+                    straightThroughRoutingLinkList.Add(node.GetStraightThroughRoutingLinkModel());
+                }
+                else
+                {
+                    node.StraightThroughRoutingLinkID = -1;
+                }
+            }
 
-                    ModelElementTypeIndex routingLinkIndex = legacyRODISDamNodes[i].GetTypeIndexForStraightThroughRoutingLink();
-                    if (legacyRODISDamNodes[legacyRODISDamNodes[i].NextDownstreamIdentifier - 1].VolumeML <= 0)
+            // -- Pass 2: resolve each node's downstream water body / confluence ID, now that every node has its own ID assigned from Pass 1. --
+            for (int i = 0; i < legacyRODISDamNodes.Length; i++)
+            {
+                LegacyRODISDamNode node = legacyRODISDamNodes[i];
+                if (node.NextDownstreamIdentifier > 0)
+                {
+                    int dsArrayIndex = node.NextDownstreamIdentifier - 1;
+                    if (dsArrayIndex >= 0 && dsArrayIndex < legacyRODISDamNodes.Length)
                     {
-                        routingLinkIndex.NextDownstreamElementType = ModelElementType.ConfluenceNode;
+                        LegacyRODISDamNode dsNode = legacyRODISDamNodes[dsArrayIndex];
+                        node.NextDownstreamWaterBodyID = dsNode.WaterBodyNodeID;
+                        node.NextDownstreamConfluenceID = dsNode.ConfluenceNodeID;
                     }
-                    calculationOrderList.Add(routingLinkIndex);
+                }
+            }
 
-                    legacyIndexSTRouting.Add(legacyRODISDamNodes[i].Identifier);
+            // -- Pass 3: build the calculation order in upstream-first order, so downstream totals accumulate correctly during traversal. --
+            for (int i = 0; i < legacyRODISDamNodes.Length; i++)
+            {
+                LegacyRODISDamNode node = legacyRODISDamNodes[i];
+                if (node.SubcatchmentInflowID >= 0)
+                {
+                    calculationOrderList.Add(node.GetTypeIndexForSubcatchment());
+                }
+
+                if (node.RepeatingMonthlyDemandID >= 0)
+                {
+                    calculationOrderList.Add(node.GetTypeIndexForRepeatingMonthlyDemand());
+                }
+                else if (node.TimeSeriesDemandID >= 0)
+                {
+                    calculationOrderList.Add(node.GetTypeIndexForTimeSeriesDemand());
+                }
+
+                calculationOrderList.Add(node.GetTypeIndexForNode());
+                if (node.StraightThroughRoutingLinkID >= 0)
+                {
+                    calculationOrderList.Add(node.GetTypeIndexForStraightThroughRoutingLink());
                 }
             }
 
@@ -424,16 +442,17 @@ namespace RODIS.ModelRun
             this.StraightThroughRoutingLinks = straightThroughRoutingLinkList.ToArray();
             this.RepeatingMonthlyDemandModels = repeatingMonthlyDemandList.ToArray();
             this.TimeSeriesDemandModels = timeSeriesDemandList.ToArray();
-
             this.ReportingGroups = reportingGroupsHashSet.ToArray();
             List<string> reportingGroupsList = reportingGroupsHashSet.ToList();
-
             this.ElementModelCalculationOrder = calculationOrderList.ToArray();
 
+            if (this.ElementModelCalculationOrder.Length > 0)
+            {
+                this.ElementModelCalculationOrder[this.ElementModelCalculationOrder.Length - 1].NextDownstreamElementType = ModelElementType.Outlet;
+            }
+
             this.AssignReportingGroupIndices(reportingGroupsList);
-
             this.CalculateTotalCatchmentAreas();
-
             this.InitialiseReportingGroupArrays();
         }
 

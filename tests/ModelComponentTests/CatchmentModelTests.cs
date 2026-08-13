@@ -50,12 +50,21 @@ namespace RODISUnitTests.ModelComponentTests
                 UseFixedLowFlowBypassCapacity = false,
                 VolumeSurfaceAreaEquation = new EquationParser
                 {
-                    VariablesWithDescriptions = new Dictionary<string, string> { { "SA", "Surface area in m²" } },
+                    VariablesWithDescriptions = new Dictionary<string, string> { { "SA", "Surface area in m " } },
                     Equation = "0.0001449275*SA^1.314",
                 },
                 OutletStreamName = "Test Creek",
                 OutletNodeName = "Test Outlet",
                 OutletNodeNumber = "999999",
+                RepeatingMonthlyDemandGroups = new Dictionary<string, FarmDamRepeatingMonthlyDemandModel>
+                {
+                    ["RunoffDams"] = new FarmDamRepeatingMonthlyDemandModel
+                    {
+                        DemandGroup = "RunoffDams",
+                        AnnualDemandFactor = 0.0, // Zero demand keeps these routing/mass-balance tests focused purely on topology and area, not demand extraction.
+                        MonthlyDemandProportions = new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
+                    },
+                },
             };
         }
 

@@ -52,22 +52,6 @@ namespace RODISUnitTests.ModelComponentTests
         // Evaluate — zero input
         // ----------------------------------------------------
 
-        [TestMethod]
-        public void Evaluate_ZeroInput_HandlesGracefully()
-        {
-            var parser = new EquationParser
-            {
-                Equation = "2*X",
-                VariablesWithDescriptions = new Dictionary<string, string> { { "X", "input" } },
-            };
-            parser.VariableValues["X"] = 0.0;
-
-            parser.Evaluate();
-
-            // 2*0 = 0, but double.IsNormal(0) is false, so IsValidResult will be false
-            // This is a known quirk — document it
-            Assert.IsFalse(parser.IsValidResult, "Zero result: IsNormal(0) is false — known behaviour");
-        }
 
         [TestMethod]
         public void Evaluate_ZeroInput_ReturnsValidResult()

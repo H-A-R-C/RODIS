@@ -237,12 +237,11 @@ namespace RODIS.Tests
         }
 
         [TestMethod]
-        public void ReadDemandModelsFromJSON_NonExistentPaths_DoesNotThrow()
+        public void ReadDemandModelsFromJSON_NonExistentPaths_ThrowsFileNotFoundException()
         {
             var settings = CreateSettingsForInit();
             settings.TimeSeriesDemandModelsJSONPath = @"C:\nonexistent\path\does_not_exist.json";
-            settings.InitialiseFromJSON();
-            Assert.AreEqual(0, settings.TimeSeriesDemandGroups.Count);
+            Assert.ThrowsException<FileNotFoundException>(() => settings.InitialiseFromJSON());
         }
 
         // -----------------------------------------------
