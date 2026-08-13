@@ -60,7 +60,7 @@ namespace RODIS.ModelSettings
         /// <param name="jsonPath">Path to the RODIS JSON settings file.</param>
         /// <param name="damNodes">Output array of generated dam nodes, or null if specific network details are used.</param>
         /// <returns>Fully initialised RODISSettings object.</returns>
-        public static RODISSettings LoadAndValidateSettings(string jsonPath, out LegacyRODISDamNode[] damNodes)
+        public static RODISSettings LoadAndValidateSettings(string jsonPath, out LegacySTEDIDamNode[] damNodes)
         {
             if (string.IsNullOrWhiteSpace(jsonPath))
                 throw new ArgumentException("ERROR: JSON input file path is null or empty.");

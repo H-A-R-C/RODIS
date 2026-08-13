@@ -1,13 +1,13 @@
-// <copyright file="LegacyRODISDamNode.cs" company="HARC">
+// <copyright file="LegacySTEDIDamNode.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
 namespace RODIS.ModelRun
 {
-    /// <summary>Represents a single node in the legacy RODIS v1.x input format, holding geometry, demand, and connectivity data used to construct the internal model network.</summary>
-    public class LegacyRODISDamNode
+    /// <summary>Represents a single node in the legacy STEDI v1.2 input format, holding geometry, demand, and connectivity data used to construct the internal model network.</summary>
+    public class LegacySTEDIDamNode
     {
-        /// <summary>Gets or sets Unique integer identifier for this node in the legacy RODIS input array.</summary>
+        /// <summary>Gets or sets Unique integer identifier for this node in the legacy STEDI input array.</summary>
         public int Identifier { get; set; } = -1;
 
         /// <summary>Gets or sets Surface area of the water body at full supply level (m²).</summary>
@@ -190,9 +190,9 @@ namespace RODIS.ModelRun
 
 
         /// <summary>Creates a SubcatchmentInflowModel from this legacy node's catchment area.</summary>
-        /// <param name="IsLegacyRODISCatchmentInflows">True to use legacy area calculation in BeforeRunTimeStep.</param>
+        /// <param name="isLegacySTEDICatchmentInflows">True to use legacy area calculation in BeforeRunTimeStep.</param>
         /// <returns>Initialised subcatchment inflow model.</returns>
-        public SubcatchmentInflowModel GetSubcatchmentInflowModel(bool IsLegacyRODISCatchmentInflows)
+        public SubcatchmentInflowModel GetSubcatchmentInflowModel(bool isLegacySTEDICatchmentInflows)
 
         {
             SubcatchmentInflowModel result = new SubcatchmentInflowModel()
@@ -203,7 +203,7 @@ namespace RODIS.ModelRun
                 VolumeBalanceMisclosure = 0.0,
             };
 
-            result.BeforeRunTimeStep(IsLegacyRODISCatchmentInflows);
+            result.BeforeRunTimeStep(isLegacySTEDICatchmentInflows);
 
             return result;
         }

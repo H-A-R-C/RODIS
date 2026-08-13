@@ -21,7 +21,7 @@ namespace RODIS
             Dictionary<string, BaseCommandLineOption> options = OptionsToDictionary(new List<BaseCommandLineOption>()
             {
                 new RunRODIS(),
-                new RunRODISLegacyVersion(),
+                new RunSTEDILegacyVersion(),
                 new GenerateRandomValues(),
             });
 

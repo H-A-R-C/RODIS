@@ -41,7 +41,7 @@ namespace RODIS.ModelSettings
         /// <summary>
         /// Gets or sets a boolean variable that is true if calculation methods are the same as legacy RODIS version 1, false if new calculation methods to be adopted.
         /// </summary>
-        public bool UseLegacyRODIS1CalculationMethods;
+        public bool UseLegacySTEDICalculationMethods;
 
         /// <summary>
         /// Gets or sets a boolean variable that is true if low flow bypasses are to be applied to all dams bigger than a single, specific threshold of volume.

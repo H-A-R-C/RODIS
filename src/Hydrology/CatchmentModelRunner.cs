@@ -845,7 +845,7 @@ namespace RODIS.ModelRun
                         this.AppendCalculatedOutput(this.OverallOutputTimeSeries[3], this.catchmentModel.SimulationDateTime, this.catchmentModel.UnimpactedFlow);
                         this.AppendCalculatedOutput(this.OverallOutputTimeSeries[4], this.catchmentModel.SimulationDateTime, this.catchmentModel.PumpedInflow);
 
-                        if (this.catchmentModel.IsLegacyRODISCalculationMethods)
+                        if (this.catchmentModel.IsLegacySTEDICalculationMethods)
                         {
                             this.AppendCalculatedOutput(this.OverallOutputTimeSeries[5], this.catchmentModel.SimulationDateTime, -this.catchmentModel.NetRainfallVolume);
                         }

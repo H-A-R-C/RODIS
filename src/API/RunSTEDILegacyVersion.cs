@@ -1,4 +1,4 @@
-// <copyright file="RunRODISLegacyVersion.cs" company="HARC">
+// <copyright file="RunSTEDILegacyVersion.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
@@ -10,42 +10,42 @@ namespace RODIS.CommandLineOptions
     using RODIS.TimeSeries;
 
     /// <summary>Command-line option that runs the legacy RODIS model from a text-format scenario file.</summary>
-    public class RunRODISLegacyVersion : BaseCommandLineOption
+    public class RunSTEDILegacyVersion : BaseCommandLineOption
     {
         /// <inheritdoc/>
-        public override string CommandLineFlag => nameof(RunRODISLegacyVersion);
+        public override string CommandLineFlag => nameof(RunSTEDILegacyVersion);
 
         /// <inheritdoc/>
-        public override string OptionDescription => "Run Legacy RODIS model from scenario file";
+        public override string OptionDescription => "Run Legacy STEDI model from STEDI scenario file";
 
         /// <inheritdoc/>
-        public override Type SettingsType => typeof(LegacyRODISSettings);
+        public override Type SettingsType => typeof(LegacySTEDISettings);
 
         /// <summary>Reads legacy scenario file, builds dam network, and delegates execution to RODISEngine.</summary>
-        /// <param name="argumentPath">Path to the legacy RODIS text scenario file.</param>
+        /// <param name="argumentPath">Path to the legacy STEDI text scenario file.</param>
         public override void Run(string argumentPath)
         {
             this.DisplayProgramDetailsOnConsole();
 
             if (string.IsNullOrWhiteSpace(argumentPath))
-                throw new ArgumentException("ERROR: Legacy RODIS scenario input file path is null or empty.");
+                throw new ArgumentException("ERROR: Legacy STEDI scenario input file path is null or empty.");
 
             if (!File.Exists(argumentPath))
-                throw new ArgumentException("ERROR: Legacy RODIS scenario input file does not exist or has incorrect file path.\n File specified was " + argumentPath);
+                throw new ArgumentException("ERROR: Legacy STEDI scenario input file does not exist or has incorrect file path.\n File specified was " + argumentPath);
 
             try
             {
-                Console.WriteLine("Reading legacy RODIS scenario input file " + argumentPath);
+                Console.WriteLine("Reading legacy STEDI scenario input file " + argumentPath);
 
                 double catchmentAreaKM2;
-                LegacyRODISSettings rodisSettings = this.ReadRODISSettings(argumentPath, out catchmentAreaKM2);
+                LegacySTEDISettings rodisSettings = this.ReadLegacySTEDISettings(argumentPath, out catchmentAreaKM2);
                 ModelElementType demandModelType = RODISSettingsHelper.GetDemandModelType(rodisSettings.Settings);
 
-                LegacyRODISDamNode[] legacyRODISDamNodes = null;
+                LegacySTEDIDamNode[] legacySTEDIDamNodes = null;
 
                 if (rodisSettings.Settings.UseSpecificDamNetworkDetails)
                 {
-                    legacyRODISDamNodes = this.ReadExplicitRODISNetwork(argumentPath, catchmentAreaKM2, demandModelType);
+                    legacySTEDIDamNodes = this.ReadExplicitSTEDINetwork(argumentPath, catchmentAreaKM2, demandModelType);
                 }
                 else
                 {
@@ -57,10 +57,10 @@ namespace RODIS.CommandLineOptions
                     if (!(demandModelType == ModelElementType.RepeatingMonthlyDemand || demandModelType == ModelElementType.TimeSeriesDemand))
                         throw new ArgumentException("ERROR: Invalid demand model type specification. File: " + argumentPath);
 
-                    legacyRODISDamNodes = RODISNetworkSetup.RandomlyGenerateRODISNetwork(rodisSettings.Settings, demandModelType);
+                    legacySTEDIDamNodes = RODISNetworkSetup.RandomlyGenerateRODISNetwork(rodisSettings.Settings, demandModelType);
                 }
 
-                this.RunModelAfterRead(legacyRODISDamNodes, rodisSettings);
+                this.RunModelAfterRead(legacySTEDIDamNodes, rodisSettings);
             }
             catch (InvalidDataException ex)
             {
@@ -70,7 +70,7 @@ namespace RODIS.CommandLineOptions
             catch (FormatException ex)
             {
                 Console.WriteLine($"\nERROR: Could not parse a value in the scenario file.\n  {ex.Message}");
-                Console.WriteLine("Please check the scenario file format matches the expected legacy RODIS format.");
+                Console.WriteLine("Please check the scenario file format matches the expected legacy STEDI v1.2 format.");
             }
             catch (ArgumentException ex)
             {
@@ -90,7 +90,7 @@ namespace RODIS.CommandLineOptions
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\nERROR: An unexpected error occurred during the RODIS run.");
+                Console.WriteLine($"\nERROR: An unexpected error occurred during the STEDI run.");
                 Console.WriteLine($"  Type: {ex.GetType().Name}");
                 Console.WriteLine($"  Message: {ex.Message}");
                 Console.WriteLine($"  Location: {ex.StackTrace?.Split('\n').FirstOrDefault()?.Trim()}");
@@ -103,19 +103,19 @@ namespace RODIS.CommandLineOptions
         /// <summary>
         /// Delegates model setup and execution to RODISEngine, then writes legacy-specific .getdat output followed by standard .res.csv and node metadata outputs.
         /// </summary>
-        /// <param name="legacyRODISDamNodes">Farm dam nodes read from the legacy RODIS v1.0 file.</param>
+        /// <param name="legacySTEDIDamNodes">Farm dam nodes read from the legacy RODIS v1.2 file.</param>
         /// <param name="rodisSettings">Legacy RODIS settings including output file paths.</param>
-        private void RunModelAfterRead(LegacyRODISDamNode[] legacyRODISDamNodes, LegacyRODISSettings rodisSettings)
+        private void RunModelAfterRead(LegacySTEDIDamNode[] legacySTEDIDamNodes, LegacySTEDISettings rodisSettings)
         {
             // --- Delegate setup to engine ---
             var engine = new RODISEngine(this.ProgramName, this.ProgramVersion);
-            engine.LegacyRODISDamNodes = legacyRODISDamNodes;
+            engine.LegacySTEDIDamNodes = legacySTEDIDamNodes;
 
             if (!engine.SetUpFirstRun(rodisSettings.Settings))
                 return;
 
             // Legacy-specific: force legacy calculation methods
-            engine.CatchmentModelRunner.catchmentModel.IsLegacyRODISCalculationMethods = true;
+            engine.CatchmentModelRunner.catchmentModel.IsLegacySTEDICalculationMethods = true;
 
             Console.WriteLine("Running simulation ...");
             engine.CatchmentModelRunner.RunAll();
@@ -163,13 +163,13 @@ namespace RODIS.CommandLineOptions
             }
         }
 
-        /// <summary>Reads general settings, file paths, demand groups, and equations from a legacy RODIS scenario file.</summary>
-        /// <param name="scenarioFileName">Path to the legacy RODIS text scenario file.</param>
+        /// <summary>Reads general settings, file paths, demand groups, and equations from a legacy STEDI v1.2 scenario file.</summary>
+        /// <param name="scenarioFileName">Path to the legacy STEDI text scenario file.</param>
         /// <param name="catchmentAreaKM2">Output: total catchment area in km² parsed from the file.</param>
-        /// <returns>Populated LegacyRODISSettings with an inner RODISSettings object.</returns>
-        private LegacyRODISSettings ReadRODISSettings(string scenarioFileName, out double catchmentAreaKM2)
+        /// <returns>Populated LegacySTEDISettings with an inner RODISSettings object.</returns>
+        private LegacySTEDISettings ReadLegacySTEDISettings(string scenarioFileName, out double catchmentAreaKM2)
         {
-            LegacyRODISSettings settings = new LegacyRODISSettings()
+            LegacySTEDISettings settings = new LegacySTEDISettings()
             {
                 Settings = new RODISSettings(),
             };
@@ -365,7 +365,7 @@ namespace RODIS.CommandLineOptions
         /// <summary>Reads demand time series group definitions from the legacy scenario file into settings.</summary>
         /// <param name="sr">StreamReader positioned at the demand time series section.</param>
         /// <param name="settings">Legacy settings to populate with time series demand groups.</param>
-        private void ReadDemandTimeSeriesGroups(StreamReader sr, LegacyRODISSettings settings)
+        private void ReadDemandTimeSeriesGroups(StreamReader sr, LegacySTEDISettings settings)
         {
             Dictionary<string, FarmDamTimeSeriesDemandModel> modelsList = new Dictionary<string, FarmDamTimeSeriesDemandModel>();
 
@@ -435,7 +435,7 @@ namespace RODIS.CommandLineOptions
         /// <param name="sr">StreamReader positioned at the equation section.</param>
         /// <param name="settings">Legacy settings containing the equation variable definitions.</param>
         /// <returns>Equation string in the form "A*SA^B".</returns>
-        private string ReadSurfaceAreaVolumeEquation(StreamReader sr, LegacyRODISSettings settings)
+        private string ReadSurfaceAreaVolumeEquation(StreamReader sr, LegacySTEDISettings settings)
         {
             string result = string.Empty;
 
@@ -467,7 +467,7 @@ namespace RODIS.CommandLineOptions
         /// <summary>Reads a piecewise-linear volume/catchment-area lookup table and builds an equation string.</summary>
         /// <param name="sr">StreamReader positioned at the volume-catchment area section.</param>
         /// <param name="settings">Legacy settings to populate with the parsed EquationParser.</param>
-        private void ReadVolumeCatchmentAreaRelationship(StreamReader sr, LegacyRODISSettings settings)
+        private void ReadVolumeCatchmentAreaRelationship(StreamReader sr, LegacySTEDISettings settings)
         {
             const string variableName = "Volume";
             string equation = string.Empty;
@@ -543,7 +543,7 @@ namespace RODIS.CommandLineOptions
         /// <summary>Reads low-flow bypass override settings including capacity, volume threshold, and season dates.</summary>
         /// <param name="sr">StreamReader positioned at the bypass override section.</param>
         /// <param name="settings">Legacy settings to populate with bypass parameters.</param>
-        private void ReadLowFlowBypassOverride(StreamReader sr, LegacyRODISSettings settings)
+        private void ReadLowFlowBypassOverride(StreamReader sr, LegacySTEDISettings settings)
         {
             int blankLineCount = 0;
 
@@ -640,7 +640,7 @@ namespace RODIS.CommandLineOptions
         /// <summary>Reads total dam volume and probability distribution of dam size classes from the legacy file.</summary>
         /// <param name="sr">StreamReader positioned at the dam volume/distribution section.</param>
         /// <param name="settings">Legacy settings to populate with volume distribution data.</param>
-        private void ReadDamVolumeAndDistribution(StreamReader sr, LegacyRODISSettings settings)
+        private void ReadDamVolumeAndDistribution(StreamReader sr, LegacySTEDISettings settings)
         {
             int blankLineCount = 0;
 
@@ -750,13 +750,13 @@ namespace RODIS.CommandLineOptions
         }
 
         /// <summary>Reads an explicit network of individually specified dam nodes from the legacy scenario file.</summary>
-        /// <param name="scenarioFileName">Path to the legacy RODIS text scenario file.</param>
+        /// <param name="scenarioFileName">Path to the legacy STEDI text scenario file.</param>
         /// <param name="catchmentAreaKM2">Total catchment area in km² (assigned to first node).</param>
         /// <param name="demandModelType">Demand model type for node property updates.</param>
-        /// <returns>Array of legacy RODIS dam nodes comprising the network.</returns>
-        private LegacyRODISDamNode[] ReadExplicitRODISNetwork(string scenarioFileName, double catchmentAreaKM2, ModelElementType demandModelType)
+        /// <returns>Array of legacy STEDI dam nodes comprising the network.</returns>
+        private LegacySTEDIDamNode[] ReadExplicitSTEDINetwork(string scenarioFileName, double catchmentAreaKM2, ModelElementType demandModelType)
         {
-            List<LegacyRODISDamNode> legacyNetwork = new List<LegacyRODISDamNode>();
+            List<LegacySTEDIDamNode> legacyNetwork = new List<LegacySTEDIDamNode>();
             int numNodesInNetwork = -1;
 
             bool isBypassForSome = false;
@@ -808,7 +808,7 @@ namespace RODIS.CommandLineOptions
                                         continue;
                                     }
 
-                                    LegacyRODISDamNode newNode = new LegacyRODISDamNode()
+                                    LegacySTEDIDamNode newNode = new LegacySTEDIDamNode()
                                     {
                                         Identifier = id,
                                         SurfaceAreaM2 = surfaceArea,
@@ -849,7 +849,7 @@ namespace RODIS.CommandLineOptions
                                         newNode.WinterfillRate = 0.0;
                                     }
 
-                                    // First node of the legacy RODIS input network is the catchment outlet, so set area to total catchment area
+                                    // First node of the legacy STEDI input network is the catchment outlet, so set area to total catchment area
                                     if (legacyNetwork.Count == 0 && catchmentAreaKM2 > 0)
                                     {
                                         newNode.TotalCatchmentAreaKM2 = catchmentAreaKM2;
@@ -936,20 +936,19 @@ namespace RODIS.CommandLineOptions
                     + "Check that the scenario file contains an explicit dam network definition.");
             }
 
-            LegacyRODISDamNode[] legacyRODISDamNodes = legacyNetwork.ToArray();
+            LegacySTEDIDamNode[] legacySTEDIDamNodes = legacyNetwork.ToArray();
 
             if (legacyNetwork.Count == numNodesInNetwork)
             {
-                RODISNetworkSetup.UpdateLegacyRODISNodeProperties(legacyRODISDamNodes, demandModelType);
+                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(legacySTEDIDamNodes, demandModelType);
             } 
             else
             {
                 throw new InvalidDataException(
-                        $"Expected {numNodesInNetwork} dam nodes in network but successfully parsed {legacyNetwork.Count}. "
-                        + $"Check the 'Dam Details:' section in '{scenarioFileName}'.");
+                        $"Expected {numNodesInNetwork} dam nodes in network but successfully parsed {legacyNetwork.Count}. Check the 'Dam Details:' section in '{scenarioFileName}'.");
             }
 
-            return legacyRODISDamNodes;
+            return legacySTEDIDamNodes;
         }
 
         /// <summary>Reads repeating monthly demand group definitions from the legacy scenario file.</summary>

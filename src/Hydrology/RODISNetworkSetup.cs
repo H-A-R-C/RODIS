@@ -11,11 +11,11 @@ namespace RODIS.ModelRun
     public class RODISNetworkSetup
     {
         /// <summary>
-        /// Calculates intermediate catchment areas and assigns element type IDs, demand IDs, and downstream connectivity for an array of legacy RODIS nodes.
+        /// Calculates intermediate catchment areas and assigns element type IDs, demand IDs, and downstream connectivity for an array of legacy STEDI model nodes.
         /// </summary>
-        /// <param name="legacyRODISDamNodes">Array of legacy nodes to update in-place.</param>
+        /// <param name="legacySTEDIDamNodes">Array of legacy nodes to update in-place.</param>
         /// <param name="demandModelType">Demand model type to assign (RepeatingMonthlyDemand or TimeSeriesDemand).</param>
-        public static void UpdateLegacyRODISNodeProperties (LegacyRODISDamNode[] legacyRODISDamNodes, ModelElementType demandModelType)
+        public static void UpdateLegacySTEDI1NodeProperties (LegacySTEDIDamNode[] legacySTEDIDamNodes, ModelElementType demandModelType)
         {
             List<int> legacyNodeIDList = new List<int>();
 
@@ -26,70 +26,70 @@ namespace RODIS.ModelRun
             int timeSeriesDemandModelsCount = 0;
             int straightThroughRoutingCount = 0;
 
-            for (int i = 0; i < legacyRODISDamNodes.Length; i++)
+            for (int i = 0; i < legacySTEDIDamNodes.Length; i++)
             {
-                legacyRODISDamNodes[i].CatchmentAreaFromUpstreamLegacyNodes = 0.0;
-                legacyNodeIDList.Add(legacyRODISDamNodes[i].Identifier);
+                legacySTEDIDamNodes[i].CatchmentAreaFromUpstreamLegacyNodes = 0.0;
+                legacyNodeIDList.Add(legacySTEDIDamNodes[i].Identifier);
             }
 
-            for (int i = legacyRODISDamNodes.Length - 1; i >= 0; i--)
+            for (int i = legacySTEDIDamNodes.Length - 1; i >= 0; i--)
             {
-                legacyRODISDamNodes[i].IntermediateCatchmentAreaKM2 = Math.Max(0, legacyRODISDamNodes[i].TotalCatchmentAreaKM2 - legacyRODISDamNodes[i].CatchmentAreaFromUpstreamLegacyNodes);
-                int nextDSID = legacyRODISDamNodes[i].NextDownstreamIdentifier - 1;
+                legacySTEDIDamNodes[i].IntermediateCatchmentAreaKM2 = Math.Max(0, legacySTEDIDamNodes[i].TotalCatchmentAreaKM2 - legacySTEDIDamNodes[i].CatchmentAreaFromUpstreamLegacyNodes);
+                int nextDSID = legacySTEDIDamNodes[i].NextDownstreamIdentifier - 1;
                 if (nextDSID >= 0)
                 {
-                    legacyRODISDamNodes[nextDSID].CatchmentAreaFromUpstreamLegacyNodes += legacyRODISDamNodes[i].TotalCatchmentAreaKM2;
+                    legacySTEDIDamNodes[nextDSID].CatchmentAreaFromUpstreamLegacyNodes += legacySTEDIDamNodes[i].TotalCatchmentAreaKM2;
                 }
 
-                if (legacyRODISDamNodes[i].VolumeML <= 0 || legacyRODISDamNodes[i].NextDownstreamIdentifier <= 0)
+                if (legacySTEDIDamNodes[i].VolumeML <= 0 || legacySTEDIDamNodes[i].NextDownstreamIdentifier <= 0)
                 {
-                    legacyRODISDamNodes[i].nodeModelType = ModelElementType.ConfluenceNode;
-                    legacyRODISDamNodes[i].ConfluenceNodeID = confluenceNodeCount;
+                    legacySTEDIDamNodes[i].nodeModelType = ModelElementType.ConfluenceNode;
+                    legacySTEDIDamNodes[i].ConfluenceNodeID = confluenceNodeCount;
                     ++confluenceNodeCount;
                 }
                 else
                 {
-                    legacyRODISDamNodes[i].nodeModelType = ModelElementType.WaterBodyNode;
+                    legacySTEDIDamNodes[i].nodeModelType = ModelElementType.WaterBodyNode;
 
-                    legacyRODISDamNodes[i].WaterBodyNodeID = waterBodyNodeCount;
+                    legacySTEDIDamNodes[i].WaterBodyNodeID = waterBodyNodeCount;
                     ++waterBodyNodeCount;
 
                     switch (demandModelType)
                     {
                         case ModelElementType.RepeatingMonthlyDemand:
-                            legacyRODISDamNodes[i].RepeatingMonthlyDemandID = repeatingMonthlyDemandModelsCount;
+                            legacySTEDIDamNodes[i].RepeatingMonthlyDemandID = repeatingMonthlyDemandModelsCount;
                             ++repeatingMonthlyDemandModelsCount;
                             break;
 
                         case ModelElementType.TimeSeriesDemand:
-                            legacyRODISDamNodes[i].TimeSeriesDemandID = timeSeriesDemandModelsCount;
+                            legacySTEDIDamNodes[i].TimeSeriesDemandID = timeSeriesDemandModelsCount;
                             ++timeSeriesDemandModelsCount;
                             break;
                     }
                 }
 
-                if (legacyRODISDamNodes[i].IntermediateCatchmentAreaKM2 > 0)
+                if (legacySTEDIDamNodes[i].IntermediateCatchmentAreaKM2 > 0)
                 {
-                    legacyRODISDamNodes[i].SubcatchmentInflowID = uniformInflowCatchmentsCount;
+                    legacySTEDIDamNodes[i].SubcatchmentInflowID = uniformInflowCatchmentsCount;
                     ++uniformInflowCatchmentsCount;
                 }
 
-                legacyRODISDamNodes[i].StraightThroughRoutingLinkID = straightThroughRoutingCount;
+                legacySTEDIDamNodes[i].StraightThroughRoutingLinkID = straightThroughRoutingCount;
                 ++straightThroughRoutingCount;
             }
 
-            for (int i = legacyRODISDamNodes.Length - 1; i > 0; i--)
+            for (int i = legacySTEDIDamNodes.Length - 1; i > 0; i--)
             {
-                int dsLegacyPosition = legacyNodeIDList.IndexOf(legacyRODISDamNodes[i].NextDownstreamIdentifier);
+                int dsLegacyPosition = legacyNodeIDList.IndexOf(legacySTEDIDamNodes[i].NextDownstreamIdentifier);
                 if (dsLegacyPosition >= 0)
                 {
-                    switch (legacyRODISDamNodes[dsLegacyPosition].nodeModelType)
+                    switch (legacySTEDIDamNodes[dsLegacyPosition].nodeModelType)
                     {
                         case ModelElementType.WaterBodyNode:
-                            legacyRODISDamNodes[i].NextDownstreamWaterBodyID = legacyRODISDamNodes[dsLegacyPosition].WaterBodyNodeID;
+                            legacySTEDIDamNodes[i].NextDownstreamWaterBodyID = legacySTEDIDamNodes[dsLegacyPosition].WaterBodyNodeID;
                             break;
                         case ModelElementType.ConfluenceNode:
-                            legacyRODISDamNodes[i].NextDownstreamConfluenceID = legacyRODISDamNodes[dsLegacyPosition].ConfluenceNodeID;
+                            legacySTEDIDamNodes[i].NextDownstreamConfluenceID = legacySTEDIDamNodes[dsLegacyPosition].ConfluenceNodeID;
                             break;
                     }
                 }
@@ -102,9 +102,9 @@ namespace RODIS.ModelRun
         /// <param name="settings">RODIS settings containing probability distribution and catchment parameters.</param>
         /// <param name="demandModelType">Type of demand model to assign to generated nodes.</param>
         /// <returns>Array of generated legacy RODIS dam nodes with network topology assigned.</returns>
-        public static LegacyRODISDamNode[] RandomlyGenerateRODISNetwork(RODISSettings settings, ModelElementType demandModelType)
+        public static LegacySTEDIDamNode[] RandomlyGenerateRODISNetwork(RODISSettings settings, ModelElementType demandModelType)
         {
-            List<LegacyRODISDamNode> legacyNetwork = new List<LegacyRODISDamNode>();
+            List<LegacySTEDIDamNode> legacyNetwork = new List<LegacySTEDIDamNode>();
 
             List<double> randomDamVolumes = new List<double>();
 
@@ -198,7 +198,7 @@ namespace RODIS.ModelRun
             // Now set up legacy RODIS format network
 
             // Start with catchment outlet node
-            LegacyRODISDamNode outletNode = new LegacyRODISDamNode()
+            LegacySTEDIDamNode outletNode = new LegacySTEDIDamNode()
             {
                 Identifier = 1,
                 SurfaceAreaM2 = 0,
@@ -215,7 +215,7 @@ namespace RODIS.ModelRun
 
             for (int i = 0; i < randomDamVolumes.Count && i < localCatchmentAreas.Count && i < surfaceAreas.Count; ++i)
             {
-                LegacyRODISDamNode newNode = new LegacyRODISDamNode()
+                LegacySTEDIDamNode newNode = new LegacySTEDIDamNode()
                 {
                     Identifier = i + 2,
                     SurfaceAreaM2 = surfaceAreas[i],
@@ -251,9 +251,9 @@ namespace RODIS.ModelRun
 
             RODISNetworkSetup.SetGeneralBypassCapacities(legacyNetwork, settings);
 
-            LegacyRODISDamNode[] legacyRODISDamNodes = legacyNetwork.ToArray();
+            LegacySTEDIDamNode[] legacyRODISDamNodes = legacyNetwork.ToArray();
 
-            RODISNetworkSetup.UpdateLegacyRODISNodeProperties(legacyRODISDamNodes, demandModelType);
+            RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(legacyRODISDamNodes, demandModelType);
 
             return legacyRODISDamNodes;
         }
@@ -261,7 +261,7 @@ namespace RODIS.ModelRun
         /// <summary>Assigns bypass capacity and season dates to all nodes in the network that exceed the volume threshold.</summary>
         /// <param name="legacyNetwork">List of legacy nodes to update.</param>
         /// <param name="settings">RODIS settings providing bypass capacity, threshold, and season parameters.</param>
-        public static void SetGeneralBypassCapacities(List<LegacyRODISDamNode> legacyNetwork, RODISSettings settings)
+        public static void SetGeneralBypassCapacities(List<LegacySTEDIDamNode> legacyNetwork, RODISSettings settings)
         {
             foreach (var node in legacyNetwork)
             {

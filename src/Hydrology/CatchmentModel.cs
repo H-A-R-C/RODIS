@@ -67,7 +67,7 @@ namespace RODIS.ModelRun
         public ModelElementTypeIndex[] ElementModelCalculationOrder;
 
         /// <summary>True to use legacy RODIS v1.20 calculation methods for surface area, rainfall and area calculations.</summary>
-        public bool IsLegacyRODISCalculationMethods = false;
+        public bool IsLegacySTEDICalculationMethods = false;
 
         /// <summary>Gets or sets Observed downstream flow (ML) for the current time step. -9999 = missing data.</summary>
         public double ObservedDownstreamFlow { get; set; } = -9999.0;
@@ -284,7 +284,7 @@ namespace RODIS.ModelRun
         /// <param name="legacyRODISDamNodes">Array of legacy RODIS model farm dam and water body nodes. Must already be in upstream-to-downstream
         /// (topological) order, with NextDownstreamIdentifier referencing another node's Identifier (1-based) or 0 for the catchment outlet.</param>
         /// <param name="settings">Overall settings of legacy RODIS model.</param>
-        public void Initialise(LegacyRODISDamNode[] legacyRODISDamNodes, RODISSettings settings)
+        public void Initialise(LegacySTEDIDamNode[] legacyRODISDamNodes, RODISSettings settings)
         {
             this.CalculateUnimpactedGivenObserved = settings.CalculateUnimpactedGivenObserved;
             List<WaterBodyModelNode> waterBodyNodesList = new List<WaterBodyModelNode>();
@@ -300,11 +300,11 @@ namespace RODIS.ModelRun
             // Forward order matches the array's assumed topological (upstream-first) layout, matching the existing NextDownstreamIdentifier - 1 indexing convention used below.
             for (int i = 0; i < legacyRODISDamNodes.Length; i++)
             {
-                LegacyRODISDamNode node = legacyRODISDamNodes[i];
+                LegacySTEDIDamNode node = legacyRODISDamNodes[i];
                 if (node.IntermediateCatchmentAreaKM2 > 0)
                 {
                     node.SubcatchmentInflowID = uniformInflowSubcatchmentList.Count;
-                    uniformInflowSubcatchmentList.Add(node.GetSubcatchmentInflowModel(this.IsLegacyRODISCalculationMethods));
+                    uniformInflowSubcatchmentList.Add(node.GetSubcatchmentInflowModel(this.IsLegacySTEDICalculationMethods));
                 }
 
                 // If over-ride setting is set to true, recalculate volume of water body from its surface area
@@ -398,13 +398,13 @@ namespace RODIS.ModelRun
             // -- Pass 2: resolve each node's downstream water body / confluence ID, now that every node has its own ID assigned from Pass 1. --
             for (int i = 0; i < legacyRODISDamNodes.Length; i++)
             {
-                LegacyRODISDamNode node = legacyRODISDamNodes[i];
+                LegacySTEDIDamNode node = legacyRODISDamNodes[i];
                 if (node.NextDownstreamIdentifier > 0)
                 {
                     int dsArrayIndex = node.NextDownstreamIdentifier - 1;
                     if (dsArrayIndex >= 0 && dsArrayIndex < legacyRODISDamNodes.Length)
                     {
-                        LegacyRODISDamNode dsNode = legacyRODISDamNodes[dsArrayIndex];
+                        LegacySTEDIDamNode dsNode = legacyRODISDamNodes[dsArrayIndex];
                         node.NextDownstreamWaterBodyID = dsNode.WaterBodyNodeID;
                         node.NextDownstreamConfluenceID = dsNode.ConfluenceNodeID;
                     }
@@ -414,7 +414,7 @@ namespace RODIS.ModelRun
             // -- Pass 3: build the calculation order in upstream-first order, so downstream totals accumulate correctly during traversal. --
             for (int i = 0; i < legacyRODISDamNodes.Length; i++)
             {
-                LegacyRODISDamNode node = legacyRODISDamNodes[i];
+                LegacySTEDIDamNode node = legacyRODISDamNodes[i];
                 if (node.SubcatchmentInflowID >= 0)
                 {
                     calculationOrderList.Add(node.GetTypeIndexForSubcatchment());
@@ -526,7 +526,7 @@ namespace RODIS.ModelRun
 
                 HashSet<string> reportingGroupsHashSet = new HashSet<string>();
 
-                List<LegacyRODISDamNode> legacyNodesList = new List<LegacyRODISDamNode>();
+                List<LegacySTEDIDamNode> legacyNodesList = new List<LegacySTEDIDamNode>();
 
                 int numWaterBodyNodes = 0;
                 int numConfluenceNodes = 0;
@@ -545,7 +545,7 @@ namespace RODIS.ModelRun
                         }
                     }
 
-                    LegacyRODISDamNode legacyNode = new LegacyRODISDamNode()
+                    LegacySTEDIDamNode legacyNode = new LegacySTEDIDamNode()
                     {
                         Identifier = i,
                         SurfaceAreaM2 = allWaterBodies[i].SurfaceAream2,
@@ -691,11 +691,11 @@ namespace RODIS.ModelRun
 
                 for (int i = 0; i < allWaterBodies.Length; ++i)
                 {
-                    LegacyRODISDamNode legacyNode = legacyNodesList[i];
+                    LegacySTEDIDamNode legacyNode = legacyNodesList[i];
 
                     if (allWaterBodies[i].CatchmentAreakm2 > 0)
                     {
-                        uniformInflowSubcatchmentList.Add(legacyNode.GetSubcatchmentInflowModel(this.IsLegacyRODISCalculationMethods));
+                        uniformInflowSubcatchmentList.Add(legacyNode.GetSubcatchmentInflowModel(this.IsLegacySTEDICalculationMethods));
                         calculationOrderList.Add(legacyNode.GetTypeIndexForSubcatchment());
                     }
 
@@ -735,7 +735,7 @@ namespace RODIS.ModelRun
 
                             // Set initial storage volume and surface area
                             // Note: Legacy RODIS did not have this option, so only use initial storage proportion full if allowing new calculation methods
-                            if (!settings.UseLegacyRODIS1CalculationMethods)
+                            if (!settings.UseLegacySTEDICalculationMethods)
                             {
                                 double startFraction = Math.Max(Math.Min(settings.AllStoragesProportionFullAtStartOfRun, 1.0), 0.0);
                                 waterBodyToAdd.VolumeInStorage = startFraction * waterBodyToAdd.StorageCapacityVolumeAtSpill;
@@ -772,7 +772,7 @@ namespace RODIS.ModelRun
 
                         // When the downstream node is a ConfluenceNode, correct BOTH the element type AND the array index.
                         // GetTypeIndexForStraightThroughRoutingLink() defaults both to WaterBodyNode.
-                        // This mirrors the equivalent logic in the legacy initialisation path (see Initialise (LegacyRODISDamNode[], RODISSettings) at ~L240).
+                        // This mirrors the equivalent logic in the legacy initialisation path (see Initialise (LegacySTEDIDamNode[], RODISSettings) at ~L240).
                         int dsPos = allWaterBodies[i].NextDownstreamArrayPosition;
                         if (dsPos >= 0 && dsPos < allWaterBodies.Length
                             && !(allWaterBodies[dsPos].SurfaceAream2 > 0 && allWaterBodies[dsPos].VolumeML > 0))
@@ -1245,7 +1245,7 @@ namespace RODIS.ModelRun
         /// <param name="settings">Overall settings of legacy RODIS model, which contain the repeating monthly demand group patterns.</param>
         /// <param name="demandGroupIndex">Index of demand pattern group for this farm dam node.</param>
         /// <returns>Repeating monthly demand model for water body node.</returns>
-        private FarmDamRepeatingMonthlyDemandModel GetRepeatingMonthlyDemandModel(LegacyRODISDamNode legacyRODISDamNode, RODISSettings settings, string demandGroupIndex)
+        private FarmDamRepeatingMonthlyDemandModel GetRepeatingMonthlyDemandModel(LegacySTEDIDamNode legacyRODISDamNode, RODISSettings settings, string demandGroupIndex)
         {
             FarmDamRepeatingMonthlyDemandModel selectedModel = settings.RepeatingMonthlyDemandGroups[demandGroupIndex];
 
@@ -1274,7 +1274,7 @@ namespace RODIS.ModelRun
         /// <param name="settings">Overall settings of legacy RODIS model, which contain the time series demand data.</param>
         /// <param name="demandGroupIndex">Index of demand pattern group for this farm dam node.</param>
         /// <returns>Time series demand model for water body node.</returns>
-        private FarmDamTimeSeriesDemandModel GetTimeSeriesDemandModel(LegacyRODISDamNode legacyRODISDamNode, RODISSettings settings, string demandGroupIndex)
+        private FarmDamTimeSeriesDemandModel GetTimeSeriesDemandModel(LegacySTEDIDamNode legacyRODISDamNode, RODISSettings settings, string demandGroupIndex)
         {
             FarmDamTimeSeriesDemandModel selectedModel = settings.TimeSeriesDemandGroups[demandGroupIndex];
 
@@ -1427,7 +1427,7 @@ namespace RODIS.ModelRun
                             if (dsType == ModelElementType.WaterBodyNode)
                             {
                                 this.SubcatchmentsInflowModels[thisIndex].WaterBodyAreaKM2 = this.WaterBodyNodes[dsIndex].SurfaceAreaStored * 1.0E-6;
-                                this.SubcatchmentsInflowModels[thisIndex].BeforeRunTimeStep(this.IsLegacyRODISCalculationMethods);
+                                this.SubcatchmentsInflowModels[thisIndex].BeforeRunTimeStep(this.IsLegacySTEDICalculationMethods);
 
                                 this.WaterBodyNodes[dsIndex].TotalUpstreamNonWaterCatchmentAreaKM2 += this.SubcatchmentsInflowModels[thisIndex].NonWaterBodyAreaKM2;
                                 this.WaterBodyNodes[dsIndex].NonWaterCatchmentAreaUpstreamOfDamsKM2 = this.WaterBodyNodes[dsIndex].TotalUpstreamNonWaterCatchmentAreaKM2;
@@ -1438,7 +1438,7 @@ namespace RODIS.ModelRun
                                 if (dsType == ModelElementType.ConfluenceNode)
                                 {
                                     this.SubcatchmentsInflowModels[thisIndex].WaterBodyAreaKM2 = 0;
-                                    this.SubcatchmentsInflowModels[thisIndex].BeforeRunTimeStep(this.IsLegacyRODISCalculationMethods);
+                                    this.SubcatchmentsInflowModels[thisIndex].BeforeRunTimeStep(this.IsLegacySTEDICalculationMethods);
                                     this.ConfluenceNodes[dsIndex].TotalUpstreamNonWaterCatchmentAreaKM2 += this.SubcatchmentsInflowModels[thisIndex].NonWaterBodyAreaKM2;
                                     this.ConfluenceNodes[dsIndex].NonWaterCatchmentAreaDownstreamOfDamsKM2 += this.SubcatchmentsInflowModels[thisIndex].NonWaterBodyAreaKM2;
                                 }
@@ -1624,7 +1624,7 @@ namespace RODIS.ModelRun
 
                             this.WaterBodyNodes[thisIndex].Rainfall = this.Rainfall * this.RainfallMultiplier * this.WaterBodyNodes[thisIndex].LocalRainfallMultiplier;
                             this.WaterBodyNodes[thisIndex].Evaporation = this.Evaporation * this.PETMultiplier * this.WaterBodyNodes[thisIndex].LocalEvaporationMultiplier;
-                            this.WaterBodyNodes[thisIndex].RunTimeStep(this.SimulationDateTime, timeStep, this.IsLegacyRODISCalculationMethods, isAdoptedRun);
+                            this.WaterBodyNodes[thisIndex].RunTimeStep(this.SimulationDateTime, timeStep, this.IsLegacySTEDICalculationMethods, isAdoptedRun);
 
                             // U5: Pass stripped upstream dam flows through — they bypass this dam entirely and continue downstream as catchment-attributed flow to preserve flow attribution identity:
                             // DownstreamFlow = DownstreamFlowFromBypass + DownstreamFlowFromSpill + DownstreamFlowFromCatchment
@@ -1648,7 +1648,7 @@ namespace RODIS.ModelRun
 
                     case ModelElementType.ConfluenceNode:
                         {
-                            this.ConfluenceNodes[thisIndex].RunTimeStep(this.SimulationDateTime, timeStep, this.IsLegacyRODISCalculationMethods);
+                            this.ConfluenceNodes[thisIndex].RunTimeStep(this.SimulationDateTime, timeStep, this.IsLegacySTEDICalculationMethods);
 
                             // Set downstream flow as upstream flow for relevant downstream link
                             if (dsType == ModelElementType.StraightThroughRoutingLink && dsIndex >= 0 && dsIndex < this.StraightThroughRoutingLinks.Length)

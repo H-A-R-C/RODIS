@@ -18,9 +18,9 @@ namespace RODISUnitTests.ModelComponentTests
         // ----------------------------------------------------
 
         /// <summary>Creates an outlet node (zero volume, no downstream, always becomes a confluence).</summary>
-        private static LegacyRODISDamNode MakeOutlet(int id, double totalCatchmentAreaKM2)
+        private static LegacySTEDIDamNode MakeOutlet(int id, double totalCatchmentAreaKM2)
         {
-            return new LegacyRODISDamNode
+            return new LegacySTEDIDamNode
             {
                 Identifier = id,
                 VolumeML = 0.0,
@@ -33,9 +33,9 @@ namespace RODISUnitTests.ModelComponentTests
         }
 
         /// <summary>Creates a dam node with specified volume and downstream connection.</summary>
-        private static LegacyRODISDamNode MakeDam(int id, double volumeML, double totalCatchmentAreaKM2, int nextDownstreamId)
+        private static LegacySTEDIDamNode MakeDam(int id, double volumeML, double totalCatchmentAreaKM2, int nextDownstreamId)
         {
-            return new LegacyRODISDamNode
+            return new LegacySTEDIDamNode
             {
                 Identifier = id,
                 VolumeML = volumeML,
@@ -48,7 +48,7 @@ namespace RODISUnitTests.ModelComponentTests
         }
 
         /// <summary>Counts nodes of a given type in the array.</summary>
-        private static int CountNodeType(LegacyRODISDamNode[] nodes, ModelElementType type)
+        private static int CountNodeType(LegacySTEDIDamNode[] nodes, ModelElementType type)
         {
             int count = 0;
             foreach (var n in nodes) { if (n.nodeModelType == type) count++; }
@@ -56,7 +56,7 @@ namespace RODISUnitTests.ModelComponentTests
         }
 
         /// <summary>Counts nodes that have a uniform inflow subcatchment assigned.</summary>
-        private static int CountSubcatchments(LegacyRODISDamNode[] nodes)
+        private static int CountSubcatchments(LegacySTEDIDamNode[] nodes)
         {
             int count = 0;
             foreach (var n in nodes) { if (n.SubcatchmentInflowID >= 0) count++; }
@@ -74,17 +74,17 @@ namespace RODISUnitTests.ModelComponentTests
         [TestClass]
         public class SingleDam
         {
-            private LegacyRODISDamNode[] nodes;
+            private LegacySTEDIDamNode[] nodes;
 
             [TestInitialize]
             public void Setup()
             {
-                this.nodes = new LegacyRODISDamNode[]
+                this.nodes = new LegacySTEDIDamNode[]
                 {
                     MakeOutlet(1, totalCatchmentAreaKM2: 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 30.0, nextDownstreamId: 1),
                 };
-                RODISNetworkSetup.UpdateLegacyRODISNodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -151,18 +151,18 @@ namespace RODISUnitTests.ModelComponentTests
         [TestClass]
         public class TwoDamsParallel
         {
-            private LegacyRODISDamNode[] nodes;
+            private LegacySTEDIDamNode[] nodes;
 
             [TestInitialize]
             public void Setup()
             {
-                this.nodes = new LegacyRODISDamNode[]
+                this.nodes = new LegacySTEDIDamNode[]
                 {
                     MakeOutlet(1, totalCatchmentAreaKM2: 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 30.0, nextDownstreamId: 1),
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 1),
                 };
-                RODISNetworkSetup.UpdateLegacyRODISNodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -221,18 +221,18 @@ namespace RODISUnitTests.ModelComponentTests
         [TestClass]
         public class TwoDamsSeries
         {
-            private LegacyRODISDamNode[] nodes;
+            private LegacySTEDIDamNode[] nodes;
 
             [TestInitialize]
             public void Setup()
             {
-                this.nodes = new LegacyRODISDamNode[]
+                this.nodes = new LegacySTEDIDamNode[]
                 {
                     MakeOutlet(1, totalCatchmentAreaKM2: 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 60.0, nextDownstreamId: 1),
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 2),
                 };
-                RODISNetworkSetup.UpdateLegacyRODISNodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -305,19 +305,19 @@ namespace RODISUnitTests.ModelComponentTests
         [TestClass]
         public class ThreeDamsYShape
         {
-            private LegacyRODISDamNode[] nodes;
+            private LegacySTEDIDamNode[] nodes;
 
             [TestInitialize]
             public void Setup()
             {
-                this.nodes = new LegacyRODISDamNode[]
+                this.nodes = new LegacySTEDIDamNode[]
                 {
                     MakeOutlet(1, totalCatchmentAreaKM2: 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 60.0, nextDownstreamId: 1),  // junction dam
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 15.0, nextDownstreamId: 2),  // left branch
                     MakeDam(4, volumeML: 2.0, totalCatchmentAreaKM2: 10.0, nextDownstreamId: 2),  // right branch
                 };
-                RODISNetworkSetup.UpdateLegacyRODISNodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -404,19 +404,19 @@ namespace RODISUnitTests.ModelComponentTests
         [TestClass]
         public class ThreeDamsSeries
         {
-            private LegacyRODISDamNode[] nodes;
+            private LegacySTEDIDamNode[] nodes;
 
             [TestInitialize]
             public void Setup()
             {
-                this.nodes = new LegacyRODISDamNode[]
+                this.nodes = new LegacySTEDIDamNode[]
                 {
                     MakeOutlet(1, totalCatchmentAreaKM2: 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 70.0, nextDownstreamId: 1),  // bottom
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 40.0, nextDownstreamId: 2),  // middle
                     MakeDam(4, volumeML: 2.0, totalCatchmentAreaKM2: 15.0, nextDownstreamId: 3),  // top
                 };
-                RODISNetworkSetup.UpdateLegacyRODISNodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -500,7 +500,7 @@ namespace RODISUnitTests.ModelComponentTests
             {
                 // Y-shape: Dam 2 = 5 ML, Dam 3 = 3 ML, Dam 4 = 2 ML
                 // Threshold = 4 ML ? only Dam 2 should get bypass
-                var nodes = new List<LegacyRODISDamNode>
+                var nodes = new List<LegacySTEDIDamNode>
                 {
                     MakeOutlet(1, 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 60.0, nextDownstreamId: 1),
@@ -519,7 +519,7 @@ namespace RODISUnitTests.ModelComponentTests
             [TestMethod]
             public void BypassCapacity_ProportionalToCatchmentArea()
             {
-                var nodes = new List<LegacyRODISDamNode>
+                var nodes = new List<LegacySTEDIDamNode>
                 {
                     MakeOutlet(1, 100.0),
                     MakeDam(2, volumeML: 10.0, totalCatchmentAreaKM2: 60.0, nextDownstreamId: 1),
@@ -538,7 +538,7 @@ namespace RODISUnitTests.ModelComponentTests
             [TestMethod]
             public void BypassCapacity_SeasonDatesFromSettings()
             {
-                var nodes = new List<LegacyRODISDamNode>
+                var nodes = new List<LegacySTEDIDamNode>
                 {
                     MakeOutlet(1, 100.0),
                     MakeDam(2, volumeML: 10.0, totalCatchmentAreaKM2: 50.0, nextDownstreamId: 1),
@@ -554,7 +554,7 @@ namespace RODISUnitTests.ModelComponentTests
             [TestMethod]
             public void BypassDisabled_NoDamsGetBypass()
             {
-                var nodes = new List<LegacyRODISDamNode>
+                var nodes = new List<LegacySTEDIDamNode>
                 {
                     MakeOutlet(1, 100.0),
                     MakeDam(2, volumeML: 10.0, totalCatchmentAreaKM2: 50.0, nextDownstreamId: 1),
@@ -570,7 +570,7 @@ namespace RODISUnitTests.ModelComponentTests
             [TestMethod]
             public void BypassThresholdZero_AllDamsWithVolumeGetBypass()
             {
-                var nodes = new List<LegacyRODISDamNode>
+                var nodes = new List<LegacySTEDIDamNode>
                 {
                     MakeOutlet(1, 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 30.0, nextDownstreamId: 1),
@@ -588,7 +588,7 @@ namespace RODISUnitTests.ModelComponentTests
             [TestMethod]
             public void OutletNode_NeverGetsBypass()
             {
-                var nodes = new List<LegacyRODISDamNode>
+                var nodes = new List<LegacySTEDIDamNode>
                 {
                     MakeOutlet(1, 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 30.0, nextDownstreamId: 1),
@@ -613,13 +613,13 @@ namespace RODISUnitTests.ModelComponentTests
             {
                 // Deliberately set upstream CA > total CA on the downstream dam
                 // This can happen with inconsistent input data
-                var nodes = new LegacyRODISDamNode[]
+                var nodes = new LegacySTEDIDamNode[]
                 {
                     MakeOutlet(1, totalCatchmentAreaKM2: 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 10.0, nextDownstreamId: 1), // total=10 but will receive 20 from upstream
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 2), // CA=20 > Dam 2's total
                 };
-                RODISNetworkSetup.UpdateLegacyRODISNodeProperties(nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(nodes, ModelElementType.RepeatingMonthlyDemand);
 
                 // Dam 2: intermediate = max(0, 10 - 20) = 0 (clamped)
                 Assert.AreEqual(0.0, nodes[1].IntermediateCatchmentAreaKM2, 0.001,
@@ -630,13 +630,13 @@ namespace RODISUnitTests.ModelComponentTests
             public void ZeroIntermediateArea_NoSubcatchmentAssigned()
             {
                 // Same setup as above — Dam 2 gets zero intermediate area
-                var nodes = new LegacyRODISDamNode[]
+                var nodes = new LegacySTEDIDamNode[]
                 {
                     MakeOutlet(1, totalCatchmentAreaKM2: 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 10.0, nextDownstreamId: 1),
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 2),
                 };
-                RODISNetworkSetup.UpdateLegacyRODISNodeProperties(nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(nodes, ModelElementType.RepeatingMonthlyDemand);
 
                 Assert.AreEqual(-1, nodes[1].SubcatchmentInflowID,
                     "Zero intermediate CA ? no subcatchment assigned");
@@ -645,13 +645,13 @@ namespace RODISUnitTests.ModelComponentTests
             [TestMethod]
             public void TimeSeriesDemand_AssignsTimeSeriesDemandIDs()
             {
-                var nodes = new LegacyRODISDamNode[]
+                var nodes = new LegacySTEDIDamNode[]
                 {
                     MakeOutlet(1, totalCatchmentAreaKM2: 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 30.0, nextDownstreamId: 1),
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 1),
                 };
-                RODISNetworkSetup.UpdateLegacyRODISNodeProperties(nodes, ModelElementType.TimeSeriesDemand);
+                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(nodes, ModelElementType.TimeSeriesDemand);
 
                 Assert.IsTrue(nodes[1].TimeSeriesDemandID >= 0, "Dam 2 should have time series demand ID");
                 Assert.IsTrue(nodes[2].TimeSeriesDemandID >= 0, "Dam 3 should have time series demand ID");

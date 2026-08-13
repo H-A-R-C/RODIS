@@ -42,7 +42,7 @@ namespace RODISUnitTests.ModelComponentTests
             return new RODISSettings
             {
                 CalculateUnimpactedGivenObserved = true,
-                UseLegacyRODIS1CalculationMethods = false,
+                UseLegacySTEDICalculationMethods = false,
                 MaximumProportionOfCatchmentImpounded = 0.999,
                 AllStoragesProportionFullAtStartOfRun = startFraction,
                 UseSpecificDamNetworkDetails = true,
@@ -123,15 +123,15 @@ namespace RODISUnitTests.ModelComponentTests
         // ----------------------------------------------------------------
 
         /// <summary>
-        /// Creates a LegacyRODISDamNode representing a dam.
+        /// Creates a LegacySTEDIDamNode representing a dam.
         /// Note: legacy nodes don't support per-node start/end existence dates.
         /// All dams exist for the entire simulation period.
         /// </summary>
-        private static LegacyRODISDamNode MakeDam(
+        private static LegacySTEDIDamNode MakeDam(
             int id, int downstreamId,
             double surfaceAream2, double volumeML, double catchmentAreakm2)
         {
-            return new LegacyRODISDamNode
+            return new LegacySTEDIDamNode
             {
                 Identifier = id,
                 NextDownstreamIdentifier = downstreamId,
@@ -144,13 +144,13 @@ namespace RODISUnitTests.ModelComponentTests
         }
 
         /// <summary>
-        /// Creates a LegacyRODISDamNode representing a confluence (outlet).
+        /// Creates a LegacySTEDIDamNode representing a confluence (outlet).
         /// Volume and surface area = 0 ? model treats it as a ConfluenceNode.
         /// </summary>
-        private static LegacyRODISDamNode MakeOutlet(
+        private static LegacySTEDIDamNode MakeOutlet(
             int id, double catchmentAreakm2)
         {
-            return new LegacyRODISDamNode
+            return new LegacySTEDIDamNode
             {
                 Identifier = id,
                 NextDownstreamIdentifier = 0,
@@ -163,7 +163,7 @@ namespace RODISUnitTests.ModelComponentTests
         }
 
         private static CatchmentModelRunner BuildRunner(
-            LegacyRODISDamNode[] nodes, double startFraction)
+            LegacySTEDIDamNode[] nodes, double startFraction)
         {
             var settings = BuildSettings(startFraction);
             var runner = new CatchmentModelRunner();

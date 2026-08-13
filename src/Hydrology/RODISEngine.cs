@@ -26,7 +26,7 @@ namespace RODIS.ModelRun
         private readonly string programVersion;
 
         /// <summary>Legacy RODIS dam nodes read from input, or null if using GIS spatial initialisation.</summary>
-        public LegacyRODISDamNode[] LegacyRODISDamNodes { get; set; } = null;
+        public LegacySTEDIDamNode[] LegacySTEDIDamNodes { get; set; } = null;
 
         /// <summary>Gets the Catchment Model runner object.</summary>
         public CatchmentModelRunner CatchmentModelRunner { get; private set; } = null;
@@ -64,9 +64,9 @@ namespace RODIS.ModelRun
         {
             try
             {
-                LegacyRODISDamNode[] damNodes;
+                LegacySTEDIDamNode[] damNodes;
                 RODISSettings settings = RODISSettingsHelper.LoadAndValidateSettings(settingsJsonPath, out damNodes);
-                this.LegacyRODISDamNodes = damNodes;
+                this.LegacySTEDIDamNodes = damNodes;
                 return settings;
             }
             catch (Exception ex) when (ex is not FileNotFoundException and not ArgumentException and not InvalidDataException)
@@ -433,10 +433,10 @@ namespace RODIS.ModelRun
                 this.CatchmentModelRunner.StartDateForStatistics = startRunDate;
                 this.CatchmentModelRunner.EndDateForStatistics = endRunDate;
 
-                if (this.LegacyRODISDamNodes == null)
+                if (this.LegacySTEDIDamNodes == null)
                     this.CatchmentModelRunner.catchmentModel.Initialise(rodisSettings, startRunDate, endRunDate);
                 else
-                    this.CatchmentModelRunner.catchmentModel.Initialise(this.LegacyRODISDamNodes, rodisSettings);
+                    this.CatchmentModelRunner.catchmentModel.Initialise(this.LegacySTEDIDamNodes, rodisSettings);
 
                 this.CatchmentModelRunner.SetOutputTimeSeriesDetails(rodisSettings);
                 return isLoadOK;
@@ -575,9 +575,9 @@ namespace RODIS.ModelRun
                                     thisRunSettings.CalculateUnimpactedGivenObserved = thisScenario.CalculateUnimpactedGivenObserved;
                                 }
 
-                                if (scenarioParamsAsString[scenarioNames[i]].Keys.Contains("UseLegacyRODIS1CalculationMethods"))
+                                if (scenarioParamsAsString[scenarioNames[i]].Keys.Contains("UseLegacySTEDICalculationMethods"))
                                 {
-                                    thisRunSettings.UseLegacyRODIS1CalculationMethods = thisScenario.UseLegacyRODIS1CalculationMethods;
+                                    thisRunSettings.UseLegacySTEDICalculationMethods = thisScenario.UseLegacySTEDICalculationMethods;
                                 }
 
                                 if (scenarioParamsAsString[scenarioNames[i]].Keys.Contains("UseFixedLowFlowBypassCapacity"))

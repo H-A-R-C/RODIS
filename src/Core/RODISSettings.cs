@@ -128,8 +128,8 @@ namespace RODIS.ModelSettings
         /// <summary>Gets or sets a value indicating whether unimpacted flow output is to be calculated for providing observed (gauged) flow input (true) or false if observed flow output is to be calculated from unimpacted flow input.</summary>
         public bool CalculateUnimpactedGivenObserved { get; set; } = false;
 
-        /// <summary>Gets or sets a value indicating whether calculation methods are the same as legacy RODIS version 1 (true) or false if new calculation methods to be adopted.</summary>
-        public bool UseLegacyRODIS1CalculationMethods { get; set; } = false;
+        /// <summary>Gets or sets a value indicating whether calculation methods are the same as legacy STEDI version 1.2 (true) or false if new calculation methods to be adopted.</summary>
+        public bool UseLegacySTEDICalculationMethods { get; set; } = false;
 
         /// <summary>
         /// Gets or sets a value indicating whether specific details are to be provided for a network with details of every dam and upstream catchments (true)
@@ -350,7 +350,7 @@ namespace RODIS.ModelSettings
         /// <summary>Gets or sets equation for Volume in ML as a function of surface area in m².</summary>
         public EquationParser VolumeSurfaceAreaEquation { get; set; } = new EquationParser()
         {
-            // Default equation is default from legacy RODIS manual
+            // Default equation is default from legacy STEDI manual
             // Lowe et al. (2005) equation, V = 1/6900 * SA ^ 1.314
             VariablesWithDescriptions = new Dictionary<string, string>() { { "SA", "Surface area in m²" } },
             Equation = "0.0001449275*SA^1.314",
@@ -535,11 +535,11 @@ namespace RODIS.ModelSettings
         }
 
         /// <summary>
-        /// Gets the index of the repeating monthly demand model for the legacy RODIS node.
+        /// Gets the index of the repeating monthly demand model for the legacy STEDI node.
         /// </summary>
-        /// <param name="legacyRODISDamNode">Legacy RODIS farm dam node.</param>
+        /// <param name="legacySTEDIDamNode">Legacy STEDI farm dam node.</param>
         /// <returns>Group index for repeating monthly demand.</returns>
-        public string GetRepeatingMonthlyDemandModelIndex(LegacyRODISDamNode legacyRODISDamNode)
+        public string GetRepeatingMonthlyDemandModelIndex(LegacySTEDIDamNode legacySTEDIDamNode)
         {
             string result = string.Empty;
 
@@ -547,9 +547,9 @@ namespace RODIS.ModelSettings
 
             if (groupModels != null)
             {
-                if (groupModels.ContainsKey(legacyRODISDamNode.DemandGroup.Trim()))
+                if (groupModels.ContainsKey(legacySTEDIDamNode.DemandGroup.Trim()))
                 {
-                    result = legacyRODISDamNode.DemandGroup.Trim();
+                    result = legacySTEDIDamNode.DemandGroup.Trim();
                 }
             }
 
@@ -557,11 +557,11 @@ namespace RODIS.ModelSettings
         }
 
         /// <summary>
-        /// Gets the index of the time series demand model for the legacy RODIS node.
+        /// Gets the index of the time series demand model for the legacy STEDI node.
         /// </summary>
-        /// <param name="legacyRODISDamNode">Legacy RODIS farm dam node.</param>
+        /// <param name="legacySTEDIDamNode">Legacy STEDI farm dam node.</param>
         /// <returns>Group index for time series demand.</returns>
-        public string GetTimeSeriesDemandModelIndex(LegacyRODISDamNode legacyRODISDamNode)
+        public string GetTimeSeriesDemandModelIndex(LegacySTEDIDamNode legacySTEDIDamNode)
         {
             string result = string.Empty;
 
@@ -569,9 +569,9 @@ namespace RODIS.ModelSettings
 
             if (groupModels != null)
             {
-                if (groupModels.ContainsKey(legacyRODISDamNode.DemandGroup.Trim()))
+                if (groupModels.ContainsKey(legacySTEDIDamNode.DemandGroup.Trim()))
                 {
-                    result = legacyRODISDamNode.DemandGroup.Trim();
+                    result = legacySTEDIDamNode.DemandGroup.Trim();
                 }
             }
 

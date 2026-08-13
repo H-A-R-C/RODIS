@@ -5,11 +5,11 @@ namespace RODISUnitTests.ModelComponentTests
     using System;
 
     [TestClass]
-    public class LegacyRODISDamNodeTests
+    public class LegacySTEDIDamNodeTests
     {
-        private static LegacyRODISDamNode MakeDamNode(double volumeML = 5.0, double saM2 = 10000.0, double caKM2 = 50.0)
+        private static LegacySTEDIDamNode MakeDamNode(double volumeML = 5.0, double saM2 = 10000.0, double caKM2 = 50.0)
         {
-            return new LegacyRODISDamNode
+            return new LegacySTEDIDamNode
             {
                 Identifier = 42,
                 VolumeML = volumeML,
@@ -121,7 +121,7 @@ namespace RODISUnitTests.ModelComponentTests
             var legacy = MakeDamNode();
             legacy.IntermediateCatchmentAreaKM2 = 25.0;
 
-            var subcatch = legacy.GetSubcatchmentInflowModel(IsLegacyRODISCatchmentInflows: true);
+            var subcatch = legacy.GetSubcatchmentInflowModel(isLegacySTEDICatchmentInflows: true);
 
             Assert.AreEqual(25.0, subcatch.AreaKM2, 0.001);
         }
