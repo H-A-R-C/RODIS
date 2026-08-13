@@ -77,9 +77,9 @@ namespace RODIS.ModelRun
         /// </summary>
         /// <param name="simulationDateTime">Current simulation date/time controlling dam existence and seasonal rules.</param>
         /// <param name="timeStep">Duration of this modelling time step.</param>
-        /// <param name="isLegacyRODISCalculationMethods">If true, uses RODIS v1.20 surface area assumptions.</param>
+        /// <param name="isLegacySTEDICalculationMethods">If true, uses legacy STEDI v1.20 surface area assumptions.</param>
         /// <param name="isAdoptedRun">If true, advances storage state to next time step; false for iterative solution trials.</param>
-        public override void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacyRODISCalculationMethods, bool isAdoptedRun = true)
+        public override void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacySTEDICalculationMethods, bool isAdoptedRun = true)
         {
             this.VolumeInStorage = this.StartTimeStepVolumeInStorage;
 
@@ -158,9 +158,9 @@ namespace RODIS.ModelRun
                 // Next deal with net rainfall
                 // Rainfall in mm, Surface area in m2, Unit conversion to get ML
                 double surfaceAreaForRainfall = 0;
-                if (isLegacyRODISCalculationMethods)
+                if (isLegacySTEDICalculationMethods)
                 {
-                    // Legacy RODIS version 1.20 assumes surface area is constant value at full level
+                    // Legacy STEDI version 1.20 assumes surface area is constant value at full level
                     surfaceAreaForRainfall = this.SurfaceAreaAtSpill;
                 }
                 else

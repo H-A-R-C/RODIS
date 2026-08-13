@@ -149,9 +149,9 @@ namespace RODIS.ModelRun
         /// </summary>
         /// <param name="simulationDateTime">Datetime for start of time step in simulation, relative to the climate and flow data inputs.</param>
         /// <param name="timeStep">Time step Modelled, starting at the simulation date time.</param>
-        /// <param name="isLegacyRODISCalculationMethods">True if calculations are to mirror legacy RODIS version 1.20 (SKM, 2012).</param>
+        /// <param name="isLegacySTEDICalculationMethods">True if calculations are to mirror legacy STEDI version 1.20 (SKM, 2012).</param>
         /// <param name="isAdoptedRun">True if this run is to be adopted. Allows re-use of code for iterative solution for unimpacted flow, with isAdoptedRun = true only on last run when iterative solution has converged.</param>
-        public abstract void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacyRODISCalculationMethods, bool isAdoptedRun);
+        public abstract void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacySTEDICalculationMethods, bool isAdoptedRun);
 
         /// <summary>Calculates the mean annual inflow (ML/year) from cumulative inflow and duration totals.</summary>
         /// <returns>Mean annual inflow in ML/year, or 0.0 if no inflow days have been recorded.</returns>

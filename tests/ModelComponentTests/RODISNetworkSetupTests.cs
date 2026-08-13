@@ -84,7 +84,7 @@ namespace RODISUnitTests.ModelComponentTests
                     MakeOutlet(1, totalCatchmentAreaKM2: 100.0),
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 30.0, nextDownstreamId: 1),
                 };
-                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDINodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -162,7 +162,7 @@ namespace RODISUnitTests.ModelComponentTests
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 30.0, nextDownstreamId: 1),
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 1),
                 };
-                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDINodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -232,7 +232,7 @@ namespace RODISUnitTests.ModelComponentTests
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 60.0, nextDownstreamId: 1),
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 2),
                 };
-                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDINodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -317,7 +317,7 @@ namespace RODISUnitTests.ModelComponentTests
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 15.0, nextDownstreamId: 2),  // left branch
                     MakeDam(4, volumeML: 2.0, totalCatchmentAreaKM2: 10.0, nextDownstreamId: 2),  // right branch
                 };
-                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDINodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -416,7 +416,7 @@ namespace RODISUnitTests.ModelComponentTests
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 40.0, nextDownstreamId: 2),  // middle
                     MakeDam(4, volumeML: 2.0, totalCatchmentAreaKM2: 15.0, nextDownstreamId: 3),  // top
                 };
-                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDINodeProperties(this.nodes, ModelElementType.RepeatingMonthlyDemand);
             }
 
             [TestMethod]
@@ -619,7 +619,7 @@ namespace RODISUnitTests.ModelComponentTests
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 10.0, nextDownstreamId: 1), // total=10 but will receive 20 from upstream
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 2), // CA=20 > Dam 2's total
                 };
-                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDINodeProperties(nodes, ModelElementType.RepeatingMonthlyDemand);
 
                 // Dam 2: intermediate = max(0, 10 - 20) = 0 (clamped)
                 Assert.AreEqual(0.0, nodes[1].IntermediateCatchmentAreaKM2, 0.001,
@@ -636,7 +636,7 @@ namespace RODISUnitTests.ModelComponentTests
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 10.0, nextDownstreamId: 1),
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 2),
                 };
-                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(nodes, ModelElementType.RepeatingMonthlyDemand);
+                RODISNetworkSetup.UpdateLegacySTEDINodeProperties(nodes, ModelElementType.RepeatingMonthlyDemand);
 
                 Assert.AreEqual(-1, nodes[1].SubcatchmentInflowID,
                     "Zero intermediate CA ? no subcatchment assigned");
@@ -651,7 +651,7 @@ namespace RODISUnitTests.ModelComponentTests
                     MakeDam(2, volumeML: 5.0, totalCatchmentAreaKM2: 30.0, nextDownstreamId: 1),
                     MakeDam(3, volumeML: 3.0, totalCatchmentAreaKM2: 20.0, nextDownstreamId: 1),
                 };
-                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(nodes, ModelElementType.TimeSeriesDemand);
+                RODISNetworkSetup.UpdateLegacySTEDINodeProperties(nodes, ModelElementType.TimeSeriesDemand);
 
                 Assert.IsTrue(nodes[1].TimeSeriesDemandID >= 0, "Dam 2 should have time series demand ID");
                 Assert.IsTrue(nodes[2].TimeSeriesDemandID >= 0, "Dam 3 should have time series demand ID");

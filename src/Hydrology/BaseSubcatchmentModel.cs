@@ -14,6 +14,6 @@ public abstract class BaseSubcatchmentModel
     public abstract void RunTimeStep();
 
     /// <summary>Pre-calculates values needed before the time step run (e.g. non-water-body area).</summary>
-    /// <param name="isLegacyRODISCalculationMethods">True to use legacy RODIS v1.20 area calculation.</param>
-    public abstract void BeforeRunTimeStep(bool isLegacyRODISCalculationMethods);
+    /// <param name="isLegacySTEDICalculationMethods">True to use legacy STEDI v1.20 area calculation.</param>
+    public abstract void BeforeRunTimeStep(bool isLegacySTEDICalculationMethods);
 }

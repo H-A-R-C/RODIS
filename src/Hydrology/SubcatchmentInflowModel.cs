@@ -25,16 +25,16 @@ namespace RODIS.ModelRun
         /// <summary>Spatial runoff multiplier for this subcatchment. Default 1.0 = no modification.</summary>
         public double InflowMultiplier { get; set; } = 1.0;
 
-        public override void BeforeRunTimeStep(bool IsLegacyRODISCalculationMethods)
+        public override void BeforeRunTimeStep(bool isLegacySTEDICalculationMethods)
         {
-            if (IsLegacyRODISCalculationMethods)
+            if (isLegacySTEDICalculationMethods)
             {
-                // Consistent with legacy RODIS
+                // Consistent with legacy STEDI
                 this.NonWaterBodyAreaKM2 = this.AreaKM2;
             }
             else
             {
-                // Below is actually the correct formula but it is inconsistent with legacy RODIS
+                // Below is actually the correct formula but it is inconsistent with legacy STEDI
                 this.NonWaterBodyAreaKM2 = Math.Max(0, this.AreaKM2 - this.WaterBodyAreaKM2);
             }
         }

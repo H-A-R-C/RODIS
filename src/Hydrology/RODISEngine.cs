@@ -25,7 +25,7 @@ namespace RODIS.ModelRun
         /// <summary>Version string of the calling program assembly, written to output file headers.</summary>
         private readonly string programVersion;
 
-        /// <summary>Legacy RODIS dam nodes read from input, or null if using GIS spatial initialisation.</summary>
+        /// <summary>Legacy STEDI dam nodes read from input, or null if using GIS spatial initialisation.</summary>
         public LegacySTEDIDamNode[] LegacySTEDIDamNodes { get; set; } = null;
 
         /// <summary>Gets the Catchment Model runner object.</summary>

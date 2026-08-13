@@ -7,7 +7,7 @@ namespace RODIS.ModelRun
     using RODIS.ModelSettings;
     using RODIS.Static;
 
-    /// <summary>Static helper methods for building and configuring legacy RODIS model networks.</summary>
+    /// <summary>Static helper methods for building and configuring legacy STEDI model networks.</summary>
     public class RODISNetworkSetup
     {
         /// <summary>
@@ -15,7 +15,7 @@ namespace RODIS.ModelRun
         /// </summary>
         /// <param name="legacySTEDIDamNodes">Array of legacy nodes to update in-place.</param>
         /// <param name="demandModelType">Demand model type to assign (RepeatingMonthlyDemand or TimeSeriesDemand).</param>
-        public static void UpdateLegacySTEDI1NodeProperties (LegacySTEDIDamNode[] legacySTEDIDamNodes, ModelElementType demandModelType)
+        public static void UpdateLegacySTEDINodeProperties (LegacySTEDIDamNode[] legacySTEDIDamNodes, ModelElementType demandModelType)
         {
             List<int> legacyNodeIDList = new List<int>();
 
@@ -97,12 +97,12 @@ namespace RODIS.ModelRun
         }
 
         /// <summary>
-        /// Randomly generates a network of legacy RODIS model nodes, using the relevant information in the settings.
+        /// Randomly generates a network of legacy STEDI model nodes, using the relevant information in the settings.
         /// </summary>
         /// <param name="settings">RODIS settings containing probability distribution and catchment parameters.</param>
         /// <param name="demandModelType">Type of demand model to assign to generated nodes.</param>
-        /// <returns>Array of generated legacy RODIS dam nodes with network topology assigned.</returns>
-        public static LegacySTEDIDamNode[] RandomlyGenerateRODISNetwork(RODISSettings settings, ModelElementType demandModelType)
+        /// <returns>Array of generated legacy STEDI dam nodes with network topology assigned.</returns>
+        public static LegacySTEDIDamNode[] RandomlyGenerateLegacySTEDINetwork(RODISSettings settings, ModelElementType demandModelType)
         {
             List<LegacySTEDIDamNode> legacyNetwork = new List<LegacySTEDIDamNode>();
 
@@ -195,7 +195,7 @@ namespace RODIS.ModelRun
                 }
             }
 
-            // Now set up legacy RODIS format network
+            // Now set up legacy STEDI format network
 
             // Start with catchment outlet node
             LegacySTEDIDamNode outletNode = new LegacySTEDIDamNode()
@@ -251,11 +251,11 @@ namespace RODIS.ModelRun
 
             RODISNetworkSetup.SetGeneralBypassCapacities(legacyNetwork, settings);
 
-            LegacySTEDIDamNode[] legacyRODISDamNodes = legacyNetwork.ToArray();
+            LegacySTEDIDamNode[] legacySTEDIDamNodes = legacyNetwork.ToArray();
 
-            RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(legacyRODISDamNodes, demandModelType);
+            RODISNetworkSetup.UpdateLegacySTEDINodeProperties(legacySTEDIDamNodes, demandModelType);
 
-            return legacyRODISDamNodes;
+            return legacySTEDIDamNodes;
         }
 
         /// <summary>Assigns bypass capacity and season dates to all nodes in the network that exceed the volume threshold.</summary>

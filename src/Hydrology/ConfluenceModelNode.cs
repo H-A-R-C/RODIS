@@ -13,9 +13,9 @@ namespace RODIS.ModelRun
         /// <summary>Runs one time step: passes upstream flow straight through and accumulates inflow statistics.</summary>
         /// <param name="simulationDateTime">Start datetime of this time step.</param>
         /// <param name="timeStep">Duration of the modelling time step.</param>
-        /// <param name="isLegacyRODISCalculationMethods">True to use legacy RODIS v1.20 calculation methods.</param>
+        /// <param name="isLegacySTEDICalculationMethods">True to use legacy STEDI v1.20 calculation methods.</param>
         /// <param name="isAdoptedRun">True if this is the adopted (final) run for the time step.</param>
-        public override void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacyRODISCalculationMethods, bool isAdoptedRun = true)
+        public override void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacySTEDICalculationMethods, bool isAdoptedRun = true)
         {
             this.VolumeBalanceMisclosure = 0;
 

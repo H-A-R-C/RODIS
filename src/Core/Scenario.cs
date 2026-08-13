@@ -39,7 +39,7 @@ namespace RODIS.ModelSettings
         public bool CalculateUnimpactedGivenObserved;
 
         /// <summary>
-        /// Gets or sets a boolean variable that is true if calculation methods are the same as legacy RODIS version 1, false if new calculation methods to be adopted.
+        /// Gets or sets a boolean variable that is true if calculation methods are the same as legacy STEDI version 1, false if new calculation methods to be adopted.
         /// </summary>
         public bool UseLegacySTEDICalculationMethods;
 

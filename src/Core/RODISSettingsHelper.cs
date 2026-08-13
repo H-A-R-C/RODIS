@@ -101,7 +101,7 @@ namespace RODIS.ModelSettings
                       demandModelType == ModelElementType.TimeSeriesDemand))
                     throw new ArgumentException("ERROR: Invalid demand model type.");
 
-                damNodes = RODISNetworkSetup.RandomlyGenerateRODISNetwork(settings, demandModelType);
+                damNodes = RODISNetworkSetup.RandomlyGenerateLegacySTEDINetwork(settings, demandModelType);
             }
 
             return settings;

@@ -284,7 +284,7 @@ namespace RODISUnitTests.ModelComponentTests
             node.Evaporation = 0.0;
             node.UpstreamFlow = 0.0;
 
-            node.RunTimeStep(new DateTime(2010, 6, 15), OneDay, isLegacyRODISCalculationMethods: true);
+            node.RunTimeStep(new DateTime(2010, 6, 15), OneDay, isLegacySTEDICalculationMethods: true);
 
             // Legacy: rainfall vol = 10mm * 10000m² * 1e-6 = 0.1 ML (uses SA at spill, not stored)
             Assert.AreEqual(0.1, node.RainfallVolume, 0.001);
@@ -298,7 +298,7 @@ namespace RODISUnitTests.ModelComponentTests
             node.Evaporation = 0.0;
             node.UpstreamFlow = 0.0;
 
-            node.RunTimeStep(new DateTime(2010, 6, 15), OneDay, isLegacyRODISCalculationMethods: false);
+            node.RunTimeStep(new DateTime(2010, 6, 15), OneDay, isLegacySTEDICalculationMethods: false);
 
             // Non-legacy: SA based on stored volume (< SA at spill), so rainfall volume < 0.1 ML
             Assert.IsTrue(node.RainfallVolume < 0.1, $"Expected < 0.1, got {node.RainfallVolume}");

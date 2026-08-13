@@ -19,7 +19,7 @@ namespace RODISUnitTests.ModelComponentTests
                 WaterBodyAreaKM2 = 20.0,
             };
 
-            model.BeforeRunTimeStep(IsLegacyRODISCalculationMethods: true);
+            model.BeforeRunTimeStep(isLegacySTEDICalculationMethods: true);
 
             Assert.AreEqual(100.0, model.NonWaterBodyAreaKM2, 0.001,
                 "Legacy mode: NonWaterBodyArea should equal total AreaKM2");
@@ -34,7 +34,7 @@ namespace RODISUnitTests.ModelComponentTests
                 WaterBodyAreaKM2 = 20.0,
             };
 
-            model.BeforeRunTimeStep(IsLegacyRODISCalculationMethods: false);
+            model.BeforeRunTimeStep(isLegacySTEDICalculationMethods: false);
 
             Assert.AreEqual(80.0, model.NonWaterBodyAreaKM2, 0.001,
                 "Non-legacy: should subtract water body area");
@@ -49,7 +49,7 @@ namespace RODISUnitTests.ModelComponentTests
                 WaterBodyAreaKM2 = 15.0,
             };
 
-            model.BeforeRunTimeStep(IsLegacyRODISCalculationMethods: false);
+            model.BeforeRunTimeStep(isLegacySTEDICalculationMethods: false);
 
             Assert.AreEqual(0.0, model.NonWaterBodyAreaKM2, 0.001,
                 "Should clamp to zero, not go negative");

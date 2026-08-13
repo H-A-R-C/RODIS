@@ -66,7 +66,7 @@ namespace RODIS.ModelRun
         /// <summary>Ordered array defining the sequence in which model elements are calculated each time step.</summary>
         public ModelElementTypeIndex[] ElementModelCalculationOrder;
 
-        /// <summary>True to use legacy RODIS v1.20 calculation methods for surface area, rainfall and area calculations.</summary>
+        /// <summary>True to use legacy STEDI v1.20 calculation methods for surface area, rainfall and area calculations.</summary>
         public bool IsLegacySTEDICalculationMethods = false;
 
         /// <summary>Gets or sets Observed downstream flow (ML) for the current time step. -9999 = missing data.</summary>
@@ -279,12 +279,12 @@ namespace RODIS.ModelRun
         public double PETMultiplier { get; set; } = 1.0;
 
         /// <summary>
-        /// Initialises the RODIS model with information from an array of legacy RODIS model dam nodes and legacy RODIS model settings.
+        /// Initialises the RODIS model with information from an array of legacy STEDI model dam nodes and RODIS model settings.
         /// </summary>
-        /// <param name="legacyRODISDamNodes">Array of legacy RODIS model farm dam and water body nodes. Must already be in upstream-to-downstream
+        /// <param name="legacySTEDIDamNodes">Array of legacy STEDI model farm dam and water body nodes. Must already be in upstream-to-downstream
         /// (topological) order, with NextDownstreamIdentifier referencing another node's Identifier (1-based) or 0 for the catchment outlet.</param>
-        /// <param name="settings">Overall settings of legacy RODIS model.</param>
-        public void Initialise(LegacySTEDIDamNode[] legacyRODISDamNodes, RODISSettings settings)
+        /// <param name="settings">Overall settings of RODIS model.</param>
+        public void Initialise(LegacySTEDIDamNode[] legacySTEDIDamNodes, RODISSettings settings)
         {
             this.CalculateUnimpactedGivenObserved = settings.CalculateUnimpactedGivenObserved;
             List<WaterBodyModelNode> waterBodyNodesList = new List<WaterBodyModelNode>();
@@ -298,9 +298,9 @@ namespace RODIS.ModelRun
 
             // -- Pass 1: classify each node (water body vs confluence), assign its per-array IDs, and build the typed model objects. --
             // Forward order matches the array's assumed topological (upstream-first) layout, matching the existing NextDownstreamIdentifier - 1 indexing convention used below.
-            for (int i = 0; i < legacyRODISDamNodes.Length; i++)
+            for (int i = 0; i < legacySTEDIDamNodes.Length; i++)
             {
-                LegacySTEDIDamNode node = legacyRODISDamNodes[i];
+                LegacySTEDIDamNode node = legacySTEDIDamNodes[i];
                 if (node.IntermediateCatchmentAreaKM2 > 0)
                 {
                     node.SubcatchmentInflowID = uniformInflowSubcatchmentList.Count;
@@ -396,15 +396,15 @@ namespace RODIS.ModelRun
             }
 
             // -- Pass 2: resolve each node's downstream water body / confluence ID, now that every node has its own ID assigned from Pass 1. --
-            for (int i = 0; i < legacyRODISDamNodes.Length; i++)
+            for (int i = 0; i < legacySTEDIDamNodes.Length; i++)
             {
-                LegacySTEDIDamNode node = legacyRODISDamNodes[i];
+                LegacySTEDIDamNode node = legacySTEDIDamNodes[i];
                 if (node.NextDownstreamIdentifier > 0)
                 {
                     int dsArrayIndex = node.NextDownstreamIdentifier - 1;
-                    if (dsArrayIndex >= 0 && dsArrayIndex < legacyRODISDamNodes.Length)
+                    if (dsArrayIndex >= 0 && dsArrayIndex < legacySTEDIDamNodes.Length)
                     {
-                        LegacySTEDIDamNode dsNode = legacyRODISDamNodes[dsArrayIndex];
+                        LegacySTEDIDamNode dsNode = legacySTEDIDamNodes[dsArrayIndex];
                         node.NextDownstreamWaterBodyID = dsNode.WaterBodyNodeID;
                         node.NextDownstreamConfluenceID = dsNode.ConfluenceNodeID;
                     }
@@ -412,9 +412,9 @@ namespace RODIS.ModelRun
             }
 
             // -- Pass 3: build the calculation order in upstream-first order, so downstream totals accumulate correctly during traversal. --
-            for (int i = 0; i < legacyRODISDamNodes.Length; i++)
+            for (int i = 0; i < legacySTEDIDamNodes.Length; i++)
             {
-                LegacySTEDIDamNode node = legacyRODISDamNodes[i];
+                LegacySTEDIDamNode node = legacySTEDIDamNodes[i];
                 if (node.SubcatchmentInflowID >= 0)
                 {
                     calculationOrderList.Add(node.GetTypeIndexForSubcatchment());
@@ -734,7 +734,7 @@ namespace RODIS.ModelRun
                             waterBodyToAdd.StorageCapacityVolumeAtSpill = waterBodyToAdd.MaxStorageCapacityVolumeAtSpill;
 
                             // Set initial storage volume and surface area
-                            // Note: Legacy RODIS did not have this option, so only use initial storage proportion full if allowing new calculation methods
+                            // Note: Legacy STEDI did not have this option, so only use initial storage proportion full if allowing new calculation methods
                             if (!settings.UseLegacySTEDICalculationMethods)
                             {
                                 double startFraction = Math.Max(Math.Min(settings.AllStoragesProportionFullAtStartOfRun, 1.0), 0.0);
@@ -1239,21 +1239,21 @@ namespace RODIS.ModelRun
         }
 
         /// <summary>
-        /// Gets repeating monthly demand model for the node of a legacy RODIS model from the demand group index.
+        /// Gets repeating monthly demand model for the node of a legacy STEDI model from the demand group index.
         /// </summary>
-        /// <param name="legacyRODISDamNode">Legacy RODIS farm dam node.</param>
-        /// <param name="settings">Overall settings of legacy RODIS model, which contain the repeating monthly demand group patterns.</param>
+        /// <param name="legacySTEDIDamNode">Legacy STEDI farm dam node.</param>
+        /// <param name="settings">Overall settings of RODIS model, which contain the repeating monthly demand group patterns.</param>
         /// <param name="demandGroupIndex">Index of demand pattern group for this farm dam node.</param>
         /// <returns>Repeating monthly demand model for water body node.</returns>
-        private FarmDamRepeatingMonthlyDemandModel GetRepeatingMonthlyDemandModel(LegacySTEDIDamNode legacyRODISDamNode, RODISSettings settings, string demandGroupIndex)
+        private FarmDamRepeatingMonthlyDemandModel GetRepeatingMonthlyDemandModel(LegacySTEDIDamNode legacySTEDIDamNode, RODISSettings settings, string demandGroupIndex)
         {
             FarmDamRepeatingMonthlyDemandModel selectedModel = settings.RepeatingMonthlyDemandGroups[demandGroupIndex];
 
             FarmDamRepeatingMonthlyDemandModel newDemandModel = new FarmDamRepeatingMonthlyDemandModel()
             {
                 AnnualDemandFactor = selectedModel.AnnualDemandFactor,
-                DamStorageCapacityVolumeAtSpill = legacyRODISDamNode.VolumeML,
-                DemandGroup = legacyRODISDamNode.DemandGroup,
+                DamStorageCapacityVolumeAtSpill = legacySTEDIDamNode.VolumeML,
+                DemandGroup = legacySTEDIDamNode.DemandGroup,
             };
 
             newDemandModel.MonthlyDemandProportions = new double[selectedModel.MonthlyDemandProportions.Length];
@@ -1268,21 +1268,21 @@ namespace RODIS.ModelRun
         }
 
         /// <summary>
-        /// Gets time series demand model for the node of a legacy RODIS model from the demand group index.
+        /// Gets time series demand model for the node of a legacy STEDI model from the demand group index.
         /// </summary>
-        /// <param name="legacyRODISDamNode">Legacy RODIS farm dam node.</param>
-        /// <param name="settings">Overall settings of legacy RODIS model, which contain the time series demand data.</param>
+        /// <param name="legacySTEDIDamNode">Legacy STEDI farm dam node.</param>
+        /// <param name="settings">Overall settings of RODIS model, which contain the time series demand data.</param>
         /// <param name="demandGroupIndex">Index of demand pattern group for this farm dam node.</param>
         /// <returns>Time series demand model for water body node.</returns>
-        private FarmDamTimeSeriesDemandModel GetTimeSeriesDemandModel(LegacySTEDIDamNode legacyRODISDamNode, RODISSettings settings, string demandGroupIndex)
+        private FarmDamTimeSeriesDemandModel GetTimeSeriesDemandModel(LegacySTEDIDamNode legacySTEDIDamNode, RODISSettings settings, string demandGroupIndex)
         {
             FarmDamTimeSeriesDemandModel selectedModel = settings.TimeSeriesDemandGroups[demandGroupIndex];
 
             FarmDamTimeSeriesDemandModel newDemandModel = new FarmDamTimeSeriesDemandModel()
             {
                 AnnualDemandFactor = selectedModel.AnnualDemandFactor,
-                DamStorageCapacityVolumeAtSpill = legacyRODISDamNode.VolumeML,
-                DemandGroup = legacyRODISDamNode.DemandGroup,
+                DamStorageCapacityVolumeAtSpill = legacySTEDIDamNode.VolumeML,
+                DemandGroup = legacySTEDIDamNode.DemandGroup,
             };
 
             newDemandModel.InputPattern = new Series.TimeSeriesValue[selectedModel.InputPattern.Length];

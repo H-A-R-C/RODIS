@@ -9,7 +9,7 @@ namespace RODIS.CommandLineOptions
     using RODIS.ModelSettings;
     using RODIS.TimeSeries;
 
-    /// <summary>Command-line option that runs the legacy RODIS model from a text-format scenario file.</summary>
+    /// <summary>Command-line option that runs the legacy STEDI model from a text-format scenario file.</summary>
     public class RunSTEDILegacyVersion : BaseCommandLineOption
     {
         /// <inheritdoc/>
@@ -57,7 +57,7 @@ namespace RODIS.CommandLineOptions
                     if (!(demandModelType == ModelElementType.RepeatingMonthlyDemand || demandModelType == ModelElementType.TimeSeriesDemand))
                         throw new ArgumentException("ERROR: Invalid demand model type specification. File: " + argumentPath);
 
-                    legacySTEDIDamNodes = RODISNetworkSetup.RandomlyGenerateRODISNetwork(rodisSettings.Settings, demandModelType);
+                    legacySTEDIDamNodes = RODISNetworkSetup.RandomlyGenerateLegacySTEDINetwork(rodisSettings.Settings, demandModelType);
                 }
 
                 this.RunModelAfterRead(legacySTEDIDamNodes, rodisSettings);
@@ -103,15 +103,15 @@ namespace RODIS.CommandLineOptions
         /// <summary>
         /// Delegates model setup and execution to RODISEngine, then writes legacy-specific .getdat output followed by standard .res.csv and node metadata outputs.
         /// </summary>
-        /// <param name="legacySTEDIDamNodes">Farm dam nodes read from the legacy RODIS v1.2 file.</param>
-        /// <param name="rodisSettings">Legacy RODIS settings including output file paths.</param>
-        private void RunModelAfterRead(LegacySTEDIDamNode[] legacySTEDIDamNodes, LegacySTEDISettings rodisSettings)
+        /// <param name="legacySTEDIDamNodes">Farm dam nodes read from the legacy STEDI v1.2 file.</param>
+        /// <param name="stediSettings">Legacy STEDI settings including output file paths.</param>
+        private void RunModelAfterRead(LegacySTEDIDamNode[] legacySTEDIDamNodes, LegacySTEDISettings stediSettings)
         {
             // --- Delegate setup to engine ---
             var engine = new RODISEngine(this.ProgramName, this.ProgramVersion);
             engine.LegacySTEDIDamNodes = legacySTEDIDamNodes;
 
-            if (!engine.SetUpFirstRun(rodisSettings.Settings))
+            if (!engine.SetUpFirstRun(stediSettings.Settings))
                 return;
 
             // Legacy-specific: force legacy calculation methods
@@ -123,43 +123,43 @@ namespace RODIS.CommandLineOptions
             // --- Outputs ---
             try
             {
-                Console.WriteLine("Writing simulation outputs to directory " + rodisSettings.Settings.OutFolder);
+                Console.WriteLine("Writing simulation outputs to directory " + stediSettings.Settings.OutFolder);
 
                 // Legacy-specific: write .getdat flow output file
                 Console.Write(".");
                 ReadWriteGetDatFiles.WriteGetDatFile(
                     engine.CatchmentModelRunner.OverallOutputTimeSeries[LegacyFlowOutputIndex].Data.ToArray(),
-                    rodisSettings.FlowOutputFilePath,
+                    stediSettings.FlowOutputFilePath,
                     this.ProgramName + " " + this.ProgramVersion,
-                    rodisSettings.Settings.OutletNodeName,
+                    stediSettings.Settings.OutletNodeName,
                     "ML/d");
 
                 // Set default output path based on legacy scenario file name (not JSON path)
-                if (string.IsNullOrEmpty(rodisSettings.Settings.ResCSVOutputPath))
+                if (string.IsNullOrEmpty(stediSettings.Settings.ResCSVOutputPath))
                 {
-                    rodisSettings.Settings.ResCSVOutputPath = Path.Combine(
-                        rodisSettings.Settings.OutFolder,
-                        Path.GetFileNameWithoutExtension(rodisSettings.ScenarioFilePath))
+                    stediSettings.Settings.ResCSVOutputPath = Path.Combine(
+                        stediSettings.Settings.OutFolder,
+                        Path.GetFileNameWithoutExtension(stediSettings.ScenarioFilePath))
                         + RODISSettingsHelper.DefaultFileExtension;
                 }
 
                 // Write .res.csv outputs via engine (overall + per reporting group)
-                engine.WriteSingleRunOutputsToFiles(rodisSettings.Settings);
+                engine.WriteSingleRunOutputsToFiles(stediSettings.Settings);
 
                 // Write node metadata
-                string defaultOutputFileName = ReadWriteResCSV.GetFileNameWithoutExtension(rodisSettings.Settings.ResCSVOutputPath);
-                string nodeMetadataFileName = Path.Combine(rodisSettings.Settings.OutFolder, defaultOutputFileName) + "_NodeData.csv";
+                string defaultOutputFileName = ReadWriteResCSV.GetFileNameWithoutExtension(stediSettings.Settings.ResCSVOutputPath);
+                string nodeMetadataFileName = Path.Combine(stediSettings.Settings.OutFolder, defaultOutputFileName) + "_NodeData.csv";
                 engine.CatchmentModelRunner.catchmentModel.WriteAllNodesToCSV(nodeMetadataFileName);
 
                 Console.WriteLine("Completed");
             }
             catch (UnauthorizedAccessException ex)
             {
-                throw new IOException($"Cannot write output files — access denied. Check folder permissions for '{rodisSettings.Settings.OutFolder}'. {ex.Message}", ex);
+                throw new IOException($"Cannot write output files — access denied. Check folder permissions for '{stediSettings.Settings.OutFolder}'. {ex.Message}", ex);
             }
             catch (DirectoryNotFoundException ex)
             {
-                throw new IOException($"Output directory does not exist: '{rodisSettings.Settings.OutFolder}'. {ex.Message}", ex);
+                throw new IOException($"Output directory does not exist: '{stediSettings.Settings.OutFolder}'. {ex.Message}", ex);
             }
         }
 
@@ -940,7 +940,7 @@ namespace RODIS.CommandLineOptions
 
             if (legacyNetwork.Count == numNodesInNetwork)
             {
-                RODISNetworkSetup.UpdateLegacySTEDI1NodeProperties(legacySTEDIDamNodes, demandModelType);
+                RODISNetworkSetup.UpdateLegacySTEDINodeProperties(legacySTEDIDamNodes, demandModelType);
             } 
             else
             {

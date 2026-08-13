@@ -1,6 +1,6 @@
 namespace RODIS.ModelSettings
 {
-    /// <summary>Settings container for legacy RODIS text-format scenario files, wrapping a RODISSettings instance.</summary>
+    /// <summary>Settings container for legacy STEDI text-format scenario files, wrapping a RODISSettings instance.</summary>
     public class LegacySTEDISettings
     {
         /// <summary>Path to the legacy text scenario file.</summary>
