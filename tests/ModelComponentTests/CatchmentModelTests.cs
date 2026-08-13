@@ -1,18 +1,18 @@
-﻿// <copyright file="CatchmentModelTests.cs" company="HARC">
+// <copyright file="CatchmentModelTests.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
-namespace STEDIUnitTests.ModelComponentTests
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
-    using STEDI.ModelSettings;
-    using STEDI.Series;
+    using RODIS.ModelRun;
+    using RODIS.ModelSettings;
+    using RODIS.Series;
     using System;
     using System.Collections.Generic;
 
-    // ════════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------------
     //  Helper: builds small hand-wired test catchments without GIS files
-    // ════════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------------
 
     /// <summary>
     /// Factory methods for building small test catchments that can be initialised
@@ -21,7 +21,7 @@ namespace STEDIUnitTests.ModelComponentTests
     /// </summary>
     internal static class TestCatchmentBuilder
     {
-        // ── Time series helpers ──────────────────────────────────────────
+        // -- Time series helpers ------------------------------------------
 
         /// <summary>Creates a daily TimeSeriesValue array with a constant value.</summary>
         private static TimeSeriesValue[] MakeConstantTimeSeries(DateTime start, DateTime end, double value)
@@ -34,15 +34,15 @@ namespace STEDIUnitTests.ModelComponentTests
             return list.ToArray();
         }
 
-        // ── Settings helper ─────────────────────────────────────────────
+        // -- Settings helper ---------------------------------------------
 
-        /// <summary>Builds minimal STEDISettings for a test run.</summary>
-        private static STEDISettings BuildSettings(double startFraction = 0.0)
+        /// <summary>Builds minimal RODISSettings for a test run.</summary>
+        private static RODISSettings BuildSettings(double startFraction = 0.0)
         {
-            return new STEDISettings
+            return new RODISSettings
             {
                 CalculateUnimpactedGivenObserved = true,
-                UseLegacySTEDI1CalculationMethods = false,
+                UseLegacyRODIS1CalculationMethods = false,
                 MaximumProportionOfCatchmentImpounded = 0.999,
                 AllStoragesProportionFullAtStartOfRun = startFraction,
                 UseSpecificDamNetworkDetails = true,
@@ -50,7 +50,7 @@ namespace STEDIUnitTests.ModelComponentTests
                 UseFixedLowFlowBypassCapacity = false,
                 VolumeSurfaceAreaEquation = new EquationParser
                 {
-                    VariablesWithDescriptions = new Dictionary<string, string> { { "SA", "Surface area in m²" } },
+                    VariablesWithDescriptions = new Dictionary<string, string> { { "SA", "Surface area in m�" } },
                     Equation = "0.0001449275*SA^1.314",
                 },
                 OutletStreamName = "Test Creek",
@@ -59,13 +59,13 @@ namespace STEDIUnitTests.ModelComponentTests
             };
         }
 
-        // ════════════════════════════════════════════════════════════════
-        //  Network builders — return initialised CatchmentModelRunner
-        // ════════════════════════════════════════════════════════════════
+        // ----------------------------------------------------------------
+        //  Network builders � return initialised CatchmentModelRunner
+        // ----------------------------------------------------------------
 
         /// <summary>
-        /// Y-shaped: D1 (0.5 km²) → Outlet(3), D2 (0.4 km²) → Outlet(3).
-        /// Outlet = 0.3 km² local. Total = 1.2 km².
+        /// Y-shaped: D1 (0.5 km�) ? Outlet(3), D2 (0.4 km�) ? Outlet(3).
+        /// Outlet = 0.3 km� local. Total = 1.2 km�.
         /// </summary>
         public static CatchmentModelRunner BuildYNetwork(double startFraction = 0.0)
         {
@@ -79,7 +79,7 @@ namespace STEDIUnitTests.ModelComponentTests
         }
 
         /// <summary>
-        /// Chain: D1 (0.5 km²) → D2 (0.3 km²) → Outlet(3, 0.2 km²). Total = 1.0 km².
+        /// Chain: D1 (0.5 km�) ? D2 (0.3 km�) ? Outlet(3, 0.2 km�). Total = 1.0 km�.
         /// </summary>
         public static CatchmentModelRunner BuildChainNetwork(double startFraction = 0.0)
         {
@@ -93,8 +93,8 @@ namespace STEDIUnitTests.ModelComponentTests
         }
 
         /// <summary>
-        /// Mixed: D1 (0.5) → D3, D2 (0.4) → D3, D3 (0.3) → Outlet(5),
-        /// D4 (0.6) → Outlet(5). Outlet = 0.2 km². Total = 2.0 km².
+        /// Mixed: D1 (0.5) ? D3, D2 (0.4) ? D3, D3 (0.3) ? Outlet(5),
+        /// D4 (0.6) ? Outlet(5). Outlet = 0.2 km�. Total = 2.0 km�.
         /// </summary>
         public static CatchmentModelRunner BuildMixedNetwork(double startFraction = 0.0)
         {
@@ -109,20 +109,20 @@ namespace STEDIUnitTests.ModelComponentTests
             return BuildRunner(nodes, startFraction);
         }
 
-        // ════════════════════════════════════════════════════════════════
+        // ----------------------------------------------------------------
         //  Core builder: initialises model + loads time series
-        // ════════════════════════════════════════════════════════════════
+        // ----------------------------------------------------------------
 
         /// <summary>
-        /// Creates a LegacySTEDIDamNode representing a dam.
+        /// Creates a LegacyRODISDamNode representing a dam.
         /// Note: legacy nodes don't support per-node start/end existence dates.
         /// All dams exist for the entire simulation period.
         /// </summary>
-        private static LegacySTEDIDamNode MakeDam(
+        private static LegacyRODISDamNode MakeDam(
             int id, int downstreamId,
             double surfaceAream2, double volumeML, double catchmentAreakm2)
         {
-            return new LegacySTEDIDamNode
+            return new LegacyRODISDamNode
             {
                 Identifier = id,
                 NextDownstreamIdentifier = downstreamId,
@@ -135,13 +135,13 @@ namespace STEDIUnitTests.ModelComponentTests
         }
 
         /// <summary>
-        /// Creates a LegacySTEDIDamNode representing a confluence (outlet).
-        /// Volume and surface area = 0 → model treats it as a ConfluenceNode.
+        /// Creates a LegacyRODISDamNode representing a confluence (outlet).
+        /// Volume and surface area = 0 ? model treats it as a ConfluenceNode.
         /// </summary>
-        private static LegacySTEDIDamNode MakeOutlet(
+        private static LegacyRODISDamNode MakeOutlet(
             int id, double catchmentAreakm2)
         {
-            return new LegacySTEDIDamNode
+            return new LegacyRODISDamNode
             {
                 Identifier = id,
                 NextDownstreamIdentifier = 0,
@@ -154,7 +154,7 @@ namespace STEDIUnitTests.ModelComponentTests
         }
 
         private static CatchmentModelRunner BuildRunner(
-            LegacySTEDIDamNode[] nodes, double startFraction)
+            LegacyRODISDamNode[] nodes, double startFraction)
         {
             var settings = BuildSettings(startFraction);
             var runner = new CatchmentModelRunner();
@@ -191,9 +191,9 @@ namespace STEDIUnitTests.ModelComponentTests
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------------
     //  Group 1: Topological sort tests
-    // ════════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------------
 
     [TestClass]
     public class TopologicalSortTests
@@ -214,7 +214,7 @@ namespace STEDIUnitTests.ModelComponentTests
         [TestMethod]
         public void LinearChain_OutletFirst_SortsToLeavesFirst()
         {
-            // Input: C (outlet), B, A — wrong order
+            // Input: C (outlet), B, A � wrong order
             var nodes = new WaterBodyWithCatchment[]
             {
                 new() { Label = "C", NextDownstreamArrayPosition = -1 },
@@ -274,7 +274,7 @@ namespace STEDIUnitTests.ModelComponentTests
         [TestMethod]
         public void MixedNetwork_AllUpstreamBeforeDownstream()
         {
-            // D0 → D2, D1 → D2, D2 → Out, D3 → Out
+            // D0 ? D2, D1 ? D2, D2 ? Out, D3 ? Out
             // Input order deliberately scrambled: Out, D2, D3, D0, D1
             var nodes = new WaterBodyWithCatchment[]
             {
@@ -300,9 +300,9 @@ namespace STEDIUnitTests.ModelComponentTests
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------------
     //  Group 2: Network setup and area traversal tests
-    // ════════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------------
 
     [TestClass]
     public class CatchmentModelNetworkTests
@@ -344,7 +344,7 @@ namespace STEDIUnitTests.ModelComponentTests
                         entry.IndexForNextDownstreamElementType >= 0
                         && entry.IndexForNextDownstreamElementType < model.ConfluenceNodes.Length,
                         $"RL[{entry.IndexForElementType}] targets ConfluenceNode" +
-                        $"[{entry.IndexForNextDownstreamElementType}] — out of range.");
+                        $"[{entry.IndexForNextDownstreamElementType}] � out of range.");
                 }
             }
         }
@@ -358,15 +358,15 @@ namespace STEDIUnitTests.ModelComponentTests
             }
 
             Assert.AreEqual(expectedArea, directSum, 1.0E-4,
-                $"Direct sum should be {expectedArea} km².");
+                $"Direct sum should be {expectedArea} km�.");
             Assert.AreEqual(directSum, model.TotalCatchmentAreaKM2, 1.0E-6,
                 "Traversal area must match direct sum.");
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------------
     //  Group 3: Mass balance closure tests (integration)
-    // ════════════════════════════════════════════════════════════════════════
+    // ------------------------------------------------------------------------
 
 
     [TestClass]

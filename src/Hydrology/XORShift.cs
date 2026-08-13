@@ -1,8 +1,8 @@
-﻿// <copyright file="XORShift.cs" company="HARC">
+// <copyright file="XORShift.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Statistics
+namespace RODIS.Statistics
 {
     using System.Linq;
 

@@ -1,4 +1,4 @@
-﻿namespace STEDI.Static
+namespace RODIS.Static
 {
     public static class PathTools
     {

@@ -1,14 +1,14 @@
-﻿namespace STEDIUnitTests.ModelComponentTests
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
+    using RODIS.ModelRun;
 
     [TestClass]
     public class UniformInflowSubcatchmentModelTests
     {
-        // ────────────────────────────────────────────────────
-        // BeforeRunTimeStep — legacy vs non-legacy area calculation
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // BeforeRunTimeStep � legacy vs non-legacy area calculation
+        // ----------------------------------------------------
 
         [TestMethod]
         public void BeforeRunTimeStep_Legacy_NonWaterBodyAreaEqualsTotal()
@@ -19,7 +19,7 @@
                 WaterBodyAreaKM2 = 20.0,
             };
 
-            model.BeforeRunTimeStep(IsLegacySTEDICalculationMethods: true);
+            model.BeforeRunTimeStep(IsLegacyRODISCalculationMethods: true);
 
             Assert.AreEqual(100.0, model.NonWaterBodyAreaKM2, 0.001,
                 "Legacy mode: NonWaterBodyArea should equal total AreaKM2");
@@ -34,7 +34,7 @@
                 WaterBodyAreaKM2 = 20.0,
             };
 
-            model.BeforeRunTimeStep(IsLegacySTEDICalculationMethods: false);
+            model.BeforeRunTimeStep(IsLegacyRODISCalculationMethods: false);
 
             Assert.AreEqual(80.0, model.NonWaterBodyAreaKM2, 0.001,
                 "Non-legacy: should subtract water body area");
@@ -49,15 +49,15 @@
                 WaterBodyAreaKM2 = 15.0,
             };
 
-            model.BeforeRunTimeStep(IsLegacySTEDICalculationMethods: false);
+            model.BeforeRunTimeStep(IsLegacyRODISCalculationMethods: false);
 
             Assert.AreEqual(0.0, model.NonWaterBodyAreaKM2, 0.001,
                 "Should clamp to zero, not go negative");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — downstream flow = area × rate
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � downstream flow = area � rate
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_CalculatesDownstreamFlow()
@@ -72,7 +72,7 @@
 
             model.RunTimeStep();
 
-            Assert.AreEqual(50.0, model.DownstreamFlow, 0.001, "100 km² × 0.5 ML/km² = 50 ML");
+            Assert.AreEqual(50.0, model.DownstreamFlow, 0.001, "100 km� � 0.5 ML/km� = 50 ML");
             Assert.AreEqual(0.0, model.VolumeBalanceMisclosure, 0.001);
         }
 

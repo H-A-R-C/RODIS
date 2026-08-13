@@ -1,42 +1,42 @@
-﻿// <copyright file="RunSTEDI.cs" company="HARC">
+// <copyright file="RunRODIS.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.CommandLineOptions
+namespace RODIS.CommandLineOptions
 {
-    using STEDI.ModelRun;
-    using STEDI.ModelSettings;
+    using RODIS.ModelRun;
+    using RODIS.ModelSettings;
 
-    /// <summary>Command-line option that runs a single or multi-scenario STEDI model from a JSON settings file.</summary>
-    public class RunSTEDI : BaseCommandLineOption
+    /// <summary>Command-line option that runs a single or multi-scenario RODIS model from a JSON settings file.</summary>
+    public class RunRODIS : BaseCommandLineOption
     {
         /// <inheritdoc/>
-        public override string CommandLineFlag => nameof(RunSTEDI);
+        public override string CommandLineFlag => nameof(RunRODIS);
 
         /// <inheritdoc/>
-        public override string OptionDescription => "Run STEDI model";
+        public override string OptionDescription => "Run RODIS model";
 
         /// <inheritdoc/>
-        public override Type SettingsType => typeof(STEDISettings);
+        public override Type SettingsType => typeof(RODISSettings);
 
         /// <inheritdoc/>
         /// <summary>Loads settings, sets up the engine, loads scenarios, and runs all scenarios to completion.</summary>
-        /// <param name="argumentPath">Path to the STEDI JSON settings file.</param>
+        /// <param name="argumentPath">Path to the RODIS JSON settings file.</param>
         public override void Run(string argumentPath)
         {
             this.DisplayProgramDetailsOnConsole();
 
             if (string.IsNullOrWhiteSpace(argumentPath))
-                throw new ArgumentException("ERROR: STEDI JSON scenario input file path is null or empty.");
+                throw new ArgumentException("ERROR: RODIS JSON scenario input file path is null or empty.");
             if (!File.Exists(argumentPath))
-                throw new ArgumentException("ERROR: STEDI JSON input file does not exist or has incorrect file path.\n File specified was " + argumentPath);
+                throw new ArgumentException("ERROR: RODIS JSON input file does not exist or has incorrect file path.\n File specified was " + argumentPath);
 
             try
             {
                 Console.WriteLine("Reading JSON scenario input file " + argumentPath);
 
-                var engine = new STEDIEngine(this.ProgramName, this.ProgramVersion);
-                STEDISettings settings = engine.LoadBaseSettings(argumentPath);
+                var engine = new RODISEngine(this.ProgramName, this.ProgramVersion);
+                RODISSettings settings = engine.LoadBaseSettings(argumentPath);
 
                 if (!engine.SetUpFirstRun(settings))
                     return;
@@ -81,7 +81,7 @@ namespace STEDI.CommandLineOptions
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\nERROR: An unexpected error occurred during the STEDI run.");
+                Console.WriteLine($"\nERROR: An unexpected error occurred during the RODIS run.");
                 Console.WriteLine($"  Type: {ex.GetType().Name}");
                 Console.WriteLine($"  Message: {ex.Message}");
                 Console.WriteLine($"  Location: {ex.StackTrace?.Split('\n').FirstOrDefault()?.Trim()}");

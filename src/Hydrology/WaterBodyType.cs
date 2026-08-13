@@ -1,10 +1,10 @@
-﻿// <copyright file="WaterBodyType.cs" company="HARC">
+// <copyright file="WaterBodyType.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
-    using STEDI.JSON;
+    using RODIS.JSON;
 
     public class WaterBodyType
     {

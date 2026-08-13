@@ -1,17 +1,17 @@
-ï»¿// <copyright file="CatchmentModelRunner.cs" company="HARC">
+// <copyright file="CatchmentModelRunner.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
-    using STEDI.InputOutput;
-    using STEDI.ModelSettings;
-    using STEDI.Series;
-    using STEDI.TimeSeries;
+    using RODIS.InputOutput;
+    using RODIS.ModelSettings;
+    using RODIS.Series;
+    using RODIS.TimeSeries;
     using UnitsNet;
     using UnitsNet.Units;
 
-    /// <summary>Orchestrates STEDI model runs: loads input time series, executes the simulation loop, and stores output time series and statistics.</summary>
+    /// <summary>Orchestrates RODIS model runs: loads input time series, executes the simulation loop, and stores output time series and statistics.</summary>
     public class CatchmentModelRunner
     {
         /// <summary>The catchment model containing all nodes, links, and demand models for this run.</summary>
@@ -239,13 +239,13 @@ namespace STEDI.ModelRun
         /// <param name="inputRainfallTimeSeries">Rainfall time series data array.</param>
         /// <param name="inputEvaporationTimeSeries">Evaporation (PET) time series data array.</param>
         /// <param name="inputFlowTimeSeries">Flow time series data array (unimpacted or observed, per settings).</param>
-        /// <param name="stediSettings">STEDI settings, used to check demand time series consistency.</param>
+        /// <param name="rodisSettings">RODIS settings, used to check demand time series consistency.</param>
         /// <returns>True if rainfall, evaporation, flow and demand time series inputs have consistent time spans and at least some overlap.</returns>
         public bool LoadInputTimeSeries(
             TimeSeriesValue[] inputRainfallTimeSeries,
             TimeSeriesValue[] inputEvaporationTimeSeries,
             TimeSeriesValue[] inputFlowTimeSeries,
-            STEDISettings stediSettings)
+            RODISSettings rodisSettings)
         {
             if (inputRainfallTimeSeries == null || inputRainfallTimeSeries.Length == 0)
                 throw new ArgumentException("Rainfall time series is null or empty. Check that the rainfall input file was read successfully.");
@@ -256,8 +256,8 @@ namespace STEDI.ModelRun
             if (inputFlowTimeSeries == null || inputFlowTimeSeries.Length == 0)
                 throw new ArgumentException("Flow time series is null or empty. Check that the flow input file was read successfully.");
 
-            if (stediSettings == null)
-                throw new ArgumentNullException(nameof(stediSettings), "STEDI settings object is null.");
+            if (rodisSettings == null)
+                throw new ArgumentNullException(nameof(rodisSettings), "RODIS settings object is null.");
 
             DateTime startRain = TimeSeriesValue.GetStartDateTimeValid(inputRainfallTimeSeries);
             DateTime startPET = TimeSeriesValue.GetStartDateTimeValid(inputEvaporationTimeSeries);
@@ -321,18 +321,18 @@ namespace STEDI.ModelRun
                 this.catchmentModel.ModellingTimeSpan = new StandardModellingTimeSpan(rainfallTimeSpan.BaseTimeSpan, rainfallTimeSpan.NumberOfBaseTimeSpans);
 
                 // Validate against settings if a legacy timestep string was parsed
-                if (stediSettings.ModellingTimeSpan != null)
+                if (rodisSettings.ModellingTimeSpan != null)
                 {
-                    if (stediSettings.ModellingTimeSpan != this.catchmentModel.ModellingTimeSpan)
+                    if (rodisSettings.ModellingTimeSpan != this.catchmentModel.ModellingTimeSpan)
                     {
                         Console.WriteLine(
-                            $"WARNING: Calculation timestep in scenario file ({stediSettings.ModellingTimeSpan.BaseTimeSpan}) "
+                            $"WARNING: Calculation timestep in scenario file ({rodisSettings.ModellingTimeSpan.BaseTimeSpan}) "
                             + $"does not match the timestep inferred from input data ({this.catchmentModel.ModellingTimeSpan.BaseTimeSpan}). "
                             + "Using the timestep from the input data.");
                     }
                 }
 
-                doInputTimeSpansMatch = this.CheckDemandAndClimateTimeSeries(stediSettings);
+                doInputTimeSpansMatch = this.CheckDemandAndClimateTimeSeries(rodisSettings);
 
                 return true;
             }
@@ -420,7 +420,7 @@ namespace STEDI.ModelRun
                 StandardModellingTimeSpan rainfallTimeSpan = TimeSeriesValue.GetTimeStep(this.rainfallTimeSeries);
                 this.catchmentModel.ModellingTimeSpan = new StandardModellingTimeSpan(rainfallTimeSpan.BaseTimeSpan, rainfallTimeSpan.NumberOfBaseTimeSpans);
 
-                // doInputTimeSpansMatch = this.CheckDemandAndClimateTimeSeries(stediSettings);
+                // doInputTimeSpansMatch = this.CheckDemandAndClimateTimeSeries(rodisSettings);
 
                 return true;
             }
@@ -444,16 +444,16 @@ namespace STEDI.ModelRun
         /// <summary>
         /// Checks the period of input and time span for all time series demands to make sure they are consistent with the input climate data.
         /// </summary>
-        /// <param name="stediSettings">STEDI settings, which contain the time series demand input groups.</param>
+        /// <param name="rodisSettings">RODIS settings, which contain the time series demand input groups.</param>
         /// <returns>Returns true if modelling time spans for all time series demand inputs (if any) and climate data inputs are the same.
         /// Also returns true if there are no time series demands, just repeating monthly demand time series.</returns>
-        public bool CheckDemandAndClimateTimeSeries(STEDISettings stediSettings)
+        public bool CheckDemandAndClimateTimeSeries(RODISSettings rodisSettings)
         {
             bool result = true;
 
-            if (stediSettings.TimeSeriesDemandGroups != null)
+            if (rodisSettings.TimeSeriesDemandGroups != null)
             {
-                foreach (var group in stediSettings.TimeSeriesDemandGroups)
+                foreach (var group in rodisSettings.TimeSeriesDemandGroups)
                 {
                     DateTime demandStart = TimeSeriesValue.GetStartDateTimeValid(group.Value.InputPattern);
                     DateTime demandEnd = TimeSeriesValue.GetEndDateTimeValid(group.Value.InputPattern);
@@ -539,7 +539,7 @@ namespace STEDI.ModelRun
             return result;
         }
 
-        /// <summary>Returns an array of surface area at spill (mÂ²) for all water body nodes, in model order.</summary>
+        /// <summary>Returns an array of surface area at spill (m²) for all water body nodes, in model order.</summary>
         public double[] GetSurfaceAreasAtSpill()
         {
             double[] surfaceAreas = new double[this.catchmentModel.WaterBodyNodes.Length];
@@ -680,19 +680,19 @@ namespace STEDI.ModelRun
             outputs.Data.Add(timeSeriesValue);
         }
 
-        /// <summary>Configures overall and per-reporting-group output time series lists with metadata from STEDI settings.</summary>
-        /// <param name="stediSettings">STEDI settings providing run name, scenario name, and outlet details.</param>
-        public void SetOutputTimeSeriesDetails(STEDISettings stediSettings)
+        /// <summary>Configures overall and per-reporting-group output time series lists with metadata from RODIS settings.</summary>
+        /// <param name="rodisSettings">RODIS settings providing run name, scenario name, and outlet details.</param>
+        public void SetOutputTimeSeriesDetails(RODISSettings rodisSettings)
         {
             string[] reportingGroups = this.catchmentModel.GetReportingGroups();
 
             TimeSeriesWithMetadata templateTimeSeries = new TimeSeriesWithMetadata()
             {
                 Units = "ML.day^-1",
-                RunName = stediSettings.RunName,
-                ScenarioName = stediSettings.ScenarioName,
+                RunName = rodisSettings.RunName,
+                ScenarioName = rodisSettings.ScenarioName,
                 ScenarioInputSetName = string.Empty,
-                Site = stediSettings.GetOutletNumberStreamName(),
+                Site = rodisSettings.GetOutletNumberStreamName(),
                 ElementName = "Downstream Flow",
                 WaterFeatureType = "Confluence",
                 ElementType = "Node",
@@ -845,7 +845,7 @@ namespace STEDI.ModelRun
                         this.AppendCalculatedOutput(this.OverallOutputTimeSeries[3], this.catchmentModel.SimulationDateTime, this.catchmentModel.UnimpactedFlow);
                         this.AppendCalculatedOutput(this.OverallOutputTimeSeries[4], this.catchmentModel.SimulationDateTime, this.catchmentModel.PumpedInflow);
 
-                        if (this.catchmentModel.IsLegacySTEDICalculationMethods)
+                        if (this.catchmentModel.IsLegacyRODISCalculationMethods)
                         {
                             this.AppendCalculatedOutput(this.OverallOutputTimeSeries[5], this.catchmentModel.SimulationDateTime, -this.catchmentModel.NetRainfallVolume);
                         }
@@ -957,7 +957,7 @@ namespace STEDI.ModelRun
             }
         }
 
-        /// <summary>Returns an array of year numbers that are run, as doubles â€” always spans past the start and end dates of the run.</summary>
+        /// <summary>Returns an array of year numbers that are run, as doubles — always spans past the start and end dates of the run.</summary>
         /// <returns>Array of year numbers as doubles, from one year before run start to one year after run end.</returns>
         public double[] GetYearsToRun()
         {

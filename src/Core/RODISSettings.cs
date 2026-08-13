@@ -1,21 +1,21 @@
-ï»¿namespace STEDI.ModelSettings
+namespace RODIS.ModelSettings
 {
     using Newtonsoft.Json;
-    using STEDI.InputOutput;
-    using STEDI.JSON;
-    using STEDI.ModelRun;
-    using STEDI.Static;
-    using STEDI.TimeSeries;
+    using RODIS.InputOutput;
+    using RODIS.JSON;
+    using RODIS.ModelRun;
+    using RODIS.Static;
+    using RODIS.TimeSeries;
     using UnitsNet;
     using UnitsNet.Units;
 
-    /// <summary>Complete STEDI model settings: input paths, catchment parameters, demand groups, equations, scenario overrides, and output configuration.</summary>
-    public class STEDISettings
+    /// <summary>Complete RODIS model settings: input paths, catchment parameters, demand groups, equations, scenario overrides, and output configuration.</summary>
+    public class RODISSettings
     {
         /// <summary>
-        /// Initializes static members of the <see cref="STEDISettings"/> class. Containing custom unit abbreviations used in STEDI JSON files.
+        /// Initializes static members of the <see cref="RODISSettings"/> class. Containing custom unit abbreviations used in RODIS JSON files.
         /// </summary>
-        static STEDISettings()
+        static RODISSettings()
         {
             // "ML" is standard in Australian hydrology but not a default UnitsNet abbreviation
             UnitsNet.UnitAbbreviationsCache.Default.MapUnitToAbbreviation(VolumeUnit.Megaliter, "ML");
@@ -83,19 +83,19 @@
         /// <summary>Gets or sets the name of the main summary res.csv output file.</summary>
         public string ResCSVOutputPath { get; set; } = string.Empty;
 
-        /// <summary>Catchment area in kmÂ².</summary>
+        /// <summary>Catchment area in km².</summary>
         private double catchmentAreakm2 = -1;
 
-        /// <summary>Gets or sets Catchment area as a string with units (e.g. "150 km2"). Bare numbers default to kmÂ².</summary>
+        /// <summary>Gets or sets Catchment area as a string with units (e.g. "150 km2"). Bare numbers default to km².</summary>
         [JsonConverter(typeof(UnitStringJsonConverter), "km2")]
         public string CatchmentArea { get; set; } = string.Empty;
 
-        /// <summary>Gets the catchment area in kmÂ².</summary>
-        /// <returns>Catchment area in kmÂ².</returns>
+        /// <summary>Gets the catchment area in km².</summary>
+        /// <returns>Catchment area in km².</returns>
         public double GetCatchmentAreakm2() { return catchmentAreakm2; }
 
-        /// <summary>Sets the catchment area in kmÂ² from a numeric value.</summary>
-        /// <param name="catchmentAreaWithUnits">Catchment area as a string with units (or assumes unit is kmÂ² if no units specified).</param>
+        /// <summary>Sets the catchment area in km² from a numeric value.</summary>
+        /// <param name="catchmentAreaWithUnits">Catchment area as a string with units (or assumes unit is km² if no units specified).</param>
         public void SetCatchmentArea(string catchmentAreaWithUnits)
         {
             double catchmentArea = UnitConversions.ValueFromAreaString(catchmentAreaWithUnits, AreaUnit.SquareKilometer);
@@ -106,8 +106,8 @@
             }
         }
 
-        /// <summary>Sets the catchment area in kmÂ² from a numeric value.</summary>
-        /// <param name="catchmentAreaInkm2">Catchment area in kmÂ².</param>
+        /// <summary>Sets the catchment area in km² from a numeric value.</summary>
+        /// <param name="catchmentAreaInkm2">Catchment area in km².</param>
         public void SetCatchmentArea(double catchmentAreaInkm2)
         {
             this.catchmentAreakm2 = catchmentAreaInkm2;
@@ -128,8 +128,8 @@
         /// <summary>Gets or sets a value indicating whether unimpacted flow output is to be calculated for providing observed (gauged) flow input (true) or false if observed flow output is to be calculated from unimpacted flow input.</summary>
         public bool CalculateUnimpactedGivenObserved { get; set; } = false;
 
-        /// <summary>Gets or sets a value indicating whether calculation methods are the same as legacy STEDI version 1 (true) or false if new calculation methods to be adopted.</summary>
-        public bool UseLegacySTEDI1CalculationMethods { get; set; } = false;
+        /// <summary>Gets or sets a value indicating whether calculation methods are the same as legacy RODIS version 1 (true) or false if new calculation methods to be adopted.</summary>
+        public bool UseLegacyRODIS1CalculationMethods { get; set; } = false;
 
         /// <summary>
         /// Gets or sets a value indicating whether specific details are to be provided for a network with details of every dam and upstream catchments (true)
@@ -198,7 +198,7 @@
 
         /// <summary>
         /// Gets or sets a volume that determines a fixed threshold between only 2 demand groups (e.g. "5 ML").
-        /// Bare numbers default to ML. If empty or â‰¤ 0, this feature is ignored.
+        /// Bare numbers default to ML. If empty or = 0, this feature is ignored.
         /// Positive values assign demand group 1 to dams at or below the threshold and group 2 to those above.
         /// </summary>
         [JsonConverter(typeof(UnitStringJsonConverter), "ML")]
@@ -216,7 +216,7 @@
         /// <summary>
         /// Parses the supplied string, which can have units, into the volume threshold for demand groups in ML.
         /// </summary>
-        /// <param name="volumeThresholdWithUnits">Volume threshold for demand groups as a string, with units â€” assumes ML if no units supplied.</param>
+        /// <param name="volumeThresholdWithUnits">Volume threshold for demand groups as a string, with units — assumes ML if no units supplied.</param>
         public void SetVolumeThresholdForDemandGroups(string volumeThresholdWithUnits)
         {
             double threshold = UnitConversions.ValueFromVolumeString(volumeThresholdWithUnits, VolumeUnit.Megaliter);
@@ -255,7 +255,7 @@
         }
 
         /// <summary>Parses the supplied string, which can have units, into the volume threshold for bypass in ML.</summary>
-        /// <param name="volumeThresholdWithUnits">Volume threshold for bypass as a string, with units â€” assumes ML if no units supplied.</param>
+        /// <param name="volumeThresholdWithUnits">Volume threshold for bypass as a string, with units — assumes ML if no units supplied.</param>
         public void SetVolumeThresholdForBypass(string volumeThresholdWithUnits)
         {
             double threshold = UnitConversions.ValueFromVolumeString(volumeThresholdWithUnits, VolumeUnit.Megaliter);
@@ -266,7 +266,7 @@
             }
         }
 
-        /// <summary>Gets or sets the bypass capacity flow rate in ML/d for each 1 kmÂ² of total upstream catchment area.</summary>
+        /// <summary>Gets or sets the bypass capacity flow rate in ML/d for each 1 km² of total upstream catchment area.</summary>
         public double BypassCapacityML_d_km2 { get; set; } = 0.0;
 
         /// <summary>Gets or sets the start date (year doesn't matter) of the season for which low flow bypasses are active.</summary>
@@ -314,10 +314,10 @@
         /// <summary>Gets or sets a path to a JSON file that specifies the dam type groups to use.</summary>
         public string DamTypeGroupsJSONPath { get; set; } = string.Empty;
 
-        /// <summary>Gets or sets a JSON file that specifies the fields of the input spatial data file that maps to the inputs required for each water body in the STEDI model.</summary>
+        /// <summary>Gets or sets a JSON file that specifies the fields of the input spatial data file that maps to the inputs required for each water body in the RODIS model.</summary>
         public string WaterBodyFieldsToReadJSONPath { get; set; } = string.Empty;
 
-        /// <summary>Gets or sets a JSON file that specifies the fields of the input spatial data file that map to the inputs required for each local catchment in the STEDI model.</summary>
+        /// <summary>Gets or sets a JSON file that specifies the fields of the input spatial data file that map to the inputs required for each local catchment in the RODIS model.</summary>
         public string CatchmentFieldsToReadJSONPath { get; set; } = string.Empty;
 
         /// <summary>Gets or sets the date in each year when dams are revised. Year component is ignored.</summary>
@@ -326,7 +326,7 @@
         /// <summary>Gets or sets the dictionary of named scenarios to run.</summary>
         public Dictionary<string, Scenario> ScenariosToRun { get; set; } = new Dictionary<string, Scenario>();
 
-        /// <summary>Gets or sets equation for catchment area in kmÂ² upstream of a dam as a function of storage volume in ML.</summary>
+        /// <summary>Gets or sets equation for catchment area in km² upstream of a dam as a function of storage volume in ML.</summary>
         public EquationParser VolumeCatchmentAreaEquation { get; set; } = null;
 
         /// <summary>Read specified JSON file, if provided, to specify equation for storage volume of each water body.</summary>
@@ -347,12 +347,12 @@
             }
         }
 
-        /// <summary>Gets or sets equation for Volume in ML as a function of surface area in mÂ².</summary>
+        /// <summary>Gets or sets equation for Volume in ML as a function of surface area in m².</summary>
         public EquationParser VolumeSurfaceAreaEquation { get; set; } = new EquationParser()
         {
-            // Default equation is default from legacy STEDI manual
+            // Default equation is default from legacy RODIS manual
             // Lowe et al. (2005) equation, V = 1/6900 * SA ^ 1.314
-            VariablesWithDescriptions = new Dictionary<string, string>() { { "SA", "Surface area in mÂ²" } },
+            VariablesWithDescriptions = new Dictionary<string, string>() { { "SA", "Surface area in m²" } },
             Equation = "0.0001449275*SA^1.314",
         };
 
@@ -376,10 +376,10 @@
         }
 
         /// <summary>
-        /// Returns the catchment area in kmÂ² for the specified dam volume in ML.
+        /// Returns the catchment area in km² for the specified dam volume in ML.
         /// </summary>
         /// <param name="volume">Dam storage volume at full capacity in ML.</param>
-        /// <returns>Catchment area in kmÂ².</returns>
+        /// <returns>Catchment area in km².</returns>
         public double EvaluateVolumeCatchmentAreaEquation(double volume)
         {
             double result = double.NaN;
@@ -403,7 +403,7 @@
                 }
                 else if (!string.IsNullOrEmpty(volCAEquation.ErrorMessage))
                 {
-                    Console.WriteLine($"WARNING: Volumeâ€“catchment area equation failed for volume = {volume} ML. {volCAEquation.ErrorMessage}");
+                    Console.WriteLine($"WARNING: Volume–catchment area equation failed for volume = {volume} ML. {volCAEquation.ErrorMessage}");
                 }
             }
 
@@ -411,9 +411,9 @@
         }
 
         /// <summary>
-        /// Returns the dam volume in ML for the specified dam surface area at full capacity in mÂ².
+        /// Returns the dam volume in ML for the specified dam surface area at full capacity in m².
         /// </summary>
-        /// <param name="surfaceArea">Dam surface area at full capacity in mÂ².</param>
+        /// <param name="surfaceArea">Dam surface area at full capacity in m².</param>
         /// <returns>Dam storage volume at full capacity in ML.</returns>
         public double EvaluateSurfaceAreaVolumeEquation(double surfaceArea)
         {
@@ -438,7 +438,7 @@
                 }
                 else if (!string.IsNullOrEmpty(saVolEquation.ErrorMessage))
                 {
-                    Console.WriteLine($"WARNING: Surface areaâ€“volume equation failed for surface area = {surfaceArea} mÂ². {saVolEquation.ErrorMessage}");
+                    Console.WriteLine($"WARNING: Surface area–volume equation failed for surface area = {surfaceArea} m². {saVolEquation.ErrorMessage}");
                 }
             }
 
@@ -446,10 +446,10 @@
         }
 
         /// <summary>
-        /// Solves for the surface area of the dam in mÂ² for the specified dam volume in ML.
+        /// Solves for the surface area of the dam in m² for the specified dam volume in ML.
         /// </summary>
         /// <param name="volume">Dam storage volume at full capacity in ML.</param>
-        /// <returns>Dam surface area at full capacity in mÂ².</returns>
+        /// <returns>Dam surface area at full capacity in m².</returns>
         public double SolveForSurfaceAreaFromVolume(double volume)
         {
             double result = double.NaN;
@@ -535,11 +535,11 @@
         }
 
         /// <summary>
-        /// Gets the index of the repeating monthly demand model for the legacy STEDI node.
+        /// Gets the index of the repeating monthly demand model for the legacy RODIS node.
         /// </summary>
-        /// <param name="legacySTEDIDamNode">Legacy STEDI farm dam node.</param>
+        /// <param name="legacyRODISDamNode">Legacy RODIS farm dam node.</param>
         /// <returns>Group index for repeating monthly demand.</returns>
-        public string GetRepeatingMonthlyDemandModelIndex(LegacySTEDIDamNode legacySTEDIDamNode)
+        public string GetRepeatingMonthlyDemandModelIndex(LegacyRODISDamNode legacyRODISDamNode)
         {
             string result = string.Empty;
 
@@ -547,9 +547,9 @@
 
             if (groupModels != null)
             {
-                if (groupModels.ContainsKey(legacySTEDIDamNode.DemandGroup.Trim()))
+                if (groupModels.ContainsKey(legacyRODISDamNode.DemandGroup.Trim()))
                 {
-                    result = legacySTEDIDamNode.DemandGroup.Trim();
+                    result = legacyRODISDamNode.DemandGroup.Trim();
                 }
             }
 
@@ -557,11 +557,11 @@
         }
 
         /// <summary>
-        /// Gets the index of the time series demand model for the legacy STEDI node.
+        /// Gets the index of the time series demand model for the legacy RODIS node.
         /// </summary>
-        /// <param name="legacySTEDIDamNode">Legacy STEDI farm dam node.</param>
+        /// <param name="legacyRODISDamNode">Legacy RODIS farm dam node.</param>
         /// <returns>Group index for time series demand.</returns>
-        public string GetTimeSeriesDemandModelIndex(LegacySTEDIDamNode legacySTEDIDamNode)
+        public string GetTimeSeriesDemandModelIndex(LegacyRODISDamNode legacyRODISDamNode)
         {
             string result = string.Empty;
 
@@ -569,9 +569,9 @@
 
             if (groupModels != null)
             {
-                if (groupModels.ContainsKey(legacySTEDIDamNode.DemandGroup.Trim()))
+                if (groupModels.ContainsKey(legacyRODISDamNode.DemandGroup.Trim()))
                 {
-                    result = legacySTEDIDamNode.DemandGroup.Trim();
+                    result = legacyRODISDamNode.DemandGroup.Trim();
                 }
             }
 

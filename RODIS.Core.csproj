@@ -1,13 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <RootNamespace>RODIS</RootNamespace>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Copyright>HARC Services Pty Ltd ($([System.DateTime]::Now.ToString("yyyy")))</Copyright>
     <AssemblyVersion>2.2.$([System.DateTime]::Now.ToString("yyyy")).$([System.DateTime]::Now.ToString("MMdd"))</AssemblyVersion>
-    <BaseOutputPath>bin\STEDIv2.2</BaseOutputPath>
+    <BaseOutputPath>bin\RODISv2.2</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -40,10 +41,11 @@
   </ItemGroup>
   
   <ItemGroup>
-    <InternalsVisibleTo Include="STEDIUnitTests" />
+    <InternalsVisibleTo Include="RODISUnitTests" />
     <InternalsVisibleTo Include="RODIS.Core.Tests" />
     <InternalsVisibleTo Include="RODIS.Advanced" />
     <InternalsVisibleTo Include="RODIS.Advanced.Tests" />
   </ItemGroup>
 
 </Project>
+

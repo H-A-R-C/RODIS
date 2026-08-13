@@ -1,8 +1,8 @@
-﻿// <copyright file="UnitConversions.cs" company="HARC">
+// <copyright file="UnitConversions.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
     using UnitsNet;
     using UnitsNet.Units;

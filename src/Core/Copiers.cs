@@ -1,8 +1,8 @@
-﻿// <copyright file="Copiers.cs" company="HARC">
+// <copyright file="Copiers.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
     /// <summary>Utility methods for deep-copying common collection types.</summary>
     public class Copiers

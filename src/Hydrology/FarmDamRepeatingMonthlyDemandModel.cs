@@ -1,8 +1,8 @@
-﻿// <copyright file="FarmDamRepeatingMonthlyDemandModel.cs" company="HARC">
+// <copyright file="FarmDamRepeatingMonthlyDemandModel.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
     public class FarmDamRepeatingMonthlyDemandModel : BaseDemandModel
     {
@@ -70,7 +70,7 @@ namespace STEDI.ModelRun
             }
             else
             {
-                // Time step crosses at least one month boundary — sum analytically
+                // Time step crosses at least one month boundary � sum analytically
                 this.UnrestrictedDemand = 0.0;
 
                 // Days remaining in the start month

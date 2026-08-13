@@ -1,8 +1,8 @@
-﻿// <copyright file="JsonUtils.cs" company="HARC">
+// <copyright file="JsonUtils.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.JSON
+namespace RODIS.JSON
 {
     using System.Collections.Generic;
     using System.Globalization;
@@ -41,8 +41,8 @@ namespace STEDI.JSON
         }
 
         /// <summary>
-        /// Core parser: arrays/objects → raw JSON text (or compact).
-        /// Numbers/booleans/null/strings → string values.
+        /// Core parser: arrays/objects ? raw JSON text (or compact).
+        /// Numbers/booleans/null/strings ? string values.
         /// </summary>
         public static Dictionary<string, Dictionary<string, string>> ParseScenarioDictionaryAsStrings(
             string json,

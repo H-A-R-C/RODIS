@@ -1,12 +1,12 @@
-﻿// <copyright file="ReadWriteGenCSV.cs" company="HARC">
+// <copyright file="ReadWriteGenCSV.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.InputOutput
+namespace RODIS.InputOutput
 {
     using System.Globalization;
     using System.Text;
-    using STEDI.Static;
+    using RODIS.Static;
 
     /// <summary>
     /// Input/output helper for writing "generated" CSV outputs in a Source-compatible header format (same header blocks as .res.csv) followed by a matrix body.

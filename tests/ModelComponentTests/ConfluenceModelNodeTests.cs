@@ -1,7 +1,7 @@
-ï»¿namespace STEDIUnitTests.ModelComponentTests
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
+    using RODIS.ModelRun;
     using System;
 
     [TestClass]
@@ -41,8 +41,8 @@
             node.RunTimeStep(new DateTime(2010, 1, 1), ts, false);
             node.RunTimeStep(new DateTime(2010, 1, 8), ts, false);
 
-            Assert.AreEqual(20.0, node.SumUpstreamAndPumpedInflows, 0.001, "Two steps Ã— 10 ML");
-            Assert.AreEqual(14.0, node.SumDaysOfUpstreamAndPumpedInflows, 0.001, "Two steps Ã— 7 days");
+            Assert.AreEqual(20.0, node.SumUpstreamAndPumpedInflows, 0.001, "Two steps × 10 ML");
+            Assert.AreEqual(14.0, node.SumDaysOfUpstreamAndPumpedInflows, 0.001, "Two steps × 7 days");
         }
 
         [TestMethod]

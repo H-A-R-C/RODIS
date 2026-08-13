@@ -1,10 +1,10 @@
-﻿// <copyright file="BaseSubcatchmentModel.cs" company="HARC">
+// <copyright file="BaseSubcatchmentModel.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
 public abstract class BaseSubcatchmentModel
 {
-    /// <summary>Gets or sets Total subcatchment area in km².</summary>
+    /// <summary>Gets or sets Total subcatchment area in km�.</summary>
     public double AreaKM2 { get; set; }
 
     /// <summary>Gets or sets Flow leaving the subcatchment downstream in ML for the time step.</summary>
@@ -14,6 +14,6 @@ public abstract class BaseSubcatchmentModel
     public abstract void RunTimeStep();
 
     /// <summary>Pre-calculates values needed before the time step run (e.g. non-water-body area).</summary>
-    /// <param name="isLegacySTEDICalculationMethods">True to use legacy STEDI v1.20 area calculation.</param>
-    public abstract void BeforeRunTimeStep(bool isLegacySTEDICalculationMethods);
+    /// <param name="isLegacyRODISCalculationMethods">True to use legacy RODIS v1.20 area calculation.</param>
+    public abstract void BeforeRunTimeStep(bool isLegacyRODISCalculationMethods);
 }

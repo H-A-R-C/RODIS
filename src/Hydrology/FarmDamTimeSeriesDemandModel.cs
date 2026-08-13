@@ -1,10 +1,10 @@
-ï»¿// <copyright file="FarmDamTimeSeriesDemandModel.cs" company="HARC">
+// <copyright file="FarmDamTimeSeriesDemandModel.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
-    using STEDI.Series;
+    using RODIS.Series;
 
     public class FarmDamTimeSeriesDemandModel : BaseDemandModel
     {
@@ -23,7 +23,7 @@ namespace STEDI.ModelRun
         /// <summary>Pre-computed demand volume (ML) for each time step, scaled from InputPattern during Initialise.</summary>
         private TimeSeriesValue[] timeStepDemandVolume;
 
-        /// <summary>Initialises the time-series demand model, deriving annualDemandVolume = AnnualDemandFactor Ã— DamStorageCapacityVolumeAtSpill.</summary>
+        /// <summary>Initialises the time-series demand model, deriving annualDemandVolume = AnnualDemandFactor × DamStorageCapacityVolumeAtSpill.</summary>
         public override void Initialise()
         {
             if (this.InputPattern == null || this.InputPattern.Length < 2)
@@ -62,7 +62,7 @@ namespace STEDI.ModelRun
                 }
                 else
                 {
-                    // All proportions zero â€” distribute uniformly
+                    // All proportions zero — distribute uniformly
                     scaledValue = this.annualDemandVolume / totalYears;
                 }
 

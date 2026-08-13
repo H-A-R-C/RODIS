@@ -1,4 +1,4 @@
-﻿namespace STEDI.JSON
+namespace RODIS.JSON
 {
     using Newtonsoft.Json;
 

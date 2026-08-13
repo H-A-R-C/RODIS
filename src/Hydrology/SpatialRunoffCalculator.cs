@@ -1,14 +1,14 @@
-﻿// <copyright file="SpatialRunoffCalculator.cs" company="HARC">
+// <copyright file="SpatialRunoffCalculator.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.Statistics
+namespace RODIS.Statistics
 {
     using System;
 
     /// <summary>
     /// Calculates per-node inflow multipliers from spatial gradients (location and elevation)
-    /// and per-node random runoff factors. All methods are static and pure — no side effects.
+    /// and per-node random runoff factors. All methods are static and pure � no side effects.
     /// </summary>
     public static class SpatialRunoffCalculator
     {
@@ -39,7 +39,7 @@ namespace STEDI.Statistics
             int n = eastings.Length;
             double[] multipliers = new double[n];
 
-            // ── Calculate centroid ──
+            // -- Calculate centroid --
             double meanEasting = 0.0;
             double meanNorthing = 0.0;
             double meanElevation = 0.0;
@@ -58,9 +58,9 @@ namespace STEDI.Statistics
                 meanElevation /= n;
             }
 
-            // ── Project onto orientation axis and find normalisation ranges ──
-            // Bearing: 0° = north (positive Y), 90° = east (positive X)
-            // Projected distance = dE × sin(θ) + dN × cos(θ)
+            // -- Project onto orientation axis and find normalisation ranges --
+            // Bearing: 0� = north (positive Y), 90� = east (positive X)
+            // Projected distance = dE � sin(?) + dN � cos(?)
             double orientationRad = orientationDegrees * Math.PI / 180.0;
             double sinTheta = Math.Sin(orientationRad);
             double cosTheta = Math.Cos(orientationRad);
@@ -83,7 +83,7 @@ namespace STEDI.Statistics
                 if (absElev > maxAbsElevation) maxAbsElevation = absElev;
             }
 
-            // ── Calculate multipliers ──
+            // -- Calculate multipliers --
             for (int i = 0; i < n; i++)
             {
                 // Normalise to [-1, 1] range; if no spatial spread, gradient has no effect

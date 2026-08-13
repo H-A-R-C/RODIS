@@ -1,8 +1,8 @@
-﻿// <copyright file="Interpolation.cs" company="HARC">
+// <copyright file="Interpolation.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
     using System;
 

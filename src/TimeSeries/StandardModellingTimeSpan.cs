@@ -1,10 +1,10 @@
-﻿// <copyright file="StandardModellingTimeSpan.cs" company="HARC">
+// <copyright file="StandardModellingTimeSpan.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.TimeSeries
+namespace RODIS.TimeSeries
 {
-    using STEDI.InputOutput;
+    using RODIS.InputOutput;
 
     /// <summary>
     /// Base modelling time span units used to describe temporal resolution.
@@ -105,11 +105,11 @@ namespace STEDI.TimeSeries
         /// Hourly and Yearly spans and always assigns a base unit and multiplier.
         ///
         /// Classification rules:
-        /// <1 day → Hourly (multiplier = TotalHours)
-        /// <7 days → Daily (multiplier = TotalDays)
-        /// <32 days → Weekly (multiplier = TotalDays / 7)
-        /// <370 days → Monthly (multiplier = 1)
-        /// ≥ 370 days → Yearly (multiplier = TotalDays / 365.25)
+        /// <1 day ? Hourly (multiplier = TotalHours)
+        /// <7 days ? Daily (multiplier = TotalDays)
+        /// <32 days ? Weekly (multiplier = TotalDays / 7)
+        /// <370 days ? Monthly (multiplier = 1)
+        /// = 370 days ? Yearly (multiplier = TotalDays / 365.25)
         /// This is still an inference mechanism (months/years vary by calendar), but it is explicit and deterministic.
         /// </remarks>
         public StandardModellingTimeSpan SetFromTimeSpanStrict(TimeSpan timeSpan)

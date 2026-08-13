@@ -1,8 +1,8 @@
-﻿// <copyright file="ConfluenceModelNode.cs" company="HARC">
+// <copyright file="ConfluenceModelNode.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
     /// <summary>Confluence node that passes upstream flow straight through to the downstream link without storage or demand.</summary>
     public class ConfluenceModelNode : BaseModelNode
@@ -13,9 +13,9 @@ namespace STEDI.ModelRun
         /// <summary>Runs one time step: passes upstream flow straight through and accumulates inflow statistics.</summary>
         /// <param name="simulationDateTime">Start datetime of this time step.</param>
         /// <param name="timeStep">Duration of the modelling time step.</param>
-        /// <param name="isLegacySTEDICalculationMethods">True to use legacy STEDI v1.20 calculation methods.</param>
+        /// <param name="isLegacyRODISCalculationMethods">True to use legacy RODIS v1.20 calculation methods.</param>
         /// <param name="isAdoptedRun">True if this is the adopted (final) run for the time step.</param>
-        public override void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacySTEDICalculationMethods, bool isAdoptedRun = true)
+        public override void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacyRODISCalculationMethods, bool isAdoptedRun = true)
         {
             this.VolumeBalanceMisclosure = 0;
 

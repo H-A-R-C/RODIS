@@ -1,16 +1,16 @@
-﻿// <copyright file="MonteCarloReplicateSample.cs" company="HARC">
+// <copyright file="MonteCarloReplicateSample.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.MonteCarlo
+namespace RODIS.MonteCarlo
 {
     /// <summary>
     /// Holds all sampled values for one Monte Carlo replicate.
-    /// Immutable once constructed — pass to the engine, don't let the engine modify it.
+    /// Immutable once constructed � pass to the engine, don't let the engine modify it.
     /// </summary>
     public class MonteCarloReplicateSample
     {
-        // ── Storage volume ──
+        // -- Storage volume --
 
         /// <summary>Scale factor applied to total storage capacity across all water bodies (per-replicate). Default 1.0 = no change.</summary>
         public double TotalStorageCapacityFactor { get; init; } = 1.0;
@@ -18,7 +18,7 @@ namespace STEDI.MonteCarlo
         /// <summary>Per-node scale factors applied to individual water body capacities. Null = no perturbation.</summary>
         public double[] IndividualCapacityFactors { get; init; } = null;
 
-        // ── Seepage ──
+        // -- Seepage --
 
         /// <summary>Base seepage loss rate in mm/d at full supply level, applied to all nodes before individual factors. NaN = don't override base settings.</summary>
         public double MeanSeepageLossRate_mmPerDay { get; init; } = double.NaN;
@@ -26,12 +26,12 @@ namespace STEDI.MonteCarlo
         /// <summary>Per-node multipliers on seepage loss rate. Null = no perturbation (all nodes get factor 1.0).</summary>
         public double[] IndividualSeepageFactors { get; init; } = null;
 
-        // ── Demand ──
+        // -- Demand --
 
         /// <summary>Sampled mean annual demand ratio to storage capacity. NaN = don't override base settings.</summary>
         public double MeanAnnualDemandRatio { get; init; } = double.NaN;
 
-        // ── Climate ──
+        // -- Climate --
 
         /// <summary>Multiplier applied to rainfall at every time step. 1.0 = no change.</summary>
         public double RainfallFactor { get; init; } = 1.0;
@@ -39,7 +39,7 @@ namespace STEDI.MonteCarlo
         /// <summary>Multiplier applied to PET at every time step. 1.0 = no change.</summary>
         public double PETFactor { get; init; } = 1.0;
 
-        // ── Spatial runoff variation ──
+        // -- Spatial runoff variation --
 
         /// <summary>Fractional change in mean runoff per unit of normalised projected distance across catchment. 0.0 = no spatial gradient.</summary>
         public double SlopeRunoffWithLocation { get; init; } = 0.0;
@@ -47,13 +47,13 @@ namespace STEDI.MonteCarlo
         /// <summary>Fractional change in mean runoff per unit of normalised elevation range. 0.0 = no elevation gradient.</summary>
         public double SlopeRunoffWithElevation { get; init; } = 0.0;
 
-        /// <summary>Orientation of the horizontal runoff gradient axis, in degrees clockwise from north. 0.0 = north–south axis.</summary>
+        /// <summary>Orientation of the horizontal runoff gradient axis, in degrees clockwise from north. 0.0 = north�south axis.</summary>
         public double OrientationDegrees { get; init; } = 0.0;
 
         /// <summary>Per-node random multipliers on mean runoff. Null = no random spatial variation (all nodes get factor 1.0).</summary>
         public double[] IndividualRunoffFactors { get; init; } = null;
 
-        // ── Detection of historical dams ──
+        // -- Detection of historical dams --
 
         /// <summary>
         /// Sampled annual probability of non-detection for historical dam mapping.

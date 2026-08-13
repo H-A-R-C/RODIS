@@ -1,7 +1,7 @@
-﻿namespace STEDIUnitTests.ModelComponentTests
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
+    using RODIS.ModelRun;
     using System;
 
     [TestClass]
@@ -10,9 +10,9 @@
         /// <summary>Uses ConfluenceModelNode as a concrete subclass of BaseModelNode.</summary>
         private static ConfluenceModelNode MakeNode() => new ConfluenceModelNode();
 
-        // ────────────────────────────────────────────────────
-        // SetBaseStartEndDates — normal
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // SetBaseStartEndDates � normal
+        // ----------------------------------------------------
 
         [TestMethod]
         public void SetBaseStartEndDates_ValidRange_SetsCorrectly()
@@ -27,9 +27,9 @@
             Assert.AreEqual(end, node.EndDate);
         }
 
-        // ────────────────────────────────────────────────────
-        // SetBaseStartEndDates — end before start
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // SetBaseStartEndDates � end before start
+        // ----------------------------------------------------
 
         [TestMethod]
         public void SetBaseStartEndDates_EndBeforeStart_SetsEndToStart()
@@ -45,9 +45,9 @@
             Assert.AreEqual(start, node.EndDate, "EndDate should be clamped to StartDate");
         }
 
-        // ────────────────────────────────────────────────────
-        // ResetToBaseStartEndDates — restores original
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // ResetToBaseStartEndDates � restores original
+        // ----------------------------------------------------
 
         [TestMethod]
         public void ResetToBaseStartEndDates_RestoresOriginal()
@@ -67,9 +67,9 @@
             Assert.AreEqual(origEnd, node.EndDate, "Should restore original end");
         }
 
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
         // CalculateMeanAnnualInflow
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
 
         [TestMethod]
         public void CalculateMeanAnnualInflow_OneYearOfData()

@@ -1,8 +1,8 @@
-ï»¿// <copyright file="BaseModelNode.cs" company="HARC">
+// <copyright file="BaseModelNode.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
     public abstract class BaseModelNode
     {
@@ -36,7 +36,7 @@ namespace STEDI.ModelRun
         /// <summary>Gets or sets Storage capacity volume at spill (ML) at the current time step. Zero before a water body exists or after removal.</summary>
         public double StorageCapacityVolumeAtSpill { get; set; } = 0.0;
 
-        /// <summary>Gets or sets Surface area of the water body at spill level (mÂ²). Zero before a water body exists or after removal.</summary>
+        /// <summary>Gets or sets Surface area of the water body at spill level (m²). Zero before a water body exists or after removal.</summary>
         public double SurfaceAreaAtSpill { get; set; } = 0.0;
 
         /// <summary>Gets or sets Mean annual inflow in ML/year, including catchment inflows, spills, bypasses, and pumped inflows.</summary>
@@ -120,16 +120,16 @@ namespace STEDI.ModelRun
         /// <summary>Gets or sets Elevation of this node (m AHD), used for spatial runoff variation.</summary>
         public double Elevation { get; set; }
 
-        /// <summary>Gets or sets Total upstream catchment area draining to this node (kmÂ²).</summary>
+        /// <summary>Gets or sets Total upstream catchment area draining to this node (km²).</summary>
         public double TotalUpstreamCatchmentAreaKM2 { get; set; }
 
-        /// <summary>Gets or sets Total upstream non-water-body catchment area (kmÂ²).</summary>
+        /// <summary>Gets or sets Total upstream non-water-body catchment area (km²).</summary>
         public double TotalUpstreamNonWaterCatchmentAreaKM2 { get; set; }
 
-        /// <summary>Gets or sets Non-water-body catchment area upstream of all dams draining to this node (kmÂ²).</summary>
+        /// <summary>Gets or sets Non-water-body catchment area upstream of all dams draining to this node (km²).</summary>
         public double NonWaterCatchmentAreaUpstreamOfDamsKM2 { get; set; }
 
-        /// <summary>Gets or sets Non-water-body catchment area downstream of all dams draining to this node (kmÂ²).</summary>
+        /// <summary>Gets or sets Non-water-body catchment area downstream of all dams draining to this node (km²).</summary>
         public double NonWaterCatchmentAreaDownstreamOfDamsKM2 { get; set; }
 
         /// <summary>Gets or sets Mass balance misclosure for this node (ML). Should be near zero.</summary>
@@ -149,9 +149,9 @@ namespace STEDI.ModelRun
         /// </summary>
         /// <param name="simulationDateTime">Datetime for start of time step in simulation, relative to the climate and flow data inputs.</param>
         /// <param name="timeStep">Time step Modelled, starting at the simulation date time.</param>
-        /// <param name="isLegacySTEDICalculationMethods">True if calculations are to mirror legacy STEDI version 1.20 (SKM, 2012).</param>
+        /// <param name="isLegacyRODISCalculationMethods">True if calculations are to mirror legacy RODIS version 1.20 (SKM, 2012).</param>
         /// <param name="isAdoptedRun">True if this run is to be adopted. Allows re-use of code for iterative solution for unimpacted flow, with isAdoptedRun = true only on last run when iterative solution has converged.</param>
-        public abstract void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacySTEDICalculationMethods, bool isAdoptedRun);
+        public abstract void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacyRODISCalculationMethods, bool isAdoptedRun);
 
         /// <summary>Calculates the mean annual inflow (ML/year) from cumulative inflow and duration totals.</summary>
         /// <returns>Mean annual inflow in ML/year, or 0.0 if no inflow days have been recorded.</returns>

@@ -1,7 +1,7 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System.Numerics;
 
-namespace STEDIUnitTests.FormattingTests
+namespace RODISUnitTests.FormattingTests
 {
     [TestClass]
     public class FormatWithLeadingZerosTests

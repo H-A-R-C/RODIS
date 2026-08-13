@@ -1,7 +1,7 @@
-﻿namespace STEDIUnitTests.ModelComponentTests
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
+    using RODIS.ModelRun;
     using System;
 
     [TestClass]
@@ -47,9 +47,9 @@
             return result;
         }
 
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
         // CalculateSurfaceArea
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
 
         [TestMethod]
         public void CalculateSurfaceArea_FullStorage_ReturnsSurfaceAreaAtSpill()
@@ -85,9 +85,9 @@
             Assert.AreEqual(0.0, sa, 0.001);
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — before dam exists (pass-through)
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � before dam exists (pass-through)
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_BeforeStartDate_PassThroughFlow()
@@ -119,9 +119,9 @@
             Assert.AreEqual(0.0, node.VolumeInStorage, 0.001);
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — dam exists, zero inflow, no demand
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � dam exists, zero inflow, no demand
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_ZeroInflow_ZeroDemand_VolumeUnchanged()
@@ -138,9 +138,9 @@
             Assert.AreEqual(0.0, node.DownstreamFlow, 0.001, "No spill expected");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — spill when inflow exceeds capacity
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � spill when inflow exceeds capacity
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_InflowExceedsCapacity_Spills()
@@ -154,9 +154,9 @@
             Assert.AreEqual(3.0, node.DownstreamFlowFromSpill, 0.001, "3 ML should spill");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — demand extraction limited to available volume
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � demand extraction limited to available volume
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_DemandExceedsStorage_LimitedToAvailable()
@@ -172,9 +172,9 @@
             Assert.AreEqual(2.0, node.DemandVolumeExtracted, 0.001);
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — seepage loss
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � seepage loss
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_SeepageLoss_ReducesVolume()
@@ -190,9 +190,9 @@
             Assert.IsTrue(node.VolumeInStorage < 10.0, "Seepage should reduce volume");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — bypass active within date and season
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � bypass active within date and season
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_BypassActive_ReducesStorageInflow()
@@ -212,9 +212,9 @@
             Assert.IsTrue(node.VolumeInStorage > 50.0, "Storage should increase by net inflow after bypass");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — bypass outside date window, no bypass
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � bypass outside date window, no bypass
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_BypassOutsideDateWindow_NoBypassed()
@@ -230,9 +230,9 @@
             Assert.AreEqual(0.0, node.DownstreamFlowFromBypass, 0.001, "Bypass not active");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — pumped inflow fills storage
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � pumped inflow fills storage
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_PumpedInflow_LimitedToSpareCapacity()
@@ -252,9 +252,9 @@
             Assert.AreEqual(10.0, node.VolumeInStorage, 0.001, "Should be full after pumping");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — mass balance check
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � mass balance check
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_MassBalance_MisclosureNearZero()
@@ -272,9 +272,9 @@
             Assert.AreEqual(0.0, node.VolumeBalanceMisclosure, 0.01, "Mass balance misclosure should be near zero");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — legacy vs non-legacy surface area for rainfall
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � legacy vs non-legacy surface area for rainfall
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_LegacyMode_UsesSurfaceAreaAtSpill()
@@ -284,9 +284,9 @@
             node.Evaporation = 0.0;
             node.UpstreamFlow = 0.0;
 
-            node.RunTimeStep(new DateTime(2010, 6, 15), OneDay, isLegacySTEDICalculationMethods: true);
+            node.RunTimeStep(new DateTime(2010, 6, 15), OneDay, isLegacyRODISCalculationMethods: true);
 
-            // Legacy: rainfall vol = 10mm * 10000m² * 1e-6 = 0.1 ML (uses SA at spill, not stored)
+            // Legacy: rainfall vol = 10mm * 10000m� * 1e-6 = 0.1 ML (uses SA at spill, not stored)
             Assert.AreEqual(0.1, node.RainfallVolume, 0.001);
         }
 
@@ -298,16 +298,16 @@
             node.Evaporation = 0.0;
             node.UpstreamFlow = 0.0;
 
-            node.RunTimeStep(new DateTime(2010, 6, 15), OneDay, isLegacySTEDICalculationMethods: false);
+            node.RunTimeStep(new DateTime(2010, 6, 15), OneDay, isLegacyRODISCalculationMethods: false);
 
             // Non-legacy: SA based on stored volume (< SA at spill), so rainfall volume < 0.1 ML
             Assert.IsTrue(node.RainfallVolume < 0.1, $"Expected < 0.1, got {node.RainfallVolume}");
             Assert.IsTrue(node.RainfallVolume > 0.0, "Should still have some rainfall volume");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — evaporation capped at available volume
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � evaporation capped at available volume
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_EvaporationExceedsVolume_Capped()

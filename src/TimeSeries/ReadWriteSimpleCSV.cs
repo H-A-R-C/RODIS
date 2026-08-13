@@ -1,11 +1,11 @@
-﻿// <copyright file="ReadWriteSimpleCSV.cs" company="HARC">
+// <copyright file="ReadWriteSimpleCSV.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.InputOutput
+namespace RODIS.InputOutput
 {
-    using STEDI.Series;
-    using STEDI.Static;
+    using RODIS.Series;
+    using RODIS.Static;
 
     /// <summary>
     /// Input output for simple CSV files with optional multi-line headers.

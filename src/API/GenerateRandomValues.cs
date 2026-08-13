@@ -1,10 +1,10 @@
-﻿
-namespace STEDI.CommandLineOptions
+
+namespace RODIS.CommandLineOptions
 {
-    using STEDI.InputOutput;
-    using STEDI.JSON;
-    using STEDI.ModelSettings;
-    using STEDI.Statistics;
+    using RODIS.InputOutput;
+    using RODIS.JSON;
+    using RODIS.ModelSettings;
+    using RODIS.Statistics;
     using System;
     using System.Collections.Generic;
     using System.Linq;

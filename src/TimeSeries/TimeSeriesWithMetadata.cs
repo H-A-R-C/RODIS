@@ -1,11 +1,11 @@
-﻿// <copyright file="TimeSeriesWithMetadata.cs" company="HARC">
+// <copyright file="TimeSeriesWithMetadata.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.Series
+namespace RODIS.Series
 {
-    using STEDI.InputOutput;
-    using STEDI.TimeSeries;
+    using RODIS.InputOutput;
+    using RODIS.TimeSeries;
 
     /// <summary>A time series with associated metadata (units, site, scenario, etc.) for res.csv output and aggregation.</summary>
     public class TimeSeriesWithMetadata

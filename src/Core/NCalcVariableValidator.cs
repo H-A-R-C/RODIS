@@ -1,8 +1,8 @@
-﻿// <copyright file="NCalcVariableValidator.cs" company="HARC">
+// <copyright file="NCalcVariableValidator.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
     using System.Text.RegularExpressions;
 

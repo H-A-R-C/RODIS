@@ -1,14 +1,14 @@
-﻿
-namespace STEDI.ModelSettings
-{
-    using STEDI.JSON;
-    using STEDI.ModelRun;
-    using STEDI.TimeSeries;
 
-    /// <summary>Static utility helpers for STEDISettings validation, loading, and shared constants.</summary>
-    public static class STEDISettingsHelper
+namespace RODIS.ModelSettings
+{
+    using RODIS.JSON;
+    using RODIS.ModelRun;
+    using RODIS.TimeSeries;
+
+    /// <summary>Static utility helpers for RODISSettings validation, loading, and shared constants.</summary>
+    public static class RODISSettingsHelper
     {
-        /// <summary>Default output file extension for STEDI runs.</summary>
+        /// <summary>Default output file extension for RODIS runs.</summary>
         public const string DefaultFileExtension = ".res.csv";
 
         /// <summary>
@@ -32,21 +32,21 @@ namespace STEDI.ModelSettings
         }
 
         /// <summary>Determines the demand model type from the demand groups defined in settings.</summary>
-        /// <param name="stediSettings">STEDI settings containing demand group definitions.</param>
+        /// <param name="rodisSettings">RODIS settings containing demand group definitions.</param>
         /// <returns>The demand model type (RepeatingMonthlyDemand, TimeSeriesDemand, or Missing).</returns>
-        public static ModelElementType GetDemandModelType(STEDISettings stediSettings)
+        public static ModelElementType GetDemandModelType(RODISSettings rodisSettings)
         {
             ModelElementType demandModelType = ModelElementType.Missing;
 
-            if (stediSettings.RepeatingMonthlyDemandGroups != null &&
-                stediSettings.RepeatingMonthlyDemandGroups.Count > 0)
+            if (rodisSettings.RepeatingMonthlyDemandGroups != null &&
+                rodisSettings.RepeatingMonthlyDemandGroups.Count > 0)
             {
                 demandModelType = ModelElementType.RepeatingMonthlyDemand;
             }
 
             if (demandModelType == ModelElementType.Missing &&
-                stediSettings.TimeSeriesDemandGroups != null &&
-                stediSettings.TimeSeriesDemandGroups.Count > 0)
+                rodisSettings.TimeSeriesDemandGroups != null &&
+                rodisSettings.TimeSeriesDemandGroups.Count > 0)
             {
                 demandModelType = ModelElementType.TimeSeriesDemand;
             }
@@ -55,12 +55,12 @@ namespace STEDI.ModelSettings
         }
 
         /// <summary>
-        /// Deserialises and validates a STEDI JSON settings file, sets default output path and optionally generates a random dam network if specific dam details are not provided.
+        /// Deserialises and validates a RODIS JSON settings file, sets default output path and optionally generates a random dam network if specific dam details are not provided.
         /// </summary>
-        /// <param name="jsonPath">Path to the STEDI JSON settings file.</param>
+        /// <param name="jsonPath">Path to the RODIS JSON settings file.</param>
         /// <param name="damNodes">Output array of generated dam nodes, or null if specific network details are used.</param>
-        /// <returns>Fully initialised STEDISettings object.</returns>
-        public static STEDISettings LoadAndValidateSettings(string jsonPath, out LegacySTEDIDamNode[] damNodes)
+        /// <returns>Fully initialised RODISSettings object.</returns>
+        public static RODISSettings LoadAndValidateSettings(string jsonPath, out LegacyRODISDamNode[] damNodes)
         {
             if (string.IsNullOrWhiteSpace(jsonPath))
                 throw new ArgumentException("ERROR: JSON input file path is null or empty.");
@@ -68,7 +68,7 @@ namespace STEDI.ModelSettings
             if (!File.Exists(jsonPath))
                 throw new FileNotFoundException("ERROR: JSON input file does not exist.", jsonPath);
 
-            STEDISettings settings = JSONSerialisation.DeserialiseFileThrowOnError<STEDISettings>(jsonPath);
+            RODISSettings settings = JSONSerialisation.DeserialiseFileThrowOnError<RODISSettings>(jsonPath);
 
             settings.InitialiseFromJSON();
 
@@ -101,7 +101,7 @@ namespace STEDI.ModelSettings
                       demandModelType == ModelElementType.TimeSeriesDemand))
                     throw new ArgumentException("ERROR: Invalid demand model type.");
 
-                damNodes = STEDINetworkSetup.RandomlyGenerateSTEDINetwork(settings, demandModelType);
+                damNodes = RODISNetworkSetup.RandomlyGenerateRODISNetwork(settings, demandModelType);
             }
 
             return settings;

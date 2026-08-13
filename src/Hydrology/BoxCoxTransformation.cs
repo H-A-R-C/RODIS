@@ -1,11 +1,11 @@
-ï»¿// <copyright file="BoxCoxTransformation.cs" company="HARC">
+// <copyright file="BoxCoxTransformation.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Statistics
+namespace RODIS.Statistics
 {
     /// <summary>
-    /// Boxâ€“Cox transformation utilities.
+    /// Box–Cox transformation utilities.
     /// </summary>
     public static class BoxCoxTransformation
     {
@@ -13,10 +13,10 @@ namespace STEDI.Statistics
         private const double LambdaZeroTolerance = 1e-12;
 
         /// <summary>
-        /// Applies the (optionally shifted) Boxâ€“Cox transformation.
+        /// Applies the (optionally shifted) Box–Cox transformation.
         /// </summary>
         /// <param name="value">The value to transform.</param>
-        /// <param name="lambda1">The Boxâ€“Cox lambda parameter.</param>
+        /// <param name="lambda1">The Box–Cox lambda parameter.</param>
         /// <param name="lambda2">Optional shift; the transform is applied to <c>value + lambda2</c>.</param>
         /// <returns>The transformed value.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -37,7 +37,7 @@ namespace STEDI.Statistics
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(value),
-                    $"Boxâ€“Cox requires value + lambda2 > 0. value={value}, lambda2={lambda2}.");
+                    $"Box–Cox requires value + lambda2 > 0. value={value}, lambda2={lambda2}.");
             }
 
             if (Math.Abs(lambda1) < LambdaZeroTolerance)
@@ -49,10 +49,10 @@ namespace STEDI.Statistics
         }
 
         /// <summary>
-        /// Applies the inverse (optionally shifted) Boxâ€“Cox transformation.
+        /// Applies the inverse (optionally shifted) Box–Cox transformation.
         /// </summary>
         /// <param name="transformedValue">The transformed value.</param>
-        /// <param name="lambda1">The Boxâ€“Cox lambda parameter used in the forward transform.</param>
+        /// <param name="lambda1">The Box–Cox lambda parameter used in the forward transform.</param>
         /// <param name="lambda2">Optional shift used in the forward transform.</param>
         /// <returns>The un-transformed value.</returns>
         /// <exception cref="ArgumentOutOfRangeException">
@@ -80,7 +80,7 @@ namespace STEDI.Statistics
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(transformedValue),
-                    $"Inverse Boxâ€“Cox requires (lambda1 * transformedValue + 1) > 0. lambda1={lambda1}, transformedValue={transformedValue}.");
+                    $"Inverse Box–Cox requires (lambda1 * transformedValue + 1) > 0. lambda1={lambda1}, transformedValue={transformedValue}.");
             }
 
             return Math.Pow(inner, 1.0 / lambda1) - lambda2;

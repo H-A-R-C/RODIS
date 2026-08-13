@@ -1,8 +1,8 @@
-﻿// <copyright file="PercentileProbabillityOfExceedence.cs" company="HARC">
+// <copyright file="PercentileProbabillityOfExceedence.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
     /// <summary>
     /// Calculation of percentiles and probabilities of exceeding thresholds, from arrays.

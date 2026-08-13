@@ -1,8 +1,8 @@
-﻿// <copyright file="PerformanceTimer.cs" company="HARC">
+// <copyright file="PerformanceTimer.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
     using System;
     using System.Collections.Generic;
@@ -45,7 +45,7 @@ namespace STEDI.Static
         public void Report()
         {
             Console.WriteLine();
-            Console.WriteLine("══ Performance Summary ══════════════════════════════════════════════");
+            Console.WriteLine("-- Performance Summary ----------------------------------------------");
             Console.WriteLine($"  {"Section",-45} {"Calls",6} {"Total (s)",10} {"Mean (ms)",10} {"% Total",8}");
             Console.WriteLine($"  {new string('-', 45)} {new string('-', 6)} {new string('-', 10)} {new string('-', 10)} {new string('-', 8)}");
 
@@ -63,7 +63,7 @@ namespace STEDI.Static
                 Console.WriteLine($"  {name,-45} {callCount,6} {totalSec,10:F3} {meanMs,10:F1} {pct,7:F1}%");
             }
 
-            Console.WriteLine($"  {new string('═', 83)}");
+            Console.WriteLine($"  {new string('-', 83)}");
             Console.WriteLine($"  {"TOTAL",-45} {"",6} {grandTotal,10:F3}");
             Console.WriteLine();
         }

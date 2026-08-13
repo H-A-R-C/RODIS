@@ -1,8 +1,8 @@
-﻿// <copyright file="BaseDemandModel.cs" company="HARC">
+// <copyright file="BaseDemandModel.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
     using System;
 
@@ -22,7 +22,7 @@ namespace STEDI.ModelRun
         /// <summary>Storage capacity volume of the dam when full (ML). Used together with AnnualDemandFactor to derive annualDemandVolume during Initialise.</summary>
         public double DamStorageCapacityVolumeAtSpill { get; set; } = 0.0;
 
-        /// <summary>Annual demand factor — annual mean demand divided by storage capacity at spill; reset per scenario by the LOD scaling pipeline.</summary>
+        /// <summary>Annual demand factor � annual mean demand divided by storage capacity at spill; reset per scenario by the LOD scaling pipeline.</summary>
         public double AnnualDemandFactor { get; set; } = 0.0;
 
         /// <summary>Monthly multiplicative scale factors for U7 demand-pattern uncertainty; length 12, indexed by month (0 = Jan). Defaults to all 1.0 (no perturbation).</summary>

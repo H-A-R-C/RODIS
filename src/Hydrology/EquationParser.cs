@@ -1,11 +1,11 @@
-﻿// <copyright file="EquationParser.cs" company="HARC">
+// <copyright file="EquationParser.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
     using NCalc;
-    using STEDI.Static;
+    using RODIS.Static;
 
     // TODO: Minor - clean up Style cop warnings, improve comments.
 

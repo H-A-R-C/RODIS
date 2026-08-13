@@ -1,8 +1,8 @@
-﻿// <copyright file="JSONSerialisation.cs" company="HARC">
+// <copyright file="JSONSerialisation.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.JSON
+namespace RODIS.JSON
 {
     using Newtonsoft.Json;
     using Newtonsoft.Json.Linq;

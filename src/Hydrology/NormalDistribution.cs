@@ -1,8 +1,8 @@
-﻿// <copyright file="NormalDistribution.cs" company="HARC">
+// <copyright file="NormalDistribution.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Statistics
+namespace RODIS.Statistics
 {
     /// <summary>
     /// Normal distribution.

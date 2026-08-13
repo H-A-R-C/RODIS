@@ -1,8 +1,8 @@
-﻿// <copyright file="MonthOfYear.cs" company="HARC">
+// <copyright file="MonthOfYear.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Series
+namespace RODIS.Series
 {
     /// <summary>Represents months of the calendar year (zero-indexed: Jan=0, Dec=11).</summary>
     public enum MonthOfYear

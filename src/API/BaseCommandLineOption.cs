@@ -1,12 +1,12 @@
-﻿// <copyright file="BaseCommandLineOption.cs" company="HARC">
+// <copyright file="BaseCommandLineOption.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.CommandLineOptions
+namespace RODIS.CommandLineOptions
 {
-    using STEDI.JSON;
+    using RODIS.JSON;
 
-    /// <summary>Abstract base class for all STEDI command-line run options.</summary>
+    /// <summary>Abstract base class for all RODIS command-line run options.</summary>
     public abstract class BaseCommandLineOption
     {
         /// <summary>Gets the command-line flag used to invoke this option.</summary>

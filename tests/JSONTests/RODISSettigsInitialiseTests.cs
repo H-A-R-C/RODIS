@@ -1,19 +1,19 @@
-﻿// <copyright file="STEDISettingsInitialiseTests.cs" company="HARC">
+// <copyright file="RODISSettingsInitialiseTests.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
-using STEDI.ModelRun;
-using STEDI.ModelSettings;
+using RODIS.ModelRun;
+using RODIS.ModelSettings;
 using UnitsNet;
 using UnitsNet.Units;
 
-namespace STEDI.Tests
+namespace RODIS.Tests
 {
     [TestClass]
-    public class STEDISettingsInitialiseTests
+    public class RODISSettingsInitialiseTests
     {
         /// <summary>
         /// Ensure custom unit abbreviations are registered before any test runs.
-        /// Mirrors the static constructor in STEDISettings but guarantees it for the test assembly.
+        /// Mirrors the static constructor in RODISSettings but guarantees it for the test assembly.
         /// </summary>
         [ClassInitialize]
         public static void RegisterUnitAbbreviations(TestContext context)
@@ -22,18 +22,18 @@ namespace STEDI.Tests
             UnitAbbreviationsCache.Default.MapUnitToAbbreviation(AreaUnit.SquareKilometer, "km2");
         }
 
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
         //  Helper
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
 
-        private static STEDISettings CreateSettingsForInit(
+        private static RODISSettings CreateSettingsForInit(
             string catchmentArea = "",
             string volumeThresholdForDemandGroups = "",
             bool useVolumeThresholdForDemandGroups = false,
             string volumeThresholdForBypass = "",
             Dictionary<string, double> maxVolumesAndProbs = null)
         {
-            var s = new STEDISettings
+            var s = new RODISSettings
             {
                 CatchmentArea = catchmentArea,
                 VolumeThresholdForDemandGroups = volumeThresholdForDemandGroups,
@@ -48,20 +48,20 @@ namespace STEDI.Tests
             return s;
         }
 
-        // ═══════════════════════════════════════════════
-        //  1. SetCatchmentArea  (string → km²)
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
+        //  1. SetCatchmentArea  (string ? km�)
+        // -----------------------------------------------
 
         [TestMethod]
-        [DataRow("100 km²", 100.0)]
+        [DataRow("100 km�", 100.0)]
         [DataRow("100 km2", 100.0)]
-        [DataRow("50.5 km²", 50.5)]
+        [DataRow("50.5 km�", 50.5)]
         public void SetCatchmentArea_ValidKm2String_ParsesCorrectly(string input, double expectedKm2)
         {
             var settings = CreateSettingsForInit(catchmentArea: input);
             settings.InitialiseFromJSON();
             Assert.AreEqual(expectedKm2, settings.GetCatchmentAreakm2(), 0.01,
-                $"CatchmentArea '{input}' should parse to {expectedKm2} km²");
+                $"CatchmentArea '{input}' should parse to {expectedKm2} km�");
         }
 
         [TestMethod]
@@ -76,7 +76,7 @@ namespace STEDI.Tests
         [TestMethod]
         public void SetCatchmentArea_NegativeValue_ClampsToZero()
         {
-            var settings = CreateSettingsForInit(catchmentArea: "-50 km²");
+            var settings = CreateSettingsForInit(catchmentArea: "-50 km�");
             settings.InitialiseFromJSON();
             Assert.IsTrue(settings.GetCatchmentAreakm2() >= 0,
                 "Negative catchment area should be clamped to >= 0");
@@ -85,14 +85,14 @@ namespace STEDI.Tests
         [TestMethod]
         public void SetCatchmentArea_ViaDoubleOverload_SetsDirectly()
         {
-            var settings = new STEDISettings();
+            var settings = new RODISSettings();
             settings.SetCatchmentArea(123.45);
             Assert.AreEqual(123.45, settings.GetCatchmentAreakm2(), 0.001);
         }
 
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
         //  2. SetVolumeThresholdForDemandGroups
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
 
         [TestMethod]
         [DataRow("5 ML", 5.0)]
@@ -134,9 +134,9 @@ namespace STEDI.Tests
                 "Empty threshold string should leave default sentinel (-9999)");
         }
 
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
         //  3. SetVolumeThresholdForBypass
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
 
         [TestMethod]
         [DataRow("0 ML", 0.0)]
@@ -159,9 +159,9 @@ namespace STEDI.Tests
                 "Empty bypass threshold string should leave default sentinel (-9999)");
         }
 
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
         //  4. SetMaxVolumesAndIntervalProbabilities
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
 
         [TestMethod]
         public void SetMaxVolumesAndIntervalProbabilities_ValidTable_ParsesAllEntries()
@@ -214,16 +214,16 @@ namespace STEDI.Tests
             Assert.AreEqual(2, settings.GetMaxVolumesAndIntervalProbabilities().Count,
                 "Setup: should have 2 entries");
 
-            // Step 2: re-initialise with null table — should clear
+            // Step 2: re-initialise with null table � should clear
             settings.MaxVolumesAndIntervalProbabilities = null;
             settings.SetMaxVolumesAndIntervalProbabilities(null);
             Assert.AreEqual(0, settings.GetMaxVolumesAndIntervalProbabilities().Count,
                 "Null table should clear existing entries");
         }
 
-        // ═══════════════════════════════════════════════
-        //  5. ReadDemandModelsFromJSON — graceful no-op
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
+        //  5. ReadDemandModelsFromJSON � graceful no-op
+        // -----------------------------------------------
 
         [TestMethod]
         public void ReadDemandModelsFromJSON_EmptyPaths_DoesNotThrow()
@@ -245,9 +245,9 @@ namespace STEDI.Tests
             Assert.AreEqual(0, settings.TimeSeriesDemandGroups.Count);
         }
 
-        // ═══════════════════════════════════════════════
-        //  6. Equation loaders — graceful no-op
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
+        //  6. Equation loaders � graceful no-op
+        // -----------------------------------------------
 
         [TestMethod]
         public void SetVolumeEquationFromJSON_EmptyPath_KeepsDefaultEquation()
@@ -269,9 +269,9 @@ namespace STEDI.Tests
                 "VolumeCatchmentAreaEquation should remain null when no JSON path is specified");
         }
 
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
         //  7. Full integration
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
 
         [TestMethod]
         public void InitialiseFromJSON_FullIntegration_SetsAllDerivedFields()
@@ -283,7 +283,7 @@ namespace STEDI.Tests
                 { "10 ML", 0.6 },
             };
             var settings = CreateSettingsForInit(
-                catchmentArea: "250 km²",
+                catchmentArea: "250 km�",
                 volumeThresholdForDemandGroups: "3 ML",
                 useVolumeThresholdForDemandGroups: true,
                 volumeThresholdForBypass: "1 ML",
@@ -299,21 +299,21 @@ namespace STEDI.Tests
             Assert.IsNotNull(settings.VolumeSurfaceAreaEquation, "SA-Volume equation");
         }
 
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
         //  8. GetDemandModelType
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
 
         [TestMethod]
         public void GetDemandModelType_NoGroups_ReturnsMissing()
         {
-            var settings = new STEDISettings();
+            var settings = new RODISSettings();
             Assert.AreEqual(ModelElementType.Missing, settings.GetDemandModelType());
         }
 
         [TestMethod]
         public void GetDemandModelType_OneRepeatingGroup_ReturnsRepeatingMonthly()
         {
-            var settings = new STEDISettings();
+            var settings = new RODISSettings();
             settings.RepeatingMonthlyDemandGroups.Add("Stock", new FarmDamRepeatingMonthlyDemandModel
             {
                 DemandGroup = "Stock",
@@ -326,7 +326,7 @@ namespace STEDI.Tests
         [TestMethod]
         public void GetDemandModelType_MinGroupCount2_NeedsAtLeast2Groups()
         {
-            var settings = new STEDISettings();
+            var settings = new RODISSettings();
             settings.RepeatingMonthlyDemandGroups.Add("Stock", new FarmDamRepeatingMonthlyDemandModel
             {
                 DemandGroup = "Stock",
@@ -340,7 +340,7 @@ namespace STEDI.Tests
         [TestMethod]
         public void GetDemandModelType_RepeatingTakesPrecedenceOverTimeSeries()
         {
-            var settings = new STEDISettings();
+            var settings = new RODISSettings();
             settings.RepeatingMonthlyDemandGroups.Add("Stock", new FarmDamRepeatingMonthlyDemandModel
             {
                 DemandGroup = "Stock",
@@ -359,7 +359,7 @@ namespace STEDI.Tests
         [TestMethod]
         public void GetDemandModelType_FallsBackToTimeSeries_WhenNoRepeating()
         {
-            var settings = new STEDISettings();
+            var settings = new RODISSettings();
             settings.TimeSeriesDemandGroups.Add("Irrigation", new FarmDamTimeSeriesDemandModel
             {
                 DemandGroup = "Irrigation",
@@ -369,12 +369,12 @@ namespace STEDI.Tests
                 "Should fall back to TimeSeriesDemand when no repeating groups exist");
         }
 
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
         //  9. GetGroupDemandModelIndexByVolume
         //     KEY FIX: use InitialiseFromJSON() to parse
         //     the threshold, then add groups AFTER
         //     (ReadDemandModelsFromJSON clears them)
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
 
         [TestMethod]
         public void GetGroupDemandModelIndexByVolume_BelowThreshold_ReturnsFirstKey()
@@ -433,7 +433,7 @@ namespace STEDI.Tests
         [TestMethod]
         public void GetGroupDemandModelIndexByVolume_ThresholdDisabled_ReturnsEmpty()
         {
-            var settings = new STEDISettings
+            var settings = new RODISSettings
             {
                 UseVolumeThresholdForDemandGroups = false,
             };
@@ -442,12 +442,12 @@ namespace STEDI.Tests
                 "Should return empty when volume threshold is disabled");
         }
 
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
         //  10. Idempotency
         //      KEY FIX: call SetMaxVolumesAndIntervalProbabilities
         //      directly for the second pass instead of
         //      full InitialiseFromJSON (avoids re-clearing demands)
-        // ═══════════════════════════════════════════════
+        // -----------------------------------------------
 
         [TestMethod]
         public void InitialiseFromJSON_CalledTwice_ProducesSameResult()
@@ -458,7 +458,7 @@ namespace STEDI.Tests
                 { "5 ML", 1.0 },
             };
             var settings = CreateSettingsForInit(
-                catchmentArea: "100 km²",
+                catchmentArea: "100 km�",
                 volumeThresholdForBypass: "2 ML",
                 maxVolumesAndProbs: table);
 

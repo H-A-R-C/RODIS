@@ -1,8 +1,8 @@
-﻿// <copyright file="UncertaintyRealisation.cs" company="HARC">
+// <copyright file="UncertaintyRealisation.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.MonteCarlo
+namespace RODIS.MonteCarlo
 {
     /// <summary>
     /// Holds sampled uncertainty parameter values for a single Monte Carlo iteration.
@@ -16,7 +16,7 @@ namespace STEDI.MonteCarlo
         /// <summary>Gets random seed used for this iteration, for reproducibility.</summary>
         public ulong IterationSeed { get; }
 
-        // ── Phase A: U3, U6, U11 ───────────────────────────────────────────────────────────────────
+        // -- Phase A: U3, U6, U11 -------------------------------------------------------------------
         /// <summary>Gets or sets multiplicative volume error per dam (U3). 1.0 = no error.</summary>
         public double[] DamVolumeMultipliers { get; set; }
 
@@ -29,7 +29,7 @@ namespace STEDI.MonteCarlo
         /// <summary>Gets or sets random runoff perturbation per dam (U11, additive, applied before flow-conservation rescaling).</summary>
         public double[] DamRunoffPerturbations { get; set; }
 
-        // ── Phase B: U8, U7, U2, U1 ────────────────────────────────────────────────────────────────
+        // -- Phase B: U8, U7, U2, U1 ----------------------------------------------------------------
         /// <summary>Gets or sets per-dam seepage rate in mm/day at full supply level (U8). 0.0 = no seepage. Null when disabled.</summary>
         public double[] DamSeepageRates { get; set; }
 
@@ -42,7 +42,7 @@ namespace STEDI.MonteCarlo
         /// <summary>Gets or sets per-dam flag: true if classified as a natural water body (U1). Null when disabled.</summary>
         public bool[] IsNaturalWaterBody { get; set; }
 
-        // ── Phase C: U4, U9, U10, U5 ───────────────────────────────────────────────────────────────
+        // -- Phase C: U4, U9, U10, U5 ---------------------------------------------------------------
         /// <summary>Gets or sets per-dam catchment area multiplicative error (U4). Null when disabled.</summary>
         public double[] CatchmentAreaMultipliers { get; set; }
 
@@ -55,14 +55,14 @@ namespace STEDI.MonteCarlo
         /// <summary>Gets or sets per-dam flag: true if this dam ignores upstream dam spill/bypass inflows (U5 simplified). Null when disabled.</summary>
         public bool[] UseIndependentTopology { get; set; }
 
-        // ── Experimental Treatments: E2, E6 ────────────────────────────────────────────────────────
+        // -- Experimental Treatments: E2, E6 --------------------------------------------------------
         /// <summary>Gets or sets per-dam flag: true if surveyed in this iteration (E2). Null when disabled.</summary>
         public bool[] IsSurveyed { get; set; }
 
         /// <summary>Gets or sets per-dam flag: true if monitored in this iteration (E6). Null when disabled.</summary>
         public bool[] IsMonitored { get; set; }
 
-        // ── Unused Placeholders (reserved for future full-topology rewiring) ────────────────────────
+        // -- Unused Placeholders (reserved for future full-topology rewiring) ------------------------
         /// <summary>Gets or sets per-dam downstream recipient index (U5 full rewiring, not yet implemented). Null when disabled.</summary>
         public int[] DownstreamRecipientIndex { get; set; }
 
@@ -71,7 +71,7 @@ namespace STEDI.MonteCarlo
 
         /// <summary>
         /// Initialises a new UncertaintyRealisation for the specified iteration.
-        /// Arrays are not allocated here — they are populated by <see cref="MonteCarloUncertaintySampler"/>.
+        /// Arrays are not allocated here � they are populated by <see cref="MonteCarloUncertaintySampler"/>.
         /// </summary>
         /// <param name="iterationIndex">Zero-based iteration index.</param>
         /// <param name="iterationSeed">Random seed for this iteration.</param>

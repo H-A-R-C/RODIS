@@ -1,14 +1,14 @@
-﻿// <copyright file="WaterBodyModelNode.cs" company="HARC">
+// <copyright file="WaterBodyModelNode.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
-    using STEDI.Static;
+    using RODIS.Static;
 
     public class WaterBodyModelNode : BaseModelNode
     {
-        // ── Storage state properties ──
+        // -- Storage state properties --
         /// <summary>Volume in storage at the start of the current time step (ML).</summary>
         public double StartTimeStepVolumeInStorage { get; set; }
 
@@ -18,10 +18,10 @@ namespace STEDI.ModelRun
         /// <summary>Change in storage volume over the current time step (ML).</summary>
         public double ChangeInVolumeInStorageForTimeStep { get; set; }
 
-        /// <summary>Current water surface area (m²), calculated from volume in storage.</summary>
+        /// <summary>Current water surface area (m�), calculated from volume in storage.</summary>
         public double SurfaceAreaStored { get; set; }
 
-        // ── Climate input properties ──
+        // -- Climate input properties --
         /// <summary>Rainfall depth for this time step (mm).</summary>
         public double Rainfall { get; set; }
 
@@ -37,7 +37,7 @@ namespace STEDI.ModelRun
         /// <summary>Net rainfall volume = rainfall minus evaporation (ML). Can be negative.</summary>
         public double NetRainfallVolume { get; set; }
 
-        // ── Demand properties ──
+        // -- Demand properties --
         /// <summary>Unrestricted demand for this time step (ML), set by the demand model before RunTimeStep.</summary>
         public double UnrestrictedDemand { get; set; }
 
@@ -47,11 +47,11 @@ namespace STEDI.ModelRun
         /// <summary>Volume (ML) lost due to dam removal at this time step. Non-zero only on the first time step after a dam is decommissioned.</summary>
         public double DamRemovalStorageLoss { get; set; } = 0.0;
 
-        // ── Geometry properties ──
-        /// <summary>Exponent of the power-law relationship between surface area (m²) and volume (ML).</summary>
+        // -- Geometry properties --
+        /// <summary>Exponent of the power-law relationship between surface area (m�) and volume (ML).</summary>
         public double VolumeSurfaceAreaRelationshipExponent { get; set; } = 1.0;
 
-        // ── Seepage properties ──
+        // -- Seepage properties --
         /// <summary>Seepage loss rate at full supply level (ML per time step when full).</summary>
         public double SeepageLossRateAtFull { get; set; } = 0.0;
 
@@ -61,14 +61,14 @@ namespace STEDI.ModelRun
         /// <summary>Seepage loss volume for this time step (ML).</summary>
         public double SeepageLossVolume { get; set; }
 
-        // ── Monte Carlo uncertainty analysis properties ──
+        // -- Monte Carlo uncertainty analysis properties --
         /// <summary>Per-dam rainfall multiplier for U9 uncertainty. Default 1.0 = no adjustment.</summary>
         public double LocalRainfallMultiplier { get; set; } = 1.0;
 
         /// <summary>Per-dam evaporation multiplier for U10 uncertainty. Default 1.0 = no adjustment.</summary>
         public double LocalEvaporationMultiplier { get; set; } = 1.0;
 
-        /// <summary>When true, this node ignores spill/bypass inflows from upstream dams — only local subcatchment runoff enters storage. Used for independent topology mode (U5).</summary>
+        /// <summary>When true, this node ignores spill/bypass inflows from upstream dams � only local subcatchment runoff enters storage. Used for independent topology mode (U5).</summary>
         public bool IgnoreUpstreamDamFlows { get; set; } = false;
 
         /// <summary>
@@ -77,13 +77,13 @@ namespace STEDI.ModelRun
         /// </summary>
         /// <param name="simulationDateTime">Current simulation date/time controlling dam existence and seasonal rules.</param>
         /// <param name="timeStep">Duration of this modelling time step.</param>
-        /// <param name="isLegacySTEDICalculationMethods">If true, uses STEDI v1.20 surface area assumptions.</param>
+        /// <param name="isLegacyRODISCalculationMethods">If true, uses RODIS v1.20 surface area assumptions.</param>
         /// <param name="isAdoptedRun">If true, advances storage state to next time step; false for iterative solution trials.</param>
-        public override void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacySTEDICalculationMethods, bool isAdoptedRun = true)
+        public override void RunTimeStep(DateTime simulationDateTime, TimeSpan timeStep, bool isLegacyRODISCalculationMethods, bool isAdoptedRun = true)
         {
             this.VolumeInStorage = this.StartTimeStepVolumeInStorage;
 
-            // ── Mass balance: capture starting volume before pre-existence block may zero it ──
+            // -- Mass balance: capture starting volume before pre-existence block may zero it --
             double trueStartingVolume = this.StartTimeStepVolumeInStorage;
 
             // Calculate opening surface area based on starting volume
@@ -158,9 +158,9 @@ namespace STEDI.ModelRun
                 // Next deal with net rainfall
                 // Rainfall in mm, Surface area in m2, Unit conversion to get ML
                 double surfaceAreaForRainfall = 0;
-                if (isLegacySTEDICalculationMethods)
+                if (isLegacyRODISCalculationMethods)
                 {
-                    // Legacy STEDI version 1.20 assumes surface area is constant value at full level
+                    // Legacy RODIS version 1.20 assumes surface area is constant value at full level
                     surfaceAreaForRainfall = this.SurfaceAreaAtSpill;
                 }
                 else
@@ -250,7 +250,7 @@ namespace STEDI.ModelRun
 
             // Calculate mass balance misclosure
             // NOTE: When a dam is removed (simulationDateTime >= EndDate), stored volume is set to zero.
-            // Water previously in storage is not released downstream — this is a known simplification.
+            // Water previously in storage is not released downstream � this is a known simplification.
             this.VolumeBalanceMisclosure = this.NetRainfallVolume + this.PumpedInflow + this.UpstreamFlow
                 - (this.ChangeInVolumeInStorageForTimeStep + this.SeepageLossVolume + this.DemandVolumeExtracted + this.DownstreamFlow + this.DamRemovalStorageLoss);
 
@@ -264,7 +264,7 @@ namespace STEDI.ModelRun
         }
 
         /// <summary>
-        /// Calculates surface area in m² as a function of volume stored.
+        /// Calculates surface area in m� as a function of volume stored.
         /// Public because it is also called during model initialisation to set starting surface area.
         /// </summary>
         /// <returns>Surface area in m2 at that point in time.</returns>

@@ -1,16 +1,16 @@
-﻿// <copyright file="ReadWriteGetDatFiles.cs" company="HARC">
+// <copyright file="ReadWriteGetDatFiles.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.InputOutput
+namespace RODIS.InputOutput
 {
     using System;
     using System.Collections.Generic;
     using System.Globalization;
     using System.IO;
     using System.Linq;
-    using STEDI.Series;
-    using STEDI.TimeSeries;
+    using RODIS.Series;
+    using RODIS.TimeSeries;
 
     /// <summary>
     /// Read/write utilities for "GetDat" style text files used by hydrologic tools
@@ -236,9 +236,9 @@ namespace STEDI.InputOutput
         /// <remarks>
         /// Recognised timebase tokens are:
         /// <list type="bullet">
-        /// <item><description><c>DAY</c> → Daily</description></item>
-        /// <item><description><c>WEK</c> → Weekly</description></item>
-        /// <item><description><c>MON</c> → Monthly</description></item>
+        /// <item><description><c>DAY</c> ? Daily</description></item>
+        /// <item><description><c>WEK</c> ? Weekly</description></item>
+        /// <item><description><c>MON</c> ? Monthly</description></item>
         /// </list>
         /// The first matching token is used; subsequent matches are ignored.
         /// </remarks>
@@ -805,7 +805,7 @@ namespace STEDI.InputOutput
         /// <remarks>
         /// <para>
         /// Column widths are inferred from the numeric component of each format token
-        /// (e.g. <c>F12.2</c> → width 12).
+        /// (e.g. <c>F12.2</c> ? width 12).
         /// </para>
         /// <para>
         /// If the line is shorter than the expected total width, missing columns
@@ -911,9 +911,9 @@ namespace STEDI.InputOutput
         /// <remarks>
         /// Interpretation of the SEASON field depends on the modelling time span:
         /// <list type="bullet">
-        /// <item><description>Daily → day-of-year</description></item>
-        /// <item><description>Monthly → month-of-year</description></item>
-        /// <item><description>Weekly → REALM week number</description></item>
+        /// <item><description>Daily ? day-of-year</description></item>
+        /// <item><description>Monthly ? month-of-year</description></item>
+        /// <item><description>Weekly ? REALM week number</description></item>
         /// </list>
         /// </remarks>
         private static bool TryParseRealmDate(

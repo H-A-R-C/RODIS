@@ -1,8 +1,8 @@
-﻿// <copyright file="TimeSeriesStatistics.cs" company="HARC">
+// <copyright file="TimeSeriesStatistics.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.Series
+namespace RODIS.Series
 {
     using Static;
 

@@ -1,7 +1,7 @@
-﻿namespace STEDIUnitTests.ModelComponentTests
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
+    using RODIS.ModelRun;
 
     [TestClass]
     public class StraightThroughRoutingLinkTests

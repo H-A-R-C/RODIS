@@ -1,23 +1,23 @@
-﻿// <copyright file="STEDIEngine.cs" company="HARC">
+// <copyright file="RODISEngine.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
-    using STEDI.InputOutput;
-    using STEDI.JSON;
-    using STEDI.ModelSettings;
-    using STEDI.MonteCarlo;
-    using STEDI.Series;
-    using STEDI.Static;
-    using STEDI.Statistics;
+    using RODIS.InputOutput;
+    using RODIS.JSON;
+    using RODIS.ModelSettings;
+    using RODIS.MonteCarlo;
+    using RODIS.Series;
+    using RODIS.Static;
+    using RODIS.Statistics;
     using System.Xml.Linq;
 
     /// <summary>
-    /// Executes STEDI runs (single, multi-scenario, Monte Carlo).
+    /// Executes RODIS runs (single, multi-scenario, Monte Carlo).
     /// Owns model state including the catchment model runner and optional generated dam network.
     /// </summary>
-    public class STEDIEngine
+    public class RODISEngine
     {
         /// <summary>Name of the calling program assembly, written to output file headers.</summary>
         private readonly string programName;
@@ -25,13 +25,13 @@ namespace STEDI.ModelRun
         /// <summary>Version string of the calling program assembly, written to output file headers.</summary>
         private readonly string programVersion;
 
-        /// <summary>Legacy STEDI dam nodes read from input, or null if using GIS spatial initialisation.</summary>
-        public LegacySTEDIDamNode[] LegacySTEDIDamNodes { get; set; } = null;
+        /// <summary>Legacy RODIS dam nodes read from input, or null if using GIS spatial initialisation.</summary>
+        public LegacyRODISDamNode[] LegacyRODISDamNodes { get; set; } = null;
 
         /// <summary>Gets the Catchment Model runner object.</summary>
         public CatchmentModelRunner CatchmentModelRunner { get; private set; } = null;
 
-        /// <summary>Subcatchment areas in km² for base scenario before Monte Carlo or scenario implementation.</summary>
+        /// <summary>Subcatchment areas in km� for base scenario before Monte Carlo or scenario implementation.</summary>
         private double[] baseSubcatchmentAreas;
 
         /// <summary>Demand proportions by month for each water body for base scenario, before Monte Carlo or scenario implementation.</summary>
@@ -40,47 +40,47 @@ namespace STEDI.ModelRun
         /// <summary>Performance timer for diagnosing bottlenecks. Null = no timing.</summary>
         public PerformanceTimer Timer { get; set; } = null;
 
-        /// <summary>Initialises a new STEDIEngine with program identity for output file headers.</summary>
-        public STEDIEngine()
+        /// <summary>Initialises a new RODISEngine with program identity for output file headers.</summary>
+        public RODISEngine()
         {
             this.programName = string.Empty;
             this.programVersion = string.Empty;
         }
 
-        /// <summary>Initialises a new STEDIEngine with program identity for output file headers.</summary>
+        /// <summary>Initialises a new RODISEngine with program identity for output file headers.</summary>
         /// <param name="programName">Name of the calling program assembly.</param>
         /// <param name="programVersion">Version string of the calling program assembly.</param>
-        public STEDIEngine(string programName, string programVersion)
+        public RODISEngine(string programName, string programVersion)
 
         {
             this.programName = programName ?? string.Empty;
             this.programVersion = programVersion ?? string.Empty;
         }
 
-        /// <summary>Loads base STEDI settings from JSON and generates dam network if required.</summary>
-        /// <param name="settingsJsonPath">Path to the STEDI JSON settings file.</param>
-        /// <returns>Initialised STEDISettings with dam network stored on this engine instance.</returns>
-        public STEDISettings LoadBaseSettings(string settingsJsonPath)
+        /// <summary>Loads base RODIS settings from JSON and generates dam network if required.</summary>
+        /// <param name="settingsJsonPath">Path to the RODIS JSON settings file.</param>
+        /// <returns>Initialised RODISSettings with dam network stored on this engine instance.</returns>
+        public RODISSettings LoadBaseSettings(string settingsJsonPath)
         {
             try
             {
-                LegacySTEDIDamNode[] damNodes;
-                STEDISettings settings = STEDISettingsHelper.LoadAndValidateSettings(settingsJsonPath, out damNodes);
-                this.LegacySTEDIDamNodes = damNodes;
+                LegacyRODISDamNode[] damNodes;
+                RODISSettings settings = RODISSettingsHelper.LoadAndValidateSettings(settingsJsonPath, out damNodes);
+                this.LegacyRODISDamNodes = damNodes;
                 return settings;
             }
             catch (Exception ex) when (ex is not FileNotFoundException and not ArgumentException and not InvalidDataException)
             {
-                throw new InvalidDataException($"Failed to load STEDI settings from '{settingsJsonPath}'. {ex.Message}", ex);
+                throw new InvalidDataException($"Failed to load RODIS settings from '{settingsJsonPath}'. {ex.Message}", ex);
             }
         }
 
         /// <summary>
         /// Loads scenarios from external JSON if specified in settings, parses volume revision dictionaries, and ensures at least one scenario ("Base case") exists.
         /// </summary>
-        /// <param name="settings">STEDI settings to populate with scenarios.</param>
+        /// <param name="settings">RODIS settings to populate with scenarios.</param>
         /// <returns>True if multiple named scenarios were loaded; false if only the default base case.</returns>
-        public bool LoadScenariosIntoSettings(STEDISettings settings)
+        public bool LoadScenariosIntoSettings(RODISSettings settings)
         {
             if (settings == null)
                 throw new ArgumentNullException(nameof(settings));
@@ -208,7 +208,7 @@ namespace STEDI.ModelRun
                 }
             }
 
-            // At the end of RestoreBaseModelState — reset transient per-dam multipliers/flags to defaults.
+            // At the end of RestoreBaseModelState � reset transient per-dam multipliers/flags to defaults.
             // Without this, a U5/U9/U10 value from a previous iteration persists if the block is disabled in the current iteration.
             if (catchment.WaterBodyNodes != null)
             {
@@ -236,29 +236,29 @@ namespace STEDI.ModelRun
             int nTS = catchment.TimeSeriesDemandModels?.Length ?? 0;
 
             Console.WriteLine();
-            Console.WriteLine("══ Demand Model Mapping Diagnostic ══");
+            Console.WriteLine("-- Demand Model Mapping Diagnostic --");
             Console.WriteLine($"  Water body nodes:              {nWB}");
             Console.WriteLine($"  RepeatingMonthlyDemandModels:  {nRM}");
             Console.WriteLine($"  TimeSeriesDemandModels:        {nTS}");
 
-            // ── Check 1: Array length alignment ──
+            // -- Check 1: Array length alignment --
             bool rmAligned = nRM == nWB || nRM == 0;
             bool tsAligned = nTS == nWB || nTS == 0;
 
             if (rmAligned && tsAligned)
             {
-                Console.WriteLine("  ✓ Demand model arrays are 1:1 with water body nodes (or absent).");
+                Console.WriteLine("  ? Demand model arrays are 1:1 with water body nodes (or absent).");
             }
             else
             {
-                Console.WriteLine("  ✗ MISMATCH — per-dam demand factor indexing may not align correctly.");
+                Console.WriteLine("  ? MISMATCH � per-dam demand factor indexing may not align correctly.");
                 if (nRM > 0 && nRM != nWB)
                     Console.WriteLine($"    RepeatingMonthly: {nRM} models vs {nWB} water bodies (delta = {nRM - nWB})");
                 if (nTS > 0 && nTS != nWB)
                     Console.WriteLine($"    TimeSeries: {nTS} models vs {nWB} water bodies (delta = {nTS - nWB})");
             }
 
-            // ── Check 2: Per-node detail dump (first 10 + last 2, to keep output manageable) ──
+            // -- Check 2: Per-node detail dump (first 10 + last 2, to keep output manageable) --
             if (nWB == 0)
                 return;
 
@@ -301,7 +301,7 @@ namespace STEDI.ModelRun
                 prevIdx = i;
             }
 
-            // ── Check 3: Demand group distribution ──
+            // -- Check 3: Demand group distribution --
             if (nRM > 0)
             {
                 Console.WriteLine();
@@ -332,7 +332,7 @@ namespace STEDI.ModelRun
                 Console.WriteLine($"  TimeSeries AnnualDemandFactor: min={minFac:F4}, mean={sumFac / nTS:F4}, max={maxFac:F4}");
             }
 
-            // ── Check 4: Volume threshold grouping ──
+            // -- Check 4: Volume threshold grouping --
             Console.WriteLine();
             int countAbove = 0;
             int countBelow = 0;
@@ -348,7 +348,7 @@ namespace STEDI.ModelRun
             Console.WriteLine($"  Volume threshold grouping (threshold = {volumeThreshold:F0} ML):");
             Console.WriteLine($"    >= threshold: {countAbove} dams");
             Console.WriteLine($"    <  threshold: {countBelow} dams");
-            Console.WriteLine("══════════════════════════════════════");
+            Console.WriteLine("--------------------------------------");
             Console.WriteLine();
         }
 
@@ -379,26 +379,26 @@ namespace STEDI.ModelRun
         /// Validates input files, reads time series data, initialises the catchment model runner
         /// and prepares the model for execution.
         /// </summary>
-        /// <param name="stediSettings">Settings for this STEDI run.</param>
+        /// <param name="rodisSettings">Settings for this RODIS run.</param>
         /// <returns>True if setup completed successfully; false if a validation or load error occurred.</returns>
-        public bool SetUpFirstRun(STEDISettings stediSettings)
+        public bool SetUpFirstRun(RODISSettings rodisSettings)
         {
             try
             {
                 // --- Validate input files exist ---
-                STEDISettingsHelper.ValidateFilesExist(stediSettings.RainfallInputPath, stediSettings.PETInputPath, stediSettings.FlowInputPath);
+                RODISSettingsHelper.ValidateFilesExist(rodisSettings.RainfallInputPath, rodisSettings.PETInputPath, rodisSettings.FlowInputPath);
 
-                Console.WriteLine("Reading input file for {0}: {1}", "rainfall", stediSettings.RainfallInputPath);
-                Console.WriteLine("Reading input file for {0}: {1}", "evaporation", stediSettings.PETInputPath);
-                if (stediSettings.CalculateUnimpactedGivenObserved)
-                    Console.WriteLine("Reading input file for {0}: {1}", "observed flow", stediSettings.FlowInputPath);
+                Console.WriteLine("Reading input file for {0}: {1}", "rainfall", rodisSettings.RainfallInputPath);
+                Console.WriteLine("Reading input file for {0}: {1}", "evaporation", rodisSettings.PETInputPath);
+                if (rodisSettings.CalculateUnimpactedGivenObserved)
+                    Console.WriteLine("Reading input file for {0}: {1}", "observed flow", rodisSettings.FlowInputPath);
                 else
-                    Console.WriteLine("Reading input file for {0}: {1}", "unimpacted flow", stediSettings.FlowInputPath);
+                    Console.WriteLine("Reading input file for {0}: {1}", "unimpacted flow", rodisSettings.FlowInputPath);
 
-                if (stediSettings.TimeSeriesDemandGroups.Count > 0)
+                if (rodisSettings.TimeSeriesDemandGroups.Count > 0)
                 {
                     HashSet<string> demandTimeSeriesPaths = new HashSet<string>();
-                    foreach (var group in stediSettings.TimeSeriesDemandGroups)
+                    foreach (var group in rodisSettings.TimeSeriesDemandGroups)
                     {
                         if (!demandTimeSeriesPaths.Contains(group.Value.InputFilePath))
                         {
@@ -407,7 +407,7 @@ namespace STEDI.ModelRun
                         }
                     }
                     if (demandTimeSeriesPaths.Count > 0)
-                        STEDISettingsHelper.ValidateFilesExist(demandTimeSeriesPaths.ToArray());
+                        RODISSettingsHelper.ValidateFilesExist(demandTimeSeriesPaths.ToArray());
                 }
 
                 // --- Read input time series ---
@@ -418,14 +418,14 @@ namespace STEDI.ModelRun
                 string flowInputUnits = string.Empty;
 
                 TimeSeriesValue[] rainfallTimeSeries =
-                    ReadTimeSeries.ReadTimeSeriesFromFile(stediSettings.RainfallInputPath, ref rainfallInputUnits, stediSettings.InputRainfallColumn, stediSettings.InputDateTimeColForRainfall);
+                    ReadTimeSeries.ReadTimeSeriesFromFile(rodisSettings.RainfallInputPath, ref rainfallInputUnits, rodisSettings.InputRainfallColumn, rodisSettings.InputDateTimeColForRainfall);
                 TimeSeriesValue[] petTimeSeries =
-                    ReadTimeSeries.ReadTimeSeriesFromFile(stediSettings.PETInputPath, ref petInputUnits, stediSettings.InputEvaporationColumn, stediSettings.InputDateTimeColForEvaporation);
+                    ReadTimeSeries.ReadTimeSeriesFromFile(rodisSettings.PETInputPath, ref petInputUnits, rodisSettings.InputEvaporationColumn, rodisSettings.InputDateTimeColForEvaporation);
                 TimeSeriesValue[] flowTimeSeries =
-                    ReadTimeSeries.ReadTimeSeriesFromFile(stediSettings.FlowInputPath, ref flowInputUnits, stediSettings.InputFlowColumn, stediSettings.InputDateTimeColForFlow);
+                    ReadTimeSeries.ReadTimeSeriesFromFile(rodisSettings.FlowInputPath, ref flowInputUnits, rodisSettings.InputFlowColumn, rodisSettings.InputDateTimeColForFlow);
 
                 // --- Load and validate time series ---
-                bool isLoadOK = this.CatchmentModelRunner.LoadInputTimeSeries(rainfallTimeSeries, petTimeSeries, flowTimeSeries, stediSettings);
+                bool isLoadOK = this.CatchmentModelRunner.LoadInputTimeSeries(rainfallTimeSeries, petTimeSeries, flowTimeSeries, rodisSettings);
 
                 // --- Initialise catchment model ---
                 DateTime startRunDate = this.CatchmentModelRunner.GetStartRun();
@@ -433,12 +433,12 @@ namespace STEDI.ModelRun
                 this.CatchmentModelRunner.StartDateForStatistics = startRunDate;
                 this.CatchmentModelRunner.EndDateForStatistics = endRunDate;
 
-                if (this.LegacySTEDIDamNodes == null)
-                    this.CatchmentModelRunner.catchmentModel.Initialise(stediSettings, startRunDate, endRunDate);
+                if (this.LegacyRODISDamNodes == null)
+                    this.CatchmentModelRunner.catchmentModel.Initialise(rodisSettings, startRunDate, endRunDate);
                 else
-                    this.CatchmentModelRunner.catchmentModel.Initialise(this.LegacySTEDIDamNodes, stediSettings);
+                    this.CatchmentModelRunner.catchmentModel.Initialise(this.LegacyRODISDamNodes, rodisSettings);
 
-                this.CatchmentModelRunner.SetOutputTimeSeriesDetails(stediSettings);
+                this.CatchmentModelRunner.SetOutputTimeSeriesDetails(rodisSettings);
                 return isLoadOK;
             }
             catch (FileNotFoundException ex)
@@ -448,7 +448,7 @@ namespace STEDI.ModelRun
             }
             catch (ArgumentException ex)
             {
-                Console.WriteLine($"ERROR: Invalid input — {ex.Message}");
+                Console.WriteLine($"ERROR: Invalid input � {ex.Message}");
                 return false;
             }
             catch (InvalidDataException ex)
@@ -458,7 +458,7 @@ namespace STEDI.ModelRun
             }
             catch (InvalidOperationException ex)
             {
-                Console.WriteLine($"ERROR: Model initialisation failed — {ex.Message}");
+                Console.WriteLine($"ERROR: Model initialisation failed � {ex.Message}");
                 return false;
             }
             catch (Exception ex)
@@ -485,11 +485,11 @@ namespace STEDI.ModelRun
         /// <param name="postScenarioSetupAction">Optional callback invoked after each scenario's parameter setup but before model execution. Used by the VOI MC loop to apply per-dam uncertainty after scenario-level volume/date adjustments.</param>
         /// <param name="postScenarioRunAction">Optional callback invoked after each scenario's model run and mean annual value calculation. Used by the VOI MC loop to capture water year time series data.</param>
         /// <param name="presetBaseVolumes">Optional array of pristine base dam volumes (ML), captured once from the base case. Used by RescaleWaterBodiesAndDemands to reset volumes before each scenario's scaling, preventing multiplicative accumulation across MC iterations.</param>
-        /// <param name="presetBaseSurfaceAreas">Optional array of pristine base dam surface areas (m²), captured alongside presetBaseVolumes. Used for analytical surface area recalculation during scenario volume scaling.</param>
+        /// <param name="presetBaseSurfaceAreas">Optional array of pristine base dam surface areas (m�), captured alongside presetBaseVolumes. Used for analytical surface area recalculation during scenario volume scaling.</param>
         /// <param name="presetBaseTSDemandCapacities">Optional array of pristine base time-series demand-model capacities (ML), captured once from the base case. Used by RescaleWaterBodiesAndDemands to reset TS demand-model capacities before each scenario's scaling, preventing multiplicative accumulation across MC iterations.</param>
         /// <param name="presetBaseRMDemandCapacities">Optional array of pristine base repeating-monthly demand-model capacities (ML), captured alongside presetBaseTSDemandCapacities. Used for the equivalent reset on RM demand models.</param>
         public void RunScenarios(
-            STEDISettings settings,
+            RODISSettings settings,
             DateTime waterYearsStartIgnoreYear,
             List<List<double[]>> overallMeanAnnualValues,
             List<List<double[][]>> groupMeanAnnualValues,
@@ -508,13 +508,13 @@ namespace STEDI.ModelRun
             double[] baseScenarioMaxWaterBodyVolumes = presetBaseVolumes ?? this.CatchmentModelRunner.GetMaxWaterBodyStorageVolumes();
             double[] baseScenarioSurfaceAreasAtSpill = presetBaseSurfaceAreas ?? this.CatchmentModelRunner.GetSurfaceAreasAtSpill();
 
-            // Mirror for demand-model capacities — captured inline because there are no helper getters on CatchmentModelRunner.
+            // Mirror for demand-model capacities � captured inline because there are no helper getters on CatchmentModelRunner.
             double[] baseScenarioTSDemandCapacities = presetBaseTSDemandCapacities
                 ?? this.CatchmentModelRunner.catchmentModel.TimeSeriesDemandModels?.Select(m => m.DamStorageCapacityVolumeAtSpill).ToArray();
             double[] baseScenarioRMDemandCapacities = presetBaseRMDemandCapacities
                 ?? this.CatchmentModelRunner.catchmentModel.RepeatingMonthlyDemandModels?.Select(m => m.DamStorageCapacityVolumeAtSpill).ToArray();
 
-            STEDISettings baseRunSettings = this.DeepCopySettings(settings);
+            RODISSettings baseRunSettings = this.DeepCopySettings(settings);
 
             string baseOutputFileNoExt = ReadWriteResCSV.GetFileNameWithoutExtension(baseRunSettings.ResCSVOutputPath);
             string baseOutputPath = Path.GetDirectoryName(baseRunSettings.ResCSVOutputPath);
@@ -540,7 +540,7 @@ namespace STEDI.ModelRun
                 try
                 {
                     this.Timer?.Start("DeepCopySettings");
-                    STEDISettings thisRunSettings = this.DeepCopySettings(baseRunSettings);
+                    RODISSettings thisRunSettings = this.DeepCopySettings(baseRunSettings);
                     this.Timer?.Stop("DeepCopySettings");
 
                     settings.ScenarioName = scenarioNames[i];
@@ -575,9 +575,9 @@ namespace STEDI.ModelRun
                                     thisRunSettings.CalculateUnimpactedGivenObserved = thisScenario.CalculateUnimpactedGivenObserved;
                                 }
 
-                                if (scenarioParamsAsString[scenarioNames[i]].Keys.Contains("UseLegacySTEDI1CalculationMethods"))
+                                if (scenarioParamsAsString[scenarioNames[i]].Keys.Contains("UseLegacyRODIS1CalculationMethods"))
                                 {
-                                    thisRunSettings.UseLegacySTEDI1CalculationMethods = thisScenario.UseLegacySTEDI1CalculationMethods;
+                                    thisRunSettings.UseLegacyRODIS1CalculationMethods = thisScenario.UseLegacyRODIS1CalculationMethods;
                                 }
 
                                 if (scenarioParamsAsString[scenarioNames[i]].Keys.Contains("UseFixedLowFlowBypassCapacity"))
@@ -594,7 +594,7 @@ namespace STEDI.ModelRun
 
                                 if (thisRunSettings.UseFixedLowFlowBypassCapacity && scenarioParamsAsString[scenarioNames[i]].Keys.Contains("BypassCapacityML_d_km2"))
                                 {
-                                    // No unit conversion — always ML/d/km² (compound unit not supported by UnitsNet)
+                                    // No unit conversion � always ML/d/km� (compound unit not supported by UnitsNet)
                                     thisRunSettings.BypassCapacityML_d_km2 = thisScenario.BypassCapacityML_d_km2;
                                 }
 
@@ -644,9 +644,9 @@ namespace STEDI.ModelRun
                         }
                     }
 
-                    // ── Investigation 6 hook: apply per-dam uncertainty AFTER scenario date/volume setup ──
+                    // -- Investigation 6 hook: apply per-dam uncertainty AFTER scenario date/volume setup --
                     // This ensures scenario-level adjustments (which dams are active, nominal volume scaling) are established first, then uncertainty perturbs individual dam properties on top.
-                    // For standard MC runs (RunSTEDIMonteCarlo), this is null and has no effect.
+                    // For standard MC runs (RunRODISMonteCarlo), this is null and has no effect.
                     this.Timer?.Start("PostScenarioSetup");
                     postScenarioSetupAction?.Invoke();
                     this.Timer?.Stop("PostScenarioSetup");
@@ -710,7 +710,7 @@ namespace STEDI.ModelRun
                     // Water year capture callback (used by VOI MC for per-scenario water year data)
                     postScenarioRunAction?.Invoke();
 
-                    // Write node data — only for base case or when full output requested
+                    // Write node data � only for base case or when full output requested
                     string defaultOutputFileName = ReadWriteResCSV.GetFileNameWithoutExtension(thisRunSettings.ResCSVOutputPath);
 
                     overallMeanValuesForScen.Add(this.CatchmentModelRunner.OverallOutputMeanAnnualValues);
@@ -767,56 +767,56 @@ namespace STEDI.ModelRun
         }
 
         /// <summary>Writes overall and per-reporting-group .res.csv time series outputs for a single run.</summary>
-        /// <param name="stediSettings">Settings for this STEDI run (provides output paths).</param>
+        /// <param name="rodisSettings">Settings for this RODIS run (provides output paths).</param>
         /// <param name="jsonProjectFile">Optional project file identifier written to the CSV header.</param>
-        public void WriteSingleRunOutputsToFiles(STEDISettings stediSettings, string jsonProjectFile = "")
+        public void WriteSingleRunOutputsToFiles(RODISSettings rodisSettings, string jsonProjectFile = "")
         {
             try
             {
-                if (!Directory.Exists(stediSettings.OutFolder))
+                if (!Directory.Exists(rodisSettings.OutFolder))
                 {
-                    Directory.CreateDirectory(stediSettings.OutFolder);
+                    Directory.CreateDirectory(rodisSettings.OutFolder);
                 }
 
-                string defaultOutputFileName = ReadWriteResCSV.GetFileNameWithoutExtension(stediSettings.ResCSVOutputPath);
+                string defaultOutputFileName = ReadWriteResCSV.GetFileNameWithoutExtension(rodisSettings.ResCSVOutputPath);
                 string[] reportingGroups = this.CatchmentModelRunner.catchmentModel.GetReportingGroups();
 
                 Console.Write(".");
-                string outFileName = Path.Combine(stediSettings.OutFolder, defaultOutputFileName) + STEDISettingsHelper.DefaultFileExtension;
+                string outFileName = Path.Combine(rodisSettings.OutFolder, defaultOutputFileName) + RODISSettingsHelper.DefaultFileExtension;
                 ReadWriteResCSV.WriteResCSV(this.CatchmentModelRunner.OverallOutputTimeSeries, outFileName, this.programName + " " + this.programVersion, jsonProjectFile);
 
                 for (int iRG = 0; iRG < reportingGroups.Length; iRG++)
                 {
                     Console.Write(".");
-                    outFileName = Path.Combine(stediSettings.OutFolder, defaultOutputFileName + "_" + reportingGroups[iRG]) + STEDISettingsHelper.DefaultFileExtension;
+                    outFileName = Path.Combine(rodisSettings.OutFolder, defaultOutputFileName + "_" + reportingGroups[iRG]) + RODISSettingsHelper.DefaultFileExtension;
                     ReadWriteResCSV.WriteResCSV(this.CatchmentModelRunner.GroupOutputTimeSeries[iRG], outFileName, this.programName + " " + this.programVersion, jsonProjectFile);
                 }
             }
             catch (UnauthorizedAccessException ex)
             {
-                throw new IOException($"Cannot write output files — access denied. Check folder permissions for '{stediSettings.OutFolder}'. {ex.Message}", ex);
+                throw new IOException($"Cannot write output files � access denied. Check folder permissions for '{rodisSettings.OutFolder}'. {ex.Message}", ex);
             }
             catch (DirectoryNotFoundException ex)
             {
-                throw new IOException($"Output directory does not exist and could not be created: '{stediSettings.OutFolder}'. {ex.Message}", ex);
+                throw new IOException($"Output directory does not exist and could not be created: '{rodisSettings.OutFolder}'. {ex.Message}", ex);
             }
         }
 
         /// <summary>Writes water-year aggregated .res.csv outputs (overall and per reporting group) for a single run.</summary>
         /// <param name="waterYearsStartIgnoreYear">First date of each water year (year component ignored).</param>
-        /// <param name="stediSettings">Settings for this STEDI run (provides output paths).</param>
+        /// <param name="rodisSettings">Settings for this RODIS run (provides output paths).</param>
         /// <param name="jsonProjectFile">Optional project file identifier written to the CSV header.</param>
-        public void WriteSingleRunWaterYearOutputsToFiles(DateTime waterYearsStartIgnoreYear, STEDISettings stediSettings, string jsonProjectFile = "")
+        public void WriteSingleRunWaterYearOutputsToFiles(DateTime waterYearsStartIgnoreYear, RODISSettings rodisSettings, string jsonProjectFile = "")
         {
             try
             {
-                if (!Directory.Exists(stediSettings.OutFolder))
+                if (!Directory.Exists(rodisSettings.OutFolder))
                 {
-                    Directory.CreateDirectory(stediSettings.OutFolder);
+                    Directory.CreateDirectory(rodisSettings.OutFolder);
                 }
 
-                string defaultOutputFileName = ReadWriteResCSV.GetFileNameWithoutExtension(stediSettings.ResCSVOutputPath) + "_WaterYear";
-                string outFileName = Path.Combine(stediSettings.OutFolder, defaultOutputFileName) + STEDISettingsHelper.DefaultFileExtension;
+                string defaultOutputFileName = ReadWriteResCSV.GetFileNameWithoutExtension(rodisSettings.ResCSVOutputPath) + "_WaterYear";
+                string outFileName = Path.Combine(rodisSettings.OutFolder, defaultOutputFileName) + RODISSettingsHelper.DefaultFileExtension;
                 List<TimeSeriesWithMetadata> annualOutputTimeSeries = this.CatchmentModelRunner.GetWaterYearOutputTimeSeries(this.CatchmentModelRunner.OverallOutputTimeSeries, waterYearsStartIgnoreYear);
                 ReadWriteResCSV.WriteResCSV(annualOutputTimeSeries, outFileName, this.programName + " " + this.programVersion, jsonProjectFile);
 
@@ -824,18 +824,18 @@ namespace STEDI.ModelRun
                 for (int iRG = 0; iRG < reportingGroups.Length; iRG++)
                 {
                     Console.Write(".");
-                    outFileName = Path.Combine(stediSettings.OutFolder, defaultOutputFileName + "_" + reportingGroups[iRG]) + STEDISettingsHelper.DefaultFileExtension;
+                    outFileName = Path.Combine(rodisSettings.OutFolder, defaultOutputFileName + "_" + reportingGroups[iRG]) + RODISSettingsHelper.DefaultFileExtension;
                     annualOutputTimeSeries = this.CatchmentModelRunner.GetWaterYearOutputTimeSeries(this.CatchmentModelRunner.GroupOutputTimeSeries[iRG], waterYearsStartIgnoreYear);
                     ReadWriteResCSV.WriteResCSV(annualOutputTimeSeries, outFileName, this.programName + " " + this.programVersion, jsonProjectFile);
                 }
             }
             catch (UnauthorizedAccessException ex)
             {
-                throw new IOException($"Cannot write water-year output files — access denied. Check folder permissions for '{stediSettings.OutFolder}'. {ex.Message}", ex);
+                throw new IOException($"Cannot write water-year output files � access denied. Check folder permissions for '{rodisSettings.OutFolder}'. {ex.Message}", ex);
             }
             catch (DirectoryNotFoundException ex)
             {
-                throw new IOException($"Output directory does not exist and could not be created: '{stediSettings.OutFolder}'. {ex.Message}", ex);
+                throw new IOException($"Output directory does not exist and could not be created: '{rodisSettings.OutFolder}'. {ex.Message}", ex);
             }
         }
 
@@ -845,7 +845,7 @@ namespace STEDI.ModelRun
         /// </summary>
         /// <param name="thisScenario">Scenario parameters specifying target volumes and revision years.</param>
         /// <param name="baseScenarioMaxWaterBodyVolumes">Base scenario full-supply volumes (ML), in model order.</param>
-        /// <param name="baseScenarioSurfaceAreasAtSpill">Base scenario surface areas at full (m²), in model order.</param>
+        /// <param name="baseScenarioSurfaceAreasAtSpill">Base scenario surface areas at full (m�), in model order.</param>
         /// <param name="baseScenarioTSDemandCapacities">Pristine base time-series demand-model capacities (ML), used to reset DamStorageCapacityVolumeAtSpill on TS demand models before LOD scaling.</param>
         /// <param name="baseScenarioRMDemandCapacities">Pristine base repeating-monthly demand-model capacities (ML), used to reset DamStorageCapacityVolumeAtSpill on RM demand models before LOD scaling.</param>
         /// <param name="thisRunSettings">Settings for this scenario run.</param>
@@ -857,7 +857,7 @@ namespace STEDI.ModelRun
             double[] baseScenarioSurfaceAreasAtSpill,
             double[] baseScenarioTSDemandCapacities,
             double[] baseScenarioRMDemandCapacities,
-            STEDISettings thisRunSettings,
+            RODISSettings thisRunSettings,
             double volumeScaleFactorNoSurfaceAreaChange = 1.0)
         {
             bool isScenarioDefinitionOK = true;
@@ -1065,12 +1065,12 @@ namespace STEDI.ModelRun
             return isScenarioDefinitionOK;
         }
 
-        /// <summary>Creates a deep copy of STEDI settings, preserving compiled equation state and scenario references.</summary>
-        /// <param name="settings">Input STEDI run settings to copy.</param>
+        /// <summary>Creates a deep copy of RODIS settings, preserving compiled equation state and scenario references.</summary>
+        /// <param name="settings">Input RODIS run settings to copy.</param>
         /// <returns>Independent deep copy of the settings.</returns>
-        public STEDISettings DeepCopySettings(STEDISettings settings)
+        public RODISSettings DeepCopySettings(RODISSettings settings)
         {
-            STEDISettings copy = settings.DeepCopyViaNewtonsoft();
+            RODISSettings copy = settings.DeepCopyViaNewtonsoft();
             copy.InitialiseFromJSON();
 
             // Only EquationParser needs special handling (has compiled state)
@@ -1092,8 +1092,8 @@ namespace STEDI.ModelRun
         /// Call after DeepCopySettings and before RunScenarios.
         /// </summary>
         /// <param name="sample">Immutable sample drawn by MonteCarloSampler.</param>
-        /// <param name="settings">STEDI settings for this replicate (used by demand application in future phases).</param>
-        public void ApplyMonteCarloSample(MonteCarloReplicateSample sample, STEDISettings settings)
+        /// <param name="settings">RODIS settings for this replicate (used by demand application in future phases).</param>
+        public void ApplyMonteCarloSample(MonteCarloReplicateSample sample, RODISSettings settings)
         {
             this.ApplyIndividualCapacitySample(sample, settings);
             this.ApplySeepageSample(sample);
@@ -1106,11 +1106,11 @@ namespace STEDI.ModelRun
             this.ApplyDetectionSample(sample);
         }
 
-        // ══════════════════════════════════════════════════════════════════════════════════════════════
-        //  Investigation 6 — Uncertainty Realisation Application
+        // ----------------------------------------------------------------------------------------------
+        //  Investigation 6 � Uncertainty Realisation Application
         //  These methods apply per-dam uncertainty draws from MonteCarloUncertaintySampler.
         //  Called INSTEAD OF ApplyMonteCarloSample in the Investigation 6 MC loop.
-        // ══════════════════════════════════════════════════════════════════════════════════════════════
+        // ----------------------------------------------------------------------------------------------
 
         /// <summary>
         /// Applies an <see cref="UncertaintyRealisation"/> to the current model state for Investigation 6 value-of-information MC experiments.
@@ -1118,8 +1118,8 @@ namespace STEDI.ModelRun
         /// to ensure the calibration, 2026 LOD, and 2009 LOD scenarios use identical uncertainty draws.
         /// </summary>
         /// <param name="realisation">Sampled uncertainty parameters for this MC iteration, drawn by <see cref="MonteCarloUncertaintySampler"/>.</param>
-        /// <param name="settings">STEDI settings for this replicate (provides demand group templates that may be reinitialised by RescaleWaterBodiesAndDemands).</param>
-        public void ApplyUncertaintyRealisation(UncertaintyRealisation realisation, STEDISettings settings)
+        /// <param name="settings">RODIS settings for this replicate (provides demand group templates that may be reinitialised by RescaleWaterBodiesAndDemands).</param>
+        public void ApplyUncertaintyRealisation(UncertaintyRealisation realisation, RODISSettings settings)
         {
             if (realisation == null)
                 throw new ArgumentNullException(nameof(realisation));
@@ -1143,7 +1143,7 @@ namespace STEDI.ModelRun
             this.ApplyEvaporationUncertainty(realisation);         // U10
             this.ApplyTopologyUncertainty(realisation);            // U5
 
-            // Must be LAST — removes misclassified dams from simulation
+            // Must be LAST � removes misclassified dams from simulation
             this.ApplyClassificationUncertainty(realisation);      // U1
         }
 
@@ -1152,9 +1152,9 @@ namespace STEDI.ModelRun
         /// so demand abstraction scales physically with the sampled dam size. 
         /// Demand-model arrays are 1:1-indexed with WaterBodyNodes (same indexing convention as ApplyDemandUncertainty); a single dam may have entries in both
         /// the TS and RM demand-model arrays, so both are checked and updated independently. 
-        /// Initialise() is called on each touched demand model to refresh annualDemandVolume = AnnualDemandFactor × DamStorageCapacityVolumeAtSpill from the new capacity.
-        /// SurfaceAreaAtSpill is deliberately NOT modified — it is a measured quantity from satellite/aerial imagery, known with complete accuracy per the Investigation 6 baseline assumption;
-        /// the storage–area curve adjusts implicitly via the depth.
+        /// Initialise() is called on each touched demand model to refresh annualDemandVolume = AnnualDemandFactor � DamStorageCapacityVolumeAtSpill from the new capacity.
+        /// SurfaceAreaAtSpill is deliberately NOT modified � it is a measured quantity from satellite/aerial imagery, known with complete accuracy per the Investigation 6 baseline assumption;
+        /// the storage�area curve adjusts implicitly via the depth.
         /// </summary>
         /// <param name="realisation">Uncertainty realisation containing the DamVolumeMultipliers array (length = number of dams).</param>
         private void ApplyVolumeUncertainty(UncertaintyRealisation realisation)
@@ -1174,17 +1174,17 @@ namespace STEDI.ModelRun
                 if (Math.Abs(factor - 1.0) < 1e-12)
                     continue;
 
-                // 1. WaterBodyNode storage capacity — existing behaviour, preserved exactly.
+                // 1. WaterBodyNode storage capacity � existing behaviour, preserved exactly.
                 nodes[i].MaxStorageCapacityVolumeAtSpill *= factor;
 
-                // 2. Paired TS demand model — new in Option A; propagates U3 so demand scales with sampled dam size.
+                // 2. Paired TS demand model � new in Option A; propagates U3 so demand scales with sampled dam size.
                 if (tsModels != null && i < tsModels.Length && tsModels[i] != null)
                 {
                     tsModels[i].DamStorageCapacityVolumeAtSpill *= factor;
                     tsModels[i].Initialise();
                 }
 
-                // 3. Paired RM demand model — new in Option A; same rationale as TS.
+                // 3. Paired RM demand model � new in Option A; same rationale as TS.
                 if (rmModels != null && i < rmModels.Length && rmModels[i] != null)
                 {
                     rmModels[i].DamStorageCapacityVolumeAtSpill *= factor;
@@ -1195,11 +1195,11 @@ namespace STEDI.ModelRun
 
         /// <summary>
         /// U6: Applies per-dam PERT-distributed demand factors to AnnualDemandFactor on the matching TS and RM demand models,
-        /// and re-initialises each touched model so the cached annualDemandVolume (= AnnualDemandFactor × DamStorageCapacityVolumeAtSpill)
+        /// and re-initialises each touched model so the cached annualDemandVolume (= AnnualDemandFactor � DamStorageCapacityVolumeAtSpill)
         /// reflects the new factor. Demand-model arrays are 1:1-indexed with WaterBodyNodes (same indexing convention as
         /// ApplyVolumeUncertainty); a single dam may have entries in both the TS and RM arrays, so both are checked and updated
         /// independently. Initialise() must be called here because no other Phase A/B/C block guarantees a re-initialise after
-        /// AnnualDemandFactor changes — without it, U6 has zero effect on simulated demand.
+        /// AnnualDemandFactor changes � without it, U6 has zero effect on simulated demand.
         /// </summary>
         /// <param name="realisation">Uncertainty realisation containing the DamDemandFactors array (length = number of dams).</param>
         private void ApplyDemandUncertainty(UncertaintyRealisation realisation)
@@ -1217,14 +1217,14 @@ namespace STEDI.ModelRun
             {
                 double newFactor = realisation.DamDemandFactors[i];
 
-                // Paired TS demand model — write the new factor and refresh annualDemandVolume.
+                // Paired TS demand model � write the new factor and refresh annualDemandVolume.
                 if (tsModels != null && i < tsModels.Length && tsModels[i] != null)
                 {
                     tsModels[i].AnnualDemandFactor = newFactor;
                     tsModels[i].Initialise();
                 }
 
-                // Paired RM demand model — same rationale.
+                // Paired RM demand model � same rationale.
                 if (rmModels != null && i < rmModels.Length && rmModels[i] != null)
                 {
                     rmModels[i].AnnualDemandFactor = newFactor;
@@ -1252,7 +1252,7 @@ namespace STEDI.ModelRun
                 return;
             }
 
-            // ── Extract elevations from water body and confluence nodes ──
+            // -- Extract elevations from water body and confluence nodes --
             int nWB = catchment.WaterBodyNodes?.Length ?? 0;
             int nCN = catchment.ConfluenceNodes?.Length ?? 0;
             int nTotal = nWB + nCN;
@@ -1268,7 +1268,7 @@ namespace STEDI.ModelRun
             for (int i = 0; i < nCN; i++)
                 cnElevations[i] = catchment.ConfluenceNodes[i].Elevation;
 
-            // ── Calculate mean and range of elevation across all nodes ──
+            // -- Calculate mean and range of elevation across all nodes --
             double sumElev = 0.0;
             double minElev = double.MaxValue;
             double maxElev = double.MinValue;
@@ -1290,7 +1290,7 @@ namespace STEDI.ModelRun
             double elevRange = maxElev - minElev;
             bool flatCatchment = elevRange < 1e-6;
 
-            // ── Calculate per-node multipliers ──
+            // -- Calculate per-node multipliers --
             double[] wbMultipliers = new double[nWB];
             for (int i = 0; i < nWB; i++)
             {
@@ -1315,7 +1315,7 @@ namespace STEDI.ModelRun
                 cnMultipliers[i] = Math.Max(0.01, 1.0 + tiltEffect);
             }
 
-            // ── Map to subcatchments via shared helper ──
+            // -- Map to subcatchments via shared helper --
             this.ApplyMultipliersToSubcatchments(wbMultipliers, cnMultipliers);
         }
 
@@ -1331,8 +1331,8 @@ namespace STEDI.ModelRun
             var nodes = this.CatchmentModelRunner.catchmentModel.WaterBodyNodes;
             for (int i = 0; i < nodes.Length && i < realisation.DamSeepageRates.Length; i++)
             {
-                // Convert mm/d to ML/d: mm/d × m² × 1e-6 = ML/d
-                // NOTE: assumes daily timestep — ML/d equals ML/timestep. If non-daily timesteps are ever supported, multiply by timeStep.TotalDays.
+                // Convert mm/d to ML/d: mm/d � m� � 1e-6 = ML/d
+                // NOTE: assumes daily timestep � ML/d equals ML/timestep. If non-daily timesteps are ever supported, multiply by timeStep.TotalDays.
                 nodes[i].SeepageLossRateAtFull = Math.Max(0.0, realisation.DamSeepageRates[i] * nodes[i].SurfaceAreaAtSpill * 1.0E-6);
             }
         }
@@ -1350,7 +1350,7 @@ namespace STEDI.ModelRun
 
             var catchment = this.CatchmentModelRunner.catchmentModel;
 
-            // ── Repeating monthly demand models: perturb proportions directly ──
+            // -- Repeating monthly demand models: perturb proportions directly --
             if (catchment.RepeatingMonthlyDemandModels != null)
             {
                 for (int i = 0; i < catchment.RepeatingMonthlyDemandModels.Length
@@ -1378,7 +1378,7 @@ namespace STEDI.ModelRun
                 }
             }
 
-            // ── Time series demand models: store monthly scale factors for daily application ──
+            // -- Time series demand models: store monthly scale factors for daily application --
             if (catchment.TimeSeriesDemandModels != null)
             {
                 for (int i = 0; i < catchment.TimeSeriesDemandModels.Length
@@ -1412,7 +1412,7 @@ namespace STEDI.ModelRun
                 if (delay <= 0)
                     continue;
 
-                // Shift start date BACKWARD — dam existed earlier than detected
+                // Shift start date BACKWARD � dam existed earlier than detected
                 try
                 {
                     DateTime earlierStart = nodes[i].StartDate.AddYears(-delay);
@@ -1421,7 +1421,7 @@ namespace STEDI.ModelRun
                 }
                 catch (ArgumentOutOfRangeException)
                 {
-                    // Underflow — leave as-is
+                    // Underflow � leave as-is
                 }
             }
 
@@ -1431,7 +1431,7 @@ namespace STEDI.ModelRun
 
         /// <summary>
         /// U4: Applies per-dam catchment area multipliers to subcatchment inflow model areas.
-        /// Uses the element calculation order to map water body node index → subcatchment index.
+        /// Uses the element calculation order to map water body node index ? subcatchment index.
         /// Only applies to subcatchments draining to water body nodes (confluences have no dam-level uncertainty).
         /// Reads from baseSubcatchmentAreas (captured by CaptureBaseModelState) to prevent multiplicative accumulation across iterations;
         /// falls back to in-place *= only when no base array is available (single-run, non-MC callers).
@@ -1477,7 +1477,7 @@ namespace STEDI.ModelRun
         /// <summary>
         /// U9: Applies per-dam rainfall multipliers to water body nodes.
         /// These multiply with the global RainfallMultiplier during CalculateFlowsAtTimeStep:
-        /// node.Rainfall = catchment.Rainfall × RainfallMultiplier × node.LocalRainfallMultiplier.
+        /// node.Rainfall = catchment.Rainfall � RainfallMultiplier � node.LocalRainfallMultiplier.
         /// </summary>
         /// <param name="realisation">Uncertainty realisation containing RainfallMultipliers.</param>
         private void ApplyRainfallUncertainty(UncertaintyRealisation realisation)
@@ -1495,7 +1495,7 @@ namespace STEDI.ModelRun
         /// <summary>
         /// U10: Applies per-dam evaporation multipliers to water body nodes.
         /// These multiply with the global PETMultiplier during CalculateFlowsAtTimeStep:
-        /// node.Evaporation = catchment.Evaporation × PETMultiplier × node.LocalEvaporationMultiplier.
+        /// node.Evaporation = catchment.Evaporation � PETMultiplier � node.LocalEvaporationMultiplier.
         /// </summary>
         /// <param name="realisation">Uncertainty realisation containing EvaporationMultipliers.</param>
         private void ApplyEvaporationUncertainty(UncertaintyRealisation realisation)
@@ -1512,7 +1512,7 @@ namespace STEDI.ModelRun
 
         /// <summary>
         /// U5: Applies simplified topology uncertainty. When a dam is flagged as independent,
-        /// it ignores upstream dam spill/bypass inflows — only local subcatchment runoff enters storage.
+        /// it ignores upstream dam spill/bypass inflows � only local subcatchment runoff enters storage.
         /// This is the simplified binary/probabilistic approach: each dam either uses its GIS-derived
         /// cascade connection or acts independently, controlled by a per-dam Bernoulli draw.
         /// </summary>
@@ -1544,7 +1544,7 @@ namespace STEDI.ModelRun
             {
                 if (realisation.IsNaturalWaterBody[i])
                 {
-                    // Exclude this dam — set dates to MaxValue so it's never active
+                    // Exclude this dam � set dates to MaxValue so it's never active
                     nodes[i].SetStartDate(DateTime.MaxValue);
                     nodes[i].SetEndDate(DateTime.MaxValue);
                 }
@@ -1556,8 +1556,8 @@ namespace STEDI.ModelRun
         /// to stay consistent with the volume-surface area equation.
         /// </summary>
         /// <param name="sample">Monte Carlo replicate sample.</param>
-        /// <param name="settings">STEDI settings (provides the volume-surface area equation).</param>
-        private void ApplyIndividualCapacitySample(MonteCarloReplicateSample sample, STEDISettings settings)
+        /// <param name="settings">RODIS settings (provides the volume-surface area equation).</param>
+        private void ApplyIndividualCapacitySample(MonteCarloReplicateSample sample, RODISSettings settings)
         {
             if (sample.IndividualCapacityFactors == null)
                 return;
@@ -1596,13 +1596,13 @@ namespace STEDI.ModelRun
                 if (!double.IsNaN(sample.MeanSeepageLossRate_mmPerDay))
                 {
                     // Convert mm/d to ML/d using this node's surface area at spill:
-                    // mm/d × m² × 1e-6 = ML/d
+                    // mm/d � m� � 1e-6 = ML/d
                     baseRate_MLPerDay = Math.Max(0.0,
                         sample.MeanSeepageLossRate_mmPerDay * nodes[i].SurfaceAreaAtSpill * 1.0E-6);
                 }
                 else
                 {
-                    // No MC override — keep whatever the base settings provided
+                    // No MC override � keep whatever the base settings provided
                     baseRate_MLPerDay = nodes[i].SeepageLossRateAtFull;
                 }
 
@@ -1624,13 +1624,13 @@ namespace STEDI.ModelRun
         /// on each demand model with the updated AnnualDemandFactor.
         /// </summary>
         /// <param name="sample">Monte Carlo replicate sample.</param>
-        /// <param name="settings">STEDI settings containing the demand model groups.</param>
-        private void ApplyDemandSample(MonteCarloReplicateSample sample, STEDISettings settings)
+        /// <param name="settings">RODIS settings containing the demand model groups.</param>
+        private void ApplyDemandSample(MonteCarloReplicateSample sample, RODISSettings settings)
         {
             if (double.IsNaN(sample.MeanAnnualDemandRatio))
                 return;
 
-            // Apply to repeating monthly demand groups (settings level — these are the templates)
+            // Apply to repeating monthly demand groups (settings level � these are the templates)
             if (settings.RepeatingMonthlyDemandGroups != null)
             {
                 foreach (var group in settings.RepeatingMonthlyDemandGroups.Values)
@@ -1639,7 +1639,7 @@ namespace STEDI.ModelRun
                 }
             }
 
-            // Apply to time series demand groups (settings level — these are the templates)
+            // Apply to time series demand groups (settings level � these are the templates)
             if (settings.TimeSeriesDemandGroups != null)
             {
                 foreach (var group in settings.TimeSeriesDemandGroups.Values)
@@ -1707,13 +1707,13 @@ namespace STEDI.ModelRun
                 }
                 catch (ArgumentOutOfRangeException)
                 {
-                    // AddYears overflowed — treat as removing the node
+                    // AddYears overflowed � treat as removing the node
                     shiftedStart = DateTime.MaxValue;
                 }
 
                 if (shiftedStart >= node.EndDate)
                 {
-                    // Delay pushes start past end — node effectively doesn't exist in this replicate
+                    // Delay pushes start past end � node effectively doesn't exist in this replicate
                     node.SetStartDate(DateTime.MaxValue);
                     node.SetEndDate(DateTime.MaxValue);
                 }
@@ -1764,7 +1764,7 @@ namespace STEDI.ModelRun
                 return;
             }
 
-            // ── Extract coordinates from water body and confluence nodes ──
+            // -- Extract coordinates from water body and confluence nodes --
             int nWB = catchment.WaterBodyNodes?.Length ?? 0;
             int nCN = catchment.ConfluenceNodes?.Length ?? 0;
 
@@ -1788,7 +1788,7 @@ namespace STEDI.ModelRun
                 cnElevations[i] = catchment.ConfluenceNodes[i].Elevation;
             }
 
-            // ── Calculate per-node multipliers ──
+            // -- Calculate per-node multipliers --
             SpatialRunoffCalculator.CalculateMultipliersByNodeType(
                 wbEastings, wbNorthings, wbElevations,
                 cnEastings, cnNorthings, cnElevations,
@@ -1799,7 +1799,7 @@ namespace STEDI.ModelRun
                 out double[] wbMultipliers,
                 out double[] cnMultipliers);
 
-            // ── Map to subcatchments via shared helper ──
+            // -- Map to subcatchments via shared helper --
             this.ApplyMultipliersToSubcatchments(wbMultipliers, cnMultipliers);
         }
 

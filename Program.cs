@@ -1,10 +1,10 @@
-﻿// <copyright file="Program.cs" company="HARC">
+// <copyright file="Program.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI
+namespace RODIS
 {
-    using STEDI.CommandLineOptions;
+    using RODIS.CommandLineOptions;
 
     /// <summary>
     /// Entry point.
@@ -20,8 +20,8 @@ namespace STEDI
             // Add command line options
             Dictionary<string, BaseCommandLineOption> options = OptionsToDictionary(new List<BaseCommandLineOption>()
             {
-                new RunSTEDI(),
-                new RunSTEDILegacyVersion(),
+                new RunRODIS(),
+                new RunRODISLegacyVersion(),
                 new GenerateRandomValues(),
             });
 

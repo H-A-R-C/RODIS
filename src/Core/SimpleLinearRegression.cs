@@ -1,10 +1,10 @@
-ï»¿// <copyright file="SimpleLinearRegression.cs" company="HARC">
+// <copyright file="SimpleLinearRegression.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
-    /// <summary>Ordinary least-squares simple linear regression (y = intercept + slope Ã— x) with diagnostic statistics.</summary>
+    /// <summary>Ordinary least-squares simple linear regression (y = intercept + slope × x) with diagnostic statistics.</summary>
     public sealed class SimpleLinearRegression
     {
         /// <summary>Gets Fitted slope coefficient.</summary>
@@ -13,10 +13,10 @@ namespace STEDI.Static
         /// <summary>Gets Fitted intercept coefficient.</summary>
         public double Intercept { get; private set; }
 
-        /// <summary>Gets Coefficient of determination (RÂ²).</summary>
+        /// <summary>Gets Coefficient of determination (R²).</summary>
         public double RSquared { get; private set; }
 
-        /// <summary>Gets Residual variance (sÂ²) with n âˆ’ 2 degrees of freedom.</summary>
+        /// <summary>Gets Residual variance (s²) with n - 2 degrees of freedom.</summary>
         public double ResidualVariance { get; private set; }
 
         /// <summary>Gets Standard error of the slope estimate.</summary>

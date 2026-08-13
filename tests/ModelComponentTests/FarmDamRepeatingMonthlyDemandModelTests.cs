@@ -1,7 +1,7 @@
-﻿namespace STEDIUnitTests.ModelComponentTests
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
+    using RODIS.ModelRun;
     using System;
 
     [TestClass]
@@ -19,9 +19,9 @@
             };
         }
 
-        // ────────────────────────────────────────────────────
-        // Initialise — annual demand volume
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // Initialise � annual demand volume
+        // ----------------------------------------------------
 
         [TestMethod]
         public void Initialise_AnnualDemandVolume_CorrectlyCalculated()
@@ -29,15 +29,15 @@
             var model = MakeUniformModel(annualFactor: 0.5, volumeML: 10.0);
             model.Initialise();
 
-            // Indirectly verify: run Jan 1 for 1 day, uniform demand = 5 ML/yr ÷ 365.25 days/yr ≈ constant
+            // Indirectly verify: run Jan 1 for 1 day, uniform demand = 5 ML/yr � 365.25 days/yr � constant
             model.RunTimeStep(new DateTime(2010, 1, 1), TimeSpan.FromDays(1));
             double janDailyDemand = model.UnrestrictedDemand;
             Assert.IsTrue(janDailyDemand > 0.0, "Should have positive demand");
         }
 
-        // ────────────────────────────────────────────────────
-        // Initialise — zero demand factor
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // Initialise � zero demand factor
+        // ----------------------------------------------------
 
         [TestMethod]
         public void Initialise_ZeroDemandFactor_ZeroDemand()
@@ -49,9 +49,9 @@
             Assert.AreEqual(0.0, model.UnrestrictedDemand, 0.001);
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — seasonal pattern
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � seasonal pattern
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_SeasonalPattern_SummerHigherThanWinter()
@@ -75,9 +75,9 @@
             Assert.IsTrue(janDemand > julDemand, $"Jan ({janDemand}) should exceed Jul ({julDemand})");
         }
 
-        // ────────────────────────────────────────────────────
-        // RunTimeStep — weekly time step spanning two months
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // RunTimeStep � weekly time step spanning two months
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_WeeklyStepSpanningMonths_BlendsDemand()
@@ -92,7 +92,7 @@
             };
             model.Initialise();
 
-            // 7-day step starting 28 Jan → spans into Feb
+            // 7-day step starting 28 Jan ? spans into Feb
             model.RunTimeStep(new DateTime(2010, 1, 28), TimeSpan.FromDays(7));
             double demand = model.UnrestrictedDemand;
 
@@ -100,9 +100,9 @@
             Assert.IsTrue(demand > 0.0, "Should have some demand from January days");
         }
 
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
         // Annual total demand approximately correct
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
 
         [TestMethod]
         public void RunTimeStep_FullYearDaily_SumsToAnnualDemand()
@@ -118,7 +118,7 @@
                 totalDemand += model.UnrestrictedDemand;
             }
 
-            // Expected: 0.5 × 10 = 5.0 ML/year
+            // Expected: 0.5 � 10 = 5.0 ML/year
             Assert.AreEqual(5.0, totalDemand, 0.1, "Annual total should be ~5.0 ML");
         }
     }

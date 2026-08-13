@@ -1,28 +1,28 @@
-ï»¿// <copyright file="LegacySTEDIDamNode.cs" company="HARC">
+// <copyright file="LegacyRODISDamNode.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
-    /// <summary>Represents a single node in the legacy STEDI v1.x input format, holding geometry, demand, and connectivity data used to construct the internal model network.</summary>
-    public class LegacySTEDIDamNode
+    /// <summary>Represents a single node in the legacy RODIS v1.x input format, holding geometry, demand, and connectivity data used to construct the internal model network.</summary>
+    public class LegacyRODISDamNode
     {
-        /// <summary>Gets or sets Unique integer identifier for this node in the legacy STEDI input array.</summary>
+        /// <summary>Gets or sets Unique integer identifier for this node in the legacy RODIS input array.</summary>
         public int Identifier { get; set; } = -1;
 
-        /// <summary>Gets or sets Surface area of the water body at full supply level (mÂ²).</summary>
+        /// <summary>Gets or sets Surface area of the water body at full supply level (m²).</summary>
         public double SurfaceAreaM2 { get; set; } = 0.0;
 
         /// <summary>Gets or sets Storage volume of the water body at full supply level (ML).</summary>
         public double VolumeML { get; set; } = 0.0;
 
-        /// <summary>Gets or sets Total upstream catchment area including this node's local catchment (kmÂ²).</summary>
+        /// <summary>Gets or sets Total upstream catchment area including this node's local catchment (km²).</summary>
         public double TotalCatchmentAreaKM2 { get; set; } = 0.0;
 
-        /// <summary>Gets or sets Local intermediate catchment area for this node (kmÂ²).</summary>
+        /// <summary>Gets or sets Local intermediate catchment area for this node (km²).</summary>
         public double IntermediateCatchmentAreaKM2 { get; set; } = 0.0;
 
-        /// <summary>Gets or sets Catchment area contributed by upstream legacy nodes (kmÂ²).</summary>
+        /// <summary>Gets or sets Catchment area contributed by upstream legacy nodes (km²).</summary>
         public double CatchmentAreaFromUpstreamLegacyNodes { get; set; } = 0.0;
 
         /// <summary>Gets or sets Demand group label for this node.</summary>
@@ -190,9 +190,9 @@ namespace STEDI.ModelRun
 
 
         /// <summary>Creates a SubcatchmentInflowModel from this legacy node's catchment area.</summary>
-        /// <param name="IsLegacySTEDICatchmentInflows">True to use legacy area calculation in BeforeRunTimeStep.</param>
+        /// <param name="IsLegacyRODISCatchmentInflows">True to use legacy area calculation in BeforeRunTimeStep.</param>
         /// <returns>Initialised subcatchment inflow model.</returns>
-        public SubcatchmentInflowModel GetSubcatchmentInflowModel(bool IsLegacySTEDICatchmentInflows)
+        public SubcatchmentInflowModel GetSubcatchmentInflowModel(bool IsLegacyRODISCatchmentInflows)
 
         {
             SubcatchmentInflowModel result = new SubcatchmentInflowModel()
@@ -203,7 +203,7 @@ namespace STEDI.ModelRun
                 VolumeBalanceMisclosure = 0.0,
             };
 
-            result.BeforeRunTimeStep(IsLegacySTEDICatchmentInflows);
+            result.BeforeRunTimeStep(IsLegacyRODISCatchmentInflows);
 
             return result;
         }
@@ -278,7 +278,7 @@ namespace STEDI.ModelRun
                 }
                 else
                 {
-                    // No valid downstream connection â€” this is the outlet routing link
+                    // No valid downstream connection — this is the outlet routing link
                     result.NextDownstreamElementType = ModelElementType.Outlet;
                     result.IndexForNextDownstreamElementType = -1;
                 }

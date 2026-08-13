@@ -1,15 +1,15 @@
-﻿namespace STEDIUnitTests.ModelComponentTests
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
+    using RODIS.ModelRun;
     using System.Collections.Generic;
 
     [TestClass]
     public class EquationParserTests
     {
-        // ────────────────────────────────────────────────────
-        // Evaluate — simple linear
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // Evaluate � simple linear
+        // ----------------------------------------------------
 
         [TestMethod]
         public void Evaluate_LinearEquation_CorrectResult()
@@ -27,18 +27,18 @@
             Assert.AreEqual(13.0, parser.EquationResult, 0.001);
         }
 
-        // ────────────────────────────────────────────────────
-        // Evaluate — power law (Lowe et al. style)
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // Evaluate � power law (Lowe et al. style)
+        // ----------------------------------------------------
 
         [TestMethod]
         public void Evaluate_PowerLaw_CorrectResult()
         {
-            // V = 0.0001449275 * SA ^ 1.314 — the default STEDI equation
+            // V = 0.0001449275 * SA ^ 1.314 � the default RODIS equation
             var parser = new EquationParser
             {
                 Equation = "0.0001449275*SA^1.314",
-                VariablesWithDescriptions = new Dictionary<string, string> { { "SA", "Surface area in m²" } },
+                VariablesWithDescriptions = new Dictionary<string, string> { { "SA", "Surface area in m�" } },
             };
             parser.VariableValues["SA"] = 10000.0;
 
@@ -48,9 +48,9 @@
             Assert.IsTrue(parser.EquationResult > 0.0, "Volume should be positive");
         }
 
-        // ────────────────────────────────────────────────────
-        // Evaluate — zero input
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // Evaluate � zero input
+        // ----------------------------------------------------
 
         [TestMethod]
         public void Evaluate_ZeroInput_HandlesGracefully()
@@ -65,8 +65,8 @@
             parser.Evaluate();
 
             // 2*0 = 0, but double.IsNormal(0) is false, so IsValidResult will be false
-            // This is a known quirk — document it
-            Assert.IsFalse(parser.IsValidResult, "Zero result: IsNormal(0) is false — known behaviour");
+            // This is a known quirk � document it
+            Assert.IsFalse(parser.IsValidResult, "Zero result: IsNormal(0) is false � known behaviour");
         }
 
         [TestMethod]
@@ -84,9 +84,9 @@
             Assert.AreEqual(0.0, parser.EquationResult, 0.001);
         }
 
-        // ────────────────────────────────────────────────────
-        // DeepCopy — independent copy
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // DeepCopy � independent copy
+        // ----------------------------------------------------
 
         [TestMethod]
         public void DeepCopy_ProducesIndependentCopy()

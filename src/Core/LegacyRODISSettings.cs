@@ -1,13 +1,13 @@
-﻿namespace STEDI.ModelSettings
+namespace RODIS.ModelSettings
 {
-    /// <summary>Settings container for legacy STEDI text-format scenario files, wrapping a STEDISettings instance.</summary>
-    public class LegacySTEDISettings
+    /// <summary>Settings container for legacy RODIS text-format scenario files, wrapping a RODISSettings instance.</summary>
+    public class LegacyRODISSettings
     {
         /// <summary>Path to the legacy text scenario file.</summary>
         public string ScenarioFilePath { get; set; } = string.Empty;
 
-        /// <summary>Inner STEDI settings populated from the legacy file.</summary>
-        public STEDISettings Settings { get; set; }
+        /// <summary>Inner RODIS settings populated from the legacy file.</summary>
+        public RODISSettings Settings { get; set; }
 
         /// <summary>Legacy full output file path (if specified in the scenario file).</summary>
         public string FullOutputFilePath { get; set; } = string.Empty;

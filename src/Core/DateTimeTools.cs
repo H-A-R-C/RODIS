@@ -1,11 +1,11 @@
-ï»¿// <copyright file="DateTimeTools.cs" company="HARC">
+// <copyright file="DateTimeTools.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
     using System.Globalization;
-    using STEDI.Series;
+    using RODIS.Series;
 
     /// <summary>DateTime utility methods not available in the standard library.</summary>
     public static class DateTimeTools
@@ -29,8 +29,8 @@ namespace STEDI.Static
 
         /// <summary>Returns the water year a date falls in, labelled by the calendar year the water year starts in.</summary>
         /// <param name="date">Calendar date.</param>
-        /// <param name="waterYearStartMonth">Month (1â€“12) when the water year begins. Default 7 (July, Australian convention).</param>
-        /// <returns>Water year label (e.g. for July start: Jul 2000â€“Jun 2001 â†’ 2000).</returns>
+        /// <param name="waterYearStartMonth">Month (1–12) when the water year begins. Default 7 (July, Australian convention).</param>
+        /// <returns>Water year label (e.g. for July start: Jul 2000–Jun 2001 ? 2000).</returns>
         public static int WaterYear(DateTime date, int waterYearStartMonth = 7)
         {
             return date.Month >= waterYearStartMonth ? date.Year : date.Year - 1;
@@ -82,18 +82,18 @@ namespace STEDI.Static
         }
 
         /// <summary>Converts a 1-based month number (DateTime.Month) to MonthOfYear.</summary>
-        /// <param name="month">Month number (1â€“12).</param>
+        /// <param name="month">Month number (1–12).</param>
         /// <returns>Corresponding MonthOfYear value.</returns>
         public static MonthOfYear ToMonthOfYear(int month)
         {
             if (month < 1 || month > 12)
-                throw new ArgumentOutOfRangeException(nameof(month), "Month must be 1â€“12.");
+                throw new ArgumentOutOfRangeException(nameof(month), "Month must be 1–12.");
             return (MonthOfYear)(month - 1);
         }
 
         /// <summary>Converts MonthOfYear to a 1-based month number (compatible with DateTime.Month).</summary>
         /// <param name="month">MonthOfYear value.</param>
-        /// <returns>Month number (1â€“12).</returns>
+        /// <returns>Month number (1–12).</returns>
         public static int ToMonthNumber(MonthOfYear month) => (int)month + 1;
     }
 }

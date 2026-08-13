@@ -1,28 +1,28 @@
-﻿// <copyright file="STEDISettingsEquationTests.cs" company="HARC">
+// <copyright file="RODISSettingsEquationTests.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
-using STEDI.ModelRun;
-using STEDI.ModelSettings;
+using RODIS.ModelRun;
+using RODIS.ModelSettings;
 
-namespace STEDI.Tests
+namespace RODIS.Tests
 {
     [TestClass]
-    public class STEDISettingsEquationTests
+    public class RODISSettingsEquationTests
     {
-        /// <summary>Default settings with the Lowe et al. (2005) SA–Volume equation already wired in.</summary>
-        private static STEDISettings CreateDefaultSettings()
+        /// <summary>Default settings with the Lowe et al. (2005) SA�Volume equation already wired in.</summary>
+        private static RODISSettings CreateDefaultSettings()
         {
-            var settings = new STEDISettings();
-            // VolumeSurfaceAreaEquation is initialised with the Lowe default in STEDISettings,
-            // so no extra setup is needed for SA → Volume tests.
+            var settings = new RODISSettings();
+            // VolumeSurfaceAreaEquation is initialised with the Lowe default in RODISSettings,
+            // so no extra setup is needed for SA ? Volume tests.
             return settings;
         }
 
-        /// <summary>Settings that also have a Volume → CatchmentArea equation (simple power law for test).</summary>
-        private static STEDISettings CreateSettingsWithVolumeCatchmentAreaEquation()
+        /// <summary>Settings that also have a Volume ? CatchmentArea equation (simple power law for test).</summary>
+        private static RODISSettings CreateSettingsWithVolumeCatchmentAreaEquation()
         {
             var settings = CreateDefaultSettings();
-            // Example: CatchmentArea(km²) = 0.05 * Volume(ML) ^ 0.6
+            // Example: CatchmentArea(km�) = 0.05 * Volume(ML) ^ 0.6
             settings.VolumeCatchmentAreaEquation = new EquationParser()
             {
                 VariablesWithDescriptions = new Dictionary<string, string> { { "Volume", "Storage volume when full in ML" } },
@@ -31,9 +31,9 @@ namespace STEDI.Tests
             return settings;
         }
 
-        // ──────────────────────────────────────────────
-        //  Surface Area → Volume equation tests
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
+        //  Surface Area ? Volume equation tests
+        // ----------------------------------------------
 
         [TestMethod]
         [DataRow(1000)]
@@ -46,8 +46,8 @@ namespace STEDI.Tests
 
             double volumeML = settings.EvaluateSurfaceAreaVolumeEquation(surfaceAreaM2);
 
-            Assert.IsFalse(double.IsNaN(volumeML), $"Volume should not be NaN for SA = {surfaceAreaM2} m²");
-            Assert.IsTrue(volumeML > 0, $"Volume should be positive for SA = {surfaceAreaM2} m², got {volumeML}");
+            Assert.IsFalse(double.IsNaN(volumeML), $"Volume should not be NaN for SA = {surfaceAreaM2} m�");
+            Assert.IsTrue(volumeML > 0, $"Volume should be positive for SA = {surfaceAreaM2} m�, got {volumeML}");
         }
 
         [TestMethod]
@@ -69,12 +69,12 @@ namespace STEDI.Tests
             double volSmall = settings.EvaluateSurfaceAreaVolumeEquation(1000);
             double volLarge = settings.EvaluateSurfaceAreaVolumeEquation(20000);
 
-            Assert.IsTrue(volLarge > volSmall, $"Volume at 20 000 m² ({volLarge:F4} ML) should exceed volume at 1 000 m² ({volSmall:F4} ML)");
+            Assert.IsTrue(volLarge > volSmall, $"Volume at 20 000 m� ({volLarge:F4} ML) should exceed volume at 1 000 m� ({volSmall:F4} ML)");
         }
 
-        // ──────────────────────────────────────────────
-        //  Volume → Catchment Area equation tests
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
+        //  Volume ? Catchment Area equation tests
+        // ----------------------------------------------
 
         [TestMethod]
         [DataRow(1)]
@@ -100,12 +100,12 @@ namespace STEDI.Tests
             double areaLarge = settings.EvaluateVolumeCatchmentAreaEquation(20);
 
             Assert.IsTrue(areaLarge > areaSmall,
-                $"Catchment area at 20 ML ({areaLarge:F4} km²) should exceed area at 1 ML ({areaSmall:F4} km²)");
+                $"Catchment area at 20 ML ({areaLarge:F4} km�) should exceed area at 1 ML ({areaSmall:F4} km�)");
         }
 
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
         //  Solve for Surface Area from Volume (inverse)
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
 
         [TestMethod]
         [DataRow(1.0)]
@@ -139,14 +139,14 @@ namespace STEDI.Tests
         [DataRow(20.0)]
         public void SolveForSurfaceAreaFromVolume_RoundTripsWithEvaluate(double volumeML)
         {
-            // Solve SA from V, then evaluate V from SA — should get back to the original volume
+            // Solve SA from V, then evaluate V from SA � should get back to the original volume
             var settings = CreateDefaultSettings();
             const double toleranceML = 0.01;
 
             double solvedSA = settings.SolveForSurfaceAreaFromVolume(volumeML);
             double roundTrippedVolume = settings.EvaluateSurfaceAreaVolumeEquation(solvedSA);
 
-            Assert.AreEqual(volumeML, roundTrippedVolume, toleranceML, $"Round-trip failed: V={volumeML} → SA={solvedSA:F1} → V={roundTrippedVolume:F4}");
+            Assert.AreEqual(volumeML, roundTrippedVolume, toleranceML, $"Round-trip failed: V={volumeML} ? SA={solvedSA:F1} ? V={roundTrippedVolume:F4}");
         }
 
         [TestMethod]
@@ -157,7 +157,7 @@ namespace STEDI.Tests
             double saSmall = settings.SolveForSurfaceAreaFromVolume(1);
             double saLarge = settings.SolveForSurfaceAreaFromVolume(20);
 
-            Assert.IsTrue(saLarge > saSmall, $"Surface area at 20 ML ({saLarge:F1} m²) should exceed area at 1 ML ({saSmall:F1} m²)");
+            Assert.IsTrue(saLarge > saSmall, $"Surface area at 20 ML ({saLarge:F1} m�) should exceed area at 1 ML ({saSmall:F1} m�)");
         }
     }
 }

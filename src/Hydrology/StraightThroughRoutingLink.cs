@@ -1,8 +1,8 @@
-ï»¿// <copyright file="StraightThroughRoutingLink.cs" company="HARC">
+// <copyright file="StraightThroughRoutingLink.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
     public class StraightThroughRoutingLink
     {
@@ -30,22 +30,22 @@ namespace STEDI.ModelRun
         /// <summary>Downstream flow component originating from catchment runoff (ML).</summary>
         public double DownstreamFlowFromCatchment { get; set; }
 
-        /// <summary>Total upstream catchment area draining through this link (kmÂ²).</summary>
+        /// <summary>Total upstream catchment area draining through this link (km²).</summary>
         public double TotalUpstreamCatchmentAreaKM2 { get; set; }
 
-        /// <summary>Total upstream non-water-body catchment area (kmÂ²).</summary>
+        /// <summary>Total upstream non-water-body catchment area (km²).</summary>
         public double TotalUpstreamNonWaterCatchmentAreaKM2 { get; set; }
 
-        /// <summary>Non-water-body catchment area upstream of all dams (kmÂ²).</summary>
+        /// <summary>Non-water-body catchment area upstream of all dams (km²).</summary>
         public double NonWaterCatchmentAreaUpstreamOfDamsKM2 { get; set; }
 
-        /// <summary>Non-water-body catchment area downstream of all dams (kmÂ²).</summary>
+        /// <summary>Non-water-body catchment area downstream of all dams (km²).</summary>
         public double NonWaterCatchmentAreaDownstreamOfDamsKM2 { get; set; }
 
         /// <summary>Volume balance misclosure (ML). Always 0.0 for straight-through routing.</summary>
         public double VolumeBalanceMisclosure { get; set; }
 
-        /// <summary>Routes flow straight through â€” downstream flow equals upstream flow.</summary>
+        /// <summary>Routes flow straight through — downstream flow equals upstream flow.</summary>
         public void RunTimeStep()
         {
             this.DownstreamFlow = this.UpstreamFlow;

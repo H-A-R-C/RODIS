@@ -1,8 +1,8 @@
-﻿// <copyright file="InSeason.cs" company="HARC">
+// <copyright file="InSeason.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
     /// <summary>Static helper for testing whether a date falls within a seasonal date range that may wrap across the year boundary.</summary>
     public static class InSeason

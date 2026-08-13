@@ -1,10 +1,10 @@
-﻿// <copyright file="TimeSeriesValue.cs" company="HARC">
+// <copyright file="TimeSeriesValue.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.Series
+namespace RODIS.Series
 {
-    using STEDI.TimeSeries;
+    using RODIS.TimeSeries;
 
     /// <summary>A single timestamped data point with a value and validity flag, plus static helpers for searching and interrogating time series arrays.</summary>
     public class TimeSeriesValue

@@ -1,8 +1,8 @@
-﻿
-namespace STEDIUnitTests.ModelComponentTests
+
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
+    using RODIS.ModelRun;
     using System;
 
     [TestClass]
@@ -14,7 +14,7 @@ namespace STEDIUnitTests.ModelComponentTests
             return new CatchmentModel
             {
                 WaterBodyNodes = nodes,
-                // Minimal setup — other arrays not needed for this method
+                // Minimal setup � other arrays not needed for this method
                 ConfluenceNodes = Array.Empty<ConfluenceModelNode>(),
                 SubcatchmentsInflowModels = Array.Empty<SubcatchmentInflowModel>(),
                 StraightThroughRoutingLinks = Array.Empty<StraightThroughRoutingLink>(),
@@ -42,9 +42,9 @@ namespace STEDIUnitTests.ModelComponentTests
             return result;
         }
 
-        // ────────────────────────────────────────────────────
-        // 1. Already within range — no change expected
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 1. Already within range � no change expected
+        // ----------------------------------------------------
 
         [TestMethod]
         public void DatesAlreadyWithinExistence_NoChange()
@@ -63,9 +63,9 @@ namespace STEDIUnitTests.ModelComponentTests
             Assert.AreEqual(new DateTime(2018, 6, 1), node.EndPumpedInflowDate);
         }
 
-        // ────────────────────────────────────────────────────
-        // 2. Bypass start too early — clamped to node start
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 2. Bypass start too early � clamped to node start
+        // ----------------------------------------------------
 
         [TestMethod]
         public void BypassStartBeforeExistence_ClampedToStart()
@@ -82,9 +82,9 @@ namespace STEDIUnitTests.ModelComponentTests
             Assert.AreEqual(new DateTime(2020, 12, 31), node.EndBypassDate, "Bypass end unchanged");
         }
 
-        // ────────────────────────────────────────────────────
-        // 3. Bypass end too late — clamped to node end
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 3. Bypass end too late � clamped to node end
+        // ----------------------------------------------------
 
         [TestMethod]
         public void BypassEndAfterExistence_ClampedToEnd()
@@ -101,9 +101,9 @@ namespace STEDIUnitTests.ModelComponentTests
             Assert.AreEqual(new DateTime(2010, 12, 31), node.EndBypassDate, "Bypass end should clamp to node end");
         }
 
-        // ────────────────────────────────────────────────────
-        // 4. Both bypass dates outside existence — clamped, still valid
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 4. Both bypass dates outside existence � clamped, still valid
+        // ----------------------------------------------------
 
         [TestMethod]
         public void BypassBothOutside_ClampedToExistenceWindow()
@@ -120,9 +120,9 @@ namespace STEDIUnitTests.ModelComponentTests
             Assert.AreEqual(new DateTime(2020, 12, 31), node.EndBypassDate);
         }
 
-        // ────────────────────────────────────────────────────
-        // 5. Node removed (MaxValue) — bypass disabled
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 5. Node removed (MaxValue) � bypass disabled
+        // ----------------------------------------------------
 
         [TestMethod]
         public void NodeRemovedByScenario_BypassAndPumpingDisabled()
@@ -141,9 +141,9 @@ namespace STEDIUnitTests.ModelComponentTests
             Assert.AreEqual(DateTime.MaxValue, node.EndPumpedInflowDate, "Pumping should be disabled");
         }
 
-        // ────────────────────────────────────────────────────
-        // 6. Pumping start too early — clamped to node start
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 6. Pumping start too early � clamped to node start
+        // ----------------------------------------------------
 
         [TestMethod]
         public void PumpingStartBeforeExistence_ClampedToStart()
@@ -160,14 +160,14 @@ namespace STEDIUnitTests.ModelComponentTests
             Assert.AreEqual(new DateTime(2020, 12, 31), node.EndPumpedInflowDate, "Pumping end unchanged");
         }
 
-        // ────────────────────────────────────────────────────
-        // 7. Existence window shrinks so bypass range inverts — disabled
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 7. Existence window shrinks so bypass range inverts � disabled
+        // ----------------------------------------------------
 
         [TestMethod]
         public void ExistenceShrinksToExcludeBypass_BypassDisabled()
         {
-            // Node now exists only 2015–2020, but bypass was 1990–2010 (entirely before new window)
+            // Node now exists only 2015�2020, but bypass was 1990�2010 (entirely before new window)
             var node = MakeNode(
                 new DateTime(2015, 1, 1), new DateTime(2020, 12, 31),
                 new DateTime(1990, 1, 1), new DateTime(2010, 12, 31),
@@ -176,19 +176,19 @@ namespace STEDIUnitTests.ModelComponentTests
             var model = CreateModelWithNodes(node);
             model.ClampBypassAndPumpingDatesToWaterBodyExistence();
 
-            // Start clamped to 2015, end clamped to 2010 → inverted → disabled
+            // Start clamped to 2015, end clamped to 2010 ? inverted ? disabled
             Assert.AreEqual(DateTime.MaxValue, node.StartBypassDate, "Inverted bypass should be disabled");
             Assert.AreEqual(DateTime.MaxValue, node.EndBypassDate, "Inverted bypass should be disabled");
         }
 
-        // ────────────────────────────────────────────────────
-        // 8. Same for pumping — window entirely excluded
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 8. Same for pumping � window entirely excluded
+        // ----------------------------------------------------
 
         [TestMethod]
         public void ExistenceShrinksToExcludePumping_PumpingDisabled()
         {
-            // Node now exists 2015–2020, pumping was 1990–2005 (entirely before new window)
+            // Node now exists 2015�2020, pumping was 1990�2005 (entirely before new window)
             var node = MakeNode(
                 new DateTime(2015, 1, 1), new DateTime(2020, 12, 31),
                 new DateTime(2015, 1, 1), new DateTime(2020, 12, 31),
@@ -201,9 +201,9 @@ namespace STEDIUnitTests.ModelComponentTests
             Assert.AreEqual(DateTime.MaxValue, node.EndPumpedInflowDate, "Inverted pumping should be disabled");
         }
 
-        // ────────────────────────────────────────────────────
-        // 9. Multiple nodes — each clamped independently
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 9. Multiple nodes � each clamped independently
+        // ----------------------------------------------------
 
         [TestMethod]
         public void MultipleNodes_EachClampedIndependently()
@@ -225,14 +225,14 @@ namespace STEDIUnitTests.ModelComponentTests
             Assert.AreEqual(new DateTime(2000, 1, 1), nodeA.StartBypassDate);
             Assert.AreEqual(new DateTime(2020, 12, 31), nodeA.EndBypassDate);
 
-            // Node B — pumping clamped both sides
+            // Node B � pumping clamped both sides
             Assert.AreEqual(new DateTime(2010, 1, 1), nodeB.StartPumpedInflowDate);
             Assert.AreEqual(new DateTime(2015, 12, 31), nodeB.EndPumpedInflowDate);
         }
 
-        // ────────────────────────────────────────────────────
-        // 10. Null nodes array — no crash
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 10. Null nodes array � no crash
+        // ----------------------------------------------------
 
         [TestMethod]
         public void NullWaterBodyNodes_NoCrash()
@@ -242,9 +242,9 @@ namespace STEDIUnitTests.ModelComponentTests
             // No exception = pass
         }
 
-        // ────────────────────────────────────────────────────
-        // 11. Empty nodes array — no crash
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 11. Empty nodes array � no crash
+        // ----------------------------------------------------
 
         [TestMethod]
         public void EmptyWaterBodyNodes_NoCrash()
@@ -254,9 +254,9 @@ namespace STEDIUnitTests.ModelComponentTests
             // No exception = pass
         }
 
-        // ────────────────────────────────────────────────────
-        // 12. Bypass start == end (zero-length window) — disabled
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // 12. Bypass start == end (zero-length window) � disabled
+        // ----------------------------------------------------
 
         [TestMethod]
         public void BypassStartEqualsEnd_Disabled()

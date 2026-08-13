@@ -1,4 +1,4 @@
-﻿// <copyright file="StringTools.cs" company="HARC">
+// <copyright file="StringTools.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
@@ -6,7 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Numerics;
 
-namespace STEDI.Static
+namespace RODIS.Static
 {
     public static class StringTools
     {

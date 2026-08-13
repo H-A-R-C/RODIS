@@ -1,17 +1,17 @@
-ï»¿// <copyright file="Scenario.cs" company="HARC">
+// <copyright file="Scenario.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelSettings
+namespace RODIS.ModelSettings
 {
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using Newtonsoft.Json;
-    using STEDI.JSON;
+    using RODIS.JSON;
     using UnitsNet;
 
-    /// <summary>Defines a single STEDI scenario with overrides for bypass, pumping, volume revision, and calculation method settings.</summary>
+    /// <summary>Defines a single RODIS scenario with overrides for bypass, pumping, volume revision, and calculation method settings.</summary>
     public class Scenario
     {
         private static readonly DateTime MinDate = new DateTime(1800, 1, 1);
@@ -39,9 +39,9 @@ namespace STEDI.ModelSettings
         public bool CalculateUnimpactedGivenObserved;
 
         /// <summary>
-        /// Gets or sets a boolean variable that is true if calculation methods are the same as legacy STEDI version 1, false if new calculation methods to be adopted.
+        /// Gets or sets a boolean variable that is true if calculation methods are the same as legacy RODIS version 1, false if new calculation methods to be adopted.
         /// </summary>
-        public bool UseLegacySTEDI1CalculationMethods;
+        public bool UseLegacyRODIS1CalculationMethods;
 
         /// <summary>
         /// Gets or sets a boolean variable that is true if low flow bypasses are to be applied to all dams bigger than a single, specific threshold of volume.
@@ -57,9 +57,9 @@ namespace STEDI.ModelSettings
         public string VolumeThresholdForBypass { get; set; } = string.Empty;
 
         /// <summary>
-        /// Gets or sets the bypass capacity flow rate in ML/d per kmÂ² of total upstream catchment area.
+        /// Gets or sets the bypass capacity flow rate in ML/d per km² of total upstream catchment area.
         /// </summary>
-        /// <remarks>Always in ML/d/kmÂ² â€” no unit conversion (UnitsNet has no compound unit for this).</remarks>
+        /// <remarks>Always in ML/d/km² — no unit conversion (UnitsNet has no compound unit for this).</remarks>
         public double BypassCapacityML_d_km2;
 
         /// <summary>

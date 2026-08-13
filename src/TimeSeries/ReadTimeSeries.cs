@@ -1,10 +1,10 @@
-﻿// <copyright file="ReadTimeSeries.cs" company="HARC">
+// <copyright file="ReadTimeSeries.cs" company="HARC">
 // Copyright (c) HARC. All rights reserved.
 // </copyright>
 
-namespace STEDI.InputOutput
+namespace RODIS.InputOutput
 {
-    using STEDI.Series;
+    using RODIS.Series;
 
     public static class ReadTimeSeries
     {

@@ -1,11 +1,11 @@
-﻿// <copyright file="WaterBodyWithCatchment.cs" company="HARC">
+// <copyright file="WaterBodyWithCatchment.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
     using OSGeo.OGR;
-    using STEDI.Static;
+    using RODIS.Static;
     using System.Data;
     using UnitsNet;
     using UnitsNet.Units;
@@ -24,13 +24,13 @@ namespace STEDI.ModelRun
         /// <summary>Water body type classification string (e.g. "Farm Dam", "Turkey Nest").</summary>
         public string Type { get; set; }
 
-        /// <summary>Surface area of the water body at full supply level (m²).</summary>
+        /// <summary>Surface area of the water body at full supply level (m�).</summary>
         public double SurfaceAream2 { get; set; } = 0.0;
 
-        /// <summary>Local catchment area draining to this water body (km²).</summary>
+        /// <summary>Local catchment area draining to this water body (km�).</summary>
         public double CatchmentAreakm2 { get; set; } = 0.0;
 
-        /// <summary>Total upstream catchment area including this node's local catchment (km²).</summary>
+        /// <summary>Total upstream catchment area including this node's local catchment (km�).</summary>
         public double TotalCatchmentAreakm2 { get; set; } = 0.0;
 
         /// <summary>Storage volume at full supply level (ML).</summary>
@@ -455,7 +455,7 @@ namespace STEDI.ModelRun
                                         }
                                         break;
 
-                                    // ── Spatial coordinates (optional, for runoff spatial variation U11 tilt) ──
+                                    // -- Spatial coordinates (optional, for runoff spatial variation U11 tilt) --
                                     case "Easting":
                                         allWaterBodiesList[matchIndexList[j]].Easting = catchmentFeature.GetFieldAsDouble(fieldIndicesToGet[iField]);
                                         break;
@@ -530,7 +530,7 @@ namespace STEDI.ModelRun
         
 
         /// <summary>
-        /// Applies a limitation to which water bodies are included in the STEDI model, based upon type or date.
+        /// Applies a limitation to which water bodies are included in the RODIS model, based upon type or date.
         /// </summary>
         /// <param name="allWaterBodies">Array of water bodies, with field DoesComplyWithLimitations updated.</param>
         /// <param name="limitationsSpecification">Dictionary specifying limitations on date or type to be applied.</param>

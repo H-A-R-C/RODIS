@@ -1,8 +1,8 @@
-﻿// <copyright file="MonteCarloInput.cs" company="HARC">
+// <copyright file="MonteCarloInput.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelSettings
+namespace RODIS.ModelSettings
 {
     /// <summary>Defines a single Monte Carlo input variable with distribution type, bounds, and optional Box-Cox transform parameters.</summary>
     public class MonteCarloInput

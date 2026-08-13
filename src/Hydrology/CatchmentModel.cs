@@ -1,20 +1,20 @@
-﻿// <copyright file="CatchmentModel.cs" company="HARC">
+// <copyright file="CatchmentModel.cs" company="HARC">
 // Copyright (c) HARC Services Pty Ltd. All rights reserved.
 // </copyright>
 
-namespace STEDI.ModelRun
+namespace RODIS.ModelRun
 {
     using CsvHelper;
     using CsvHelper.Configuration;
-    using STEDI.JSON;
-    using STEDI.ModelSettings;
-    using STEDI.Static;
-    using STEDI.TimeSeries;
+    using RODIS.JSON;
+    using RODIS.ModelSettings;
+    using RODIS.Static;
+    using RODIS.TimeSeries;
     using System.Diagnostics;
     using System.Globalization;
 
     /// <summary>
-    /// Valid types of STEDI model calculation elements.
+    /// Valid types of RODIS model calculation elements.
     /// </summary>
     public enum ModelElementType { ConfluenceNode, WaterBodyNode, SubcatchmentInflow, RepeatingMonthlyDemand, TimeSeriesDemand, StraightThroughRoutingLink, Outlet, Missing }
 
@@ -34,7 +34,7 @@ namespace STEDI.ModelRun
         public int IndexForNextDownstreamElementType;
     }
 
-    /// <summary>Catchment-scale STEDI model containing all nodes, links, demands, and time-step simulation logic.</summary>
+    /// <summary>Catchment-scale RODIS model containing all nodes, links, demands, and time-step simulation logic.</summary>
     public class CatchmentModel
     {
         /// <summary>Maximum allowable misclosure (ML) between calculated and observed downstream flow for the iterative solver.</summary>
@@ -66,8 +66,8 @@ namespace STEDI.ModelRun
         /// <summary>Ordered array defining the sequence in which model elements are calculated each time step.</summary>
         public ModelElementTypeIndex[] ElementModelCalculationOrder;
 
-        /// <summary>True to use legacy STEDI v1.20 calculation methods for surface area, rainfall and area calculations.</summary>
-        public bool IsLegacySTEDICalculationMethods = false;
+        /// <summary>True to use legacy RODIS v1.20 calculation methods for surface area, rainfall and area calculations.</summary>
+        public bool IsLegacyRODISCalculationMethods = false;
 
         /// <summary>Gets or sets Observed downstream flow (ML) for the current time step. -9999 = missing data.</summary>
         public double ObservedDownstreamFlow { get; set; } = -9999.0;
@@ -81,13 +81,13 @@ namespace STEDI.ModelRun
         /// <summary>Gets Net impact on flow (ML) = unimpacted minus downstream flow for the current time step.</summary>
         public double NetImpactOnFlow { get; private set; }
 
-        /// <summary>Gets Total upstream catchment area (km²) at the catchment outlet.</summary>
+        /// <summary>Gets Total upstream catchment area (km�) at the catchment outlet.</summary>
         public double TotalCatchmentAreaKM2 { get; private set; }
 
-        /// <summary>Gets Total non-water-body catchment area (km²) at the catchment outlet.</summary>
+        /// <summary>Gets Total non-water-body catchment area (km�) at the catchment outlet.</summary>
         public double TotalNonWaterBodyAreaKM2 { get; private set; }
 
-        /// <summary>Gets Non-water-body catchment area downstream of all dams (km²) at the catchment outlet.</summary>
+        /// <summary>Gets Non-water-body catchment area downstream of all dams (km�) at the catchment outlet.</summary>
         public double NonWaterbodyCatchmentAreaDownstreamOfDamsKM2 { get; private set; }
 
         /// <summary>Gets Volume balance misclosure (ML) summed across all model elements for the current time step.</summary>
@@ -114,10 +114,10 @@ namespace STEDI.ModelRun
         /// <summary>Gets Total downstream flow from catchment runoff (ML) at the outlet for the current time step.</summary>
         public double DownstreamFlowFromCatchment { get; private set; }
 
-        /// <summary>Gets Total surface area at spill (m²) across all active water bodies for the current time step.</summary>
+        /// <summary>Gets Total surface area at spill (m�) across all active water bodies for the current time step.</summary>
         public double SurfaceAreaAtSpill { get; private set; }
 
-        /// <summary>Gets Total stored surface area (m²) across all water bodies for the current time step.</summary>
+        /// <summary>Gets Total stored surface area (m�) across all water bodies for the current time step.</summary>
         public double SurfaceAreaStored { get; private set; }
 
         /// <summary>Gets or sets simulation date and time for the time step being processed.</summary>
@@ -166,7 +166,7 @@ namespace STEDI.ModelRun
         /// <summary>Cumulative top-down mass balance misclosure (ML) from simulation start.</summary>
         public double CumulativeTopDownMisclosure { get; private set; }
 
-        /// <summary>Total volume (ML) lost due to dam removal at this time step. Known simplification — not counted as misclosure.</summary>
+        /// <summary>Total volume (ML) lost due to dam removal at this time step. Known simplification � not counted as misclosure.</summary>
         public double DamRemovalStorageLoss { get; private set; }
 
         /// <summary>Cumulative volume (ML) lost due to dam removal across all time steps.</summary>
@@ -242,10 +242,10 @@ namespace STEDI.ModelRun
         /// <summary>Gets Spill downstream flow (ML) for each reporting group at the current time step.</summary>
         public double[] SpillDownstreamFlowByReportingGroup { get; private set; } = null;
 
-        /// <summary>Gets Surface area at spill (m²) for each reporting group at the current time step.</summary>
+        /// <summary>Gets Surface area at spill (m�) for each reporting group at the current time step.</summary>
         public double[] SurfaceAreaAtSpillByReportingGroup { get; private set; } = null;
 
-        /// <summary>Gets Stored surface area (m²) for each reporting group at the current time step.</summary>
+        /// <summary>Gets Stored surface area (m�) for each reporting group at the current time step.</summary>
         public double[] SurfaceAreaStoredByReportingGroup { get; private set; } = null;
 
         /// <summary>Gets Rainfall volume (ML) for each reporting group at the current time step.</summary>
@@ -279,11 +279,11 @@ namespace STEDI.ModelRun
         public double PETMultiplier { get; set; } = 1.0;
 
         /// <summary>
-        /// Initialises the STEDI model with information from an array of legacy STEDI model dam nodes and legacy STEDI model settings.
+        /// Initialises the RODIS model with information from an array of legacy RODIS model dam nodes and legacy RODIS model settings.
         /// </summary>
-        /// <param name="legacySTEDIDamNodes">Array of legacy STEDI model farm dam and water body nodes.</param>
-        /// <param name="settings">Overall settings of legacy STEDI model.</param>
-        public void Initialise(LegacySTEDIDamNode[] legacySTEDIDamNodes, STEDISettings settings) 
+        /// <param name="legacyRODISDamNodes">Array of legacy RODIS model farm dam and water body nodes.</param>
+        /// <param name="settings">Overall settings of legacy RODIS model.</param>
+        public void Initialise(LegacyRODISDamNode[] legacyRODISDamNodes, RODISSettings settings) 
         {
             this.CalculateUnimpactedGivenObserved =settings.CalculateUnimpactedGivenObserved;
 
@@ -305,44 +305,44 @@ namespace STEDI.ModelRun
             List<int> legacyIndexRMonthlyDemand = new List<int>();
             List<int> legacyIndexTSDemand = new List<int>();
 
-            for (int i = legacySTEDIDamNodes.Length - 1; i >= 0; i--)
+            for (int i = legacyRODISDamNodes.Length - 1; i >= 0; i--)
             {
-                if (legacySTEDIDamNodes[i].TotalCatchmentAreaKM2 > 0)
+                if (legacyRODISDamNodes[i].TotalCatchmentAreaKM2 > 0)
                 {
-                    uniformInflowSubcatchmentList.Add(legacySTEDIDamNodes[i].GetSubcatchmentInflowModel(this.IsLegacySTEDICalculationMethods));
-                    calculationOrderList.Add(legacySTEDIDamNodes[i].GetTypeIndexForSubcatchment());
-                    legacyIndexForUniformSubcatchmentInflow.Add(legacySTEDIDamNodes[i].Identifier);
+                    uniformInflowSubcatchmentList.Add(legacyRODISDamNodes[i].GetSubcatchmentInflowModel(this.IsLegacyRODISCalculationMethods));
+                    calculationOrderList.Add(legacyRODISDamNodes[i].GetTypeIndexForSubcatchment());
+                    legacyIndexForUniformSubcatchmentInflow.Add(legacyRODISDamNodes[i].Identifier);
                 }
 
                 // If over-ride setting is set to true, recalculate volume of water body from it's surface area
                 if (settings.RecalculateDamVolumesFromSurfaceAreas 
-                    && legacySTEDIDamNodes[i].nodeModelType == ModelElementType.WaterBodyNode
-                    && legacySTEDIDamNodes[i].SurfaceAreaM2 > 0)
+                    && legacyRODISDamNodes[i].nodeModelType == ModelElementType.WaterBodyNode
+                    && legacyRODISDamNodes[i].SurfaceAreaM2 > 0)
                 {
-                    double recalculatedVolume = settings.EvaluateSurfaceAreaVolumeEquation(legacySTEDIDamNodes[i].SurfaceAreaM2);
+                    double recalculatedVolume = settings.EvaluateSurfaceAreaVolumeEquation(legacyRODISDamNodes[i].SurfaceAreaM2);
                     if (double.IsNormal(recalculatedVolume))
                     {
-                        legacySTEDIDamNodes[i].VolumeML = recalculatedVolume;
+                        legacyRODISDamNodes[i].VolumeML = recalculatedVolume;
                     }
                 }
 
-                if (legacySTEDIDamNodes[i].SurfaceAreaM2 > 0 && legacySTEDIDamNodes[i].VolumeML > 0)
+                if (legacyRODISDamNodes[i].SurfaceAreaM2 > 0 && legacyRODISDamNodes[i].VolumeML > 0)
                 {
                     ModelElementType demandNodeType = settings.GetDemandModelType(2);
 
-                    string demandGroupIndex = settings.GetGroupDemandModelIndexByVolume(legacySTEDIDamNodes[i].VolumeML, demandNodeType);
+                    string demandGroupIndex = settings.GetGroupDemandModelIndexByVolume(legacyRODISDamNodes[i].VolumeML, demandNodeType);
 
                     if (string.IsNullOrEmpty(demandGroupIndex))
                     {
                         // Add demands by demand group
-                        demandGroupIndex = settings.GetRepeatingMonthlyDemandModelIndex(legacySTEDIDamNodes[i]);
+                        demandGroupIndex = settings.GetRepeatingMonthlyDemandModelIndex(legacyRODISDamNodes[i]);
                         if (!string.IsNullOrEmpty(demandGroupIndex))
                         {
                             demandNodeType = ModelElementType.RepeatingMonthlyDemand;
                         }
                         else
                         {
-                            demandGroupIndex = settings.GetTimeSeriesDemandModelIndex(legacySTEDIDamNodes[i]);
+                            demandGroupIndex = settings.GetTimeSeriesDemandModelIndex(legacyRODISDamNodes[i]);
                             if (!string.IsNullOrEmpty(demandGroupIndex))
                             {
                                 demandNodeType = ModelElementType.TimeSeriesDemand;
@@ -358,63 +358,63 @@ namespace STEDI.ModelRun
                     {
                         if (demandNodeType == ModelElementType.RepeatingMonthlyDemand)
                         {
-                            repeatingMonthlyDemandList.Add(this.GetRepeatingMonthlyDemandModel(legacySTEDIDamNodes[i], settings, demandGroupIndex));
-                            calculationOrderList.Add(legacySTEDIDamNodes[i].GetTypeIndexForRepeatingMonthlyDemand());
-                            legacyIndexRMonthlyDemand.Add(legacySTEDIDamNodes[i].Identifier);
+                            repeatingMonthlyDemandList.Add(this.GetRepeatingMonthlyDemandModel(legacyRODISDamNodes[i], settings, demandGroupIndex));
+                            calculationOrderList.Add(legacyRODISDamNodes[i].GetTypeIndexForRepeatingMonthlyDemand());
+                            legacyIndexRMonthlyDemand.Add(legacyRODISDamNodes[i].Identifier);
                         }
                         else
                         {
                             if (demandNodeType == ModelElementType.TimeSeriesDemand)
                             {
-                                timeSeriesDemandList.Add(this.GetTimeSeriesDemandModel(legacySTEDIDamNodes[i], settings, demandGroupIndex));
-                                calculationOrderList.Add(legacySTEDIDamNodes[i].GetTypeIndexForTimeSeriesDemand());
-                                legacyIndexTSDemand.Add(legacySTEDIDamNodes[i].Identifier);
+                                timeSeriesDemandList.Add(this.GetTimeSeriesDemandModel(legacyRODISDamNodes[i], settings, demandGroupIndex));
+                                calculationOrderList.Add(legacyRODISDamNodes[i].GetTypeIndexForTimeSeriesDemand());
+                                legacyIndexTSDemand.Add(legacyRODISDamNodes[i].Identifier);
                             }
                         }
                     }
                     else
                     {
                         throw new InvalidDataException(
-                            $"Node {legacySTEDIDamNodes[i].Identifier}: demand group '{legacySTEDIDamNodes[i].DemandGroup}' "
+                            $"Node {legacyRODISDamNodes[i].Identifier}: demand group '{legacyRODISDamNodes[i].DemandGroup}' "
                             + "is not defined in the scenario settings. Check demand group names in the JSON file.");
                     }
 
-                    waterBodyNodesList.Add(legacySTEDIDamNodes[i].GetWaterBodyModelNode());
+                    waterBodyNodesList.Add(legacyRODISDamNodes[i].GetWaterBodyModelNode());
 
-                    double surfaceAreaVolumeExponent = this.FitSurfaceAreaVolumeExponent(settings, legacySTEDIDamNodes[i].VolumeML);
+                    double surfaceAreaVolumeExponent = this.FitSurfaceAreaVolumeExponent(settings, legacyRODISDamNodes[i].VolumeML);
 
                     waterBodyNodesList.Last().VolumeSurfaceAreaRelationshipExponent = surfaceAreaVolumeExponent;
-                    legacyIndexForWaterBody.Add(legacySTEDIDamNodes[i].Identifier);
+                    legacyIndexForWaterBody.Add(legacyRODISDamNodes[i].Identifier);
                 } 
                 else
                 {
                     // Surface area or volume are 0 or negative, so this is a confluence not a water body node
-                    confluenceNodesList.Add(legacySTEDIDamNodes[i].GetConfluenceModelNode());
-                    legacyIndexForConfluence.Add(legacySTEDIDamNodes[i].Identifier);
+                    confluenceNodesList.Add(legacyRODISDamNodes[i].GetConfluenceModelNode());
+                    legacyIndexForConfluence.Add(legacyRODISDamNodes[i].Identifier);
                 }
 
-                calculationOrderList.Add(legacySTEDIDamNodes[i].GetTypeIndexForNode());
+                calculationOrderList.Add(legacyRODISDamNodes[i].GetTypeIndexForNode());
 
-                if (string.IsNullOrEmpty(legacySTEDIDamNodes[i].ResultsGroup.Trim()))
+                if (string.IsNullOrEmpty(legacyRODISDamNodes[i].ResultsGroup.Trim()))
                 {
-                    legacySTEDIDamNodes[i].ResultsGroup = "null";
+                    legacyRODISDamNodes[i].ResultsGroup = "null";
                 }
 
-                reportingGroupsHashSet.Add(legacySTEDIDamNodes[i].ResultsGroup);
+                reportingGroupsHashSet.Add(legacyRODISDamNodes[i].ResultsGroup);
 
                 if (i > 0)
                 {
                     // Add a link downstream of all nodes except the last one, which is the catchment outlet
-                    straightThroughRoutingLinkList.Add(legacySTEDIDamNodes[i].GetStraightThroughRoutingLinkModel());
+                    straightThroughRoutingLinkList.Add(legacyRODISDamNodes[i].GetStraightThroughRoutingLinkModel());
 
-                    ModelElementTypeIndex routingLinkIndex = legacySTEDIDamNodes[i].GetTypeIndexForStraightThroughRoutingLink();
-                    if (legacySTEDIDamNodes[legacySTEDIDamNodes[i].NextDownstreamIdentifier - 1].VolumeML <= 0)
+                    ModelElementTypeIndex routingLinkIndex = legacyRODISDamNodes[i].GetTypeIndexForStraightThroughRoutingLink();
+                    if (legacyRODISDamNodes[legacyRODISDamNodes[i].NextDownstreamIdentifier - 1].VolumeML <= 0)
                     {
                         routingLinkIndex.NextDownstreamElementType = ModelElementType.ConfluenceNode;
                     }
                     calculationOrderList.Add(routingLinkIndex);
 
-                    legacyIndexSTRouting.Add(legacySTEDIDamNodes[i].Identifier);
+                    legacyIndexSTRouting.Add(legacyRODISDamNodes[i].Identifier);
                 }
             }
 
@@ -437,11 +437,11 @@ namespace STEDI.ModelRun
             this.InitialiseReportingGroupArrays();
         }
 
-        /// <summary>Initialises the STEDI model from spatial GIS data files and settings.</summary>
-        /// <param name="settings">Overall STEDI model settings including GIS file paths.</param>
+        /// <summary>Initialises the RODIS model from spatial GIS data files and settings.</summary>
+        /// <param name="settings">Overall RODIS model settings including GIS file paths.</param>
         /// <param name="startRunDate">Start date of the simulation run.</param>
         /// <param name="endRunDate">End date of the simulation run.</param>
-        public void Initialise(STEDISettings settings, DateTime startRunDate, DateTime endRunDate)
+        public void Initialise(RODISSettings settings, DateTime startRunDate, DateTime endRunDate)
         {
             this.CalculateUnimpactedGivenObserved = settings.CalculateUnimpactedGivenObserved;
             int damRevisionMonthOfYear = settings.DamsRevisionDateIgnoreYear.Month;
@@ -507,7 +507,7 @@ namespace STEDI.ModelRun
 
                 HashSet<string> reportingGroupsHashSet = new HashSet<string>();
 
-                List<LegacySTEDIDamNode> legacyNodesList = new List<LegacySTEDIDamNode>();
+                List<LegacyRODISDamNode> legacyNodesList = new List<LegacyRODISDamNode>();
 
                 int numWaterBodyNodes = 0;
                 int numConfluenceNodes = 0;
@@ -526,7 +526,7 @@ namespace STEDI.ModelRun
                         }
                     }
 
-                    LegacySTEDIDamNode legacyNode = new LegacySTEDIDamNode()
+                    LegacyRODISDamNode legacyNode = new LegacyRODISDamNode()
                     {
                         Identifier = i,
                         SurfaceAreaM2 = allWaterBodies[i].SurfaceAream2,
@@ -672,11 +672,11 @@ namespace STEDI.ModelRun
 
                 for (int i = 0; i < allWaterBodies.Length; ++i)
                 {
-                    LegacySTEDIDamNode legacyNode = legacyNodesList[i];
+                    LegacyRODISDamNode legacyNode = legacyNodesList[i];
 
                     if (allWaterBodies[i].CatchmentAreakm2 > 0)
                     {
-                        uniformInflowSubcatchmentList.Add(legacyNode.GetSubcatchmentInflowModel(this.IsLegacySTEDICalculationMethods));
+                        uniformInflowSubcatchmentList.Add(legacyNode.GetSubcatchmentInflowModel(this.IsLegacyRODISCalculationMethods));
                         calculationOrderList.Add(legacyNode.GetTypeIndexForSubcatchment());
                     }
 
@@ -715,8 +715,8 @@ namespace STEDI.ModelRun
                             waterBodyToAdd.StorageCapacityVolumeAtSpill = waterBodyToAdd.MaxStorageCapacityVolumeAtSpill;
 
                             // Set initial storage volume and surface area
-                            // Note: Legacy STEDI did not have this option, so only use initial storage proportion full if allowing new calculation methods
-                            if (!settings.UseLegacySTEDI1CalculationMethods)
+                            // Note: Legacy RODIS did not have this option, so only use initial storage proportion full if allowing new calculation methods
+                            if (!settings.UseLegacyRODIS1CalculationMethods)
                             {
                                 double startFraction = Math.Max(Math.Min(settings.AllStoragesProportionFullAtStartOfRun, 1.0), 0.0);
                                 waterBodyToAdd.VolumeInStorage = startFraction * waterBodyToAdd.StorageCapacityVolumeAtSpill;
@@ -753,7 +753,7 @@ namespace STEDI.ModelRun
 
                         // When the downstream node is a ConfluenceNode, correct BOTH the element type AND the array index.
                         // GetTypeIndexForStraightThroughRoutingLink() defaults both to WaterBodyNode.
-                        // This mirrors the equivalent logic in the legacy initialisation path (see Initialise (LegacySTEDIDamNode[], STEDISettings) at ~L240).
+                        // This mirrors the equivalent logic in the legacy initialisation path (see Initialise (LegacyRODISDamNode[], RODISSettings) at ~L240).
                         int dsPos = allWaterBodies[i].NextDownstreamArrayPosition;
                         if (dsPos >= 0 && dsPos < allWaterBodies.Length
                             && !(allWaterBodies[dsPos].SurfaceAream2 > 0 && allWaterBodies[dsPos].VolumeML > 0))
@@ -819,7 +819,7 @@ namespace STEDI.ModelRun
             }
         }
 
-        /// <summary>Runs one time step of the STEDI model.</summary>
+        /// <summary>Runs one time step of the RODIS model.</summary>
         public void RunTimeStep()
         {
             TimeSpan timeStep = this.ModellingTimeSpan.GetAsTimeSpan(this.SimulationDateTime);
@@ -909,7 +909,7 @@ namespace STEDI.ModelRun
         /// Rescales the maximum storage volume of all storages in the model by a scale factor, updates the starting conditions of those storages and rescales the demands with storage volume.
         /// </summary>
         /// <param name="volumeScaleFactorWithSurfaceAreaChange">Scale factor for maximum storage volumes of all storages, relative to the current values in the catchment model. Rescales the surface areas with the volumes (assumes actual expansion).</param>
-        /// <param name="stediSettings">Settings for this run.</param>
+        /// <param name="rodisSettings">Settings for this run.</param>
         /// <param name="runStartDate">Start date for this run, so that initial conditions can be set.</param>
         /// <param name="baseScenarioMaxWaterBodyVolumes">Array of starting water body volumes at full supply level from the base scenario, to use as a basis for the adjustment.</param>
         /// <param name="volumeScaleFactorNoSurfaceAreaChange">Optional parameter that is true if we want to re-scale storage volumes without rescaling the surface areas (mimics surface area to volume estimation error).</param>
@@ -917,7 +917,7 @@ namespace STEDI.ModelRun
         /// <param name="baseScenarioSurfaceAreasAtSpill">Array of starting water body surface areas at full supply level from the base scenario, as a fast initialiser for adjustment.</param>
         public void RescaleWaterBodiesAndDemands(
             double volumeScaleFactorWithSurfaceAreaChange,
-            STEDISettings stediSettings,
+            RODISSettings rodisSettings,
             DateTime runStartDate,
             double[] baseScenarioMaxWaterBodyVolumes,
             double volumeScaleFactorNoSurfaceAreaChange = 1.0,
@@ -934,7 +934,7 @@ namespace STEDI.ModelRun
             if (this.WaterBodyNodes != null)
             {
                 //Console.WriteLine("Updating catchment configuration and water bodies for scenario");
-                double startFraction = Math.Max(Math.Min(stediSettings.AllStoragesProportionFullAtStartOfRun, 1.0), 0.0);
+                double startFraction = Math.Max(Math.Min(rodisSettings.AllStoragesProportionFullAtStartOfRun, 1.0), 0.0);
 
                 bool useBaseScenaroVolumes = false;
                 if (baseScenarioMaxWaterBodyVolumes != null)
@@ -945,7 +945,7 @@ namespace STEDI.ModelRun
                     }
                 }
 
-                // ── Checkpoint 1: Volume scaling ──
+                // -- Checkpoint 1: Volume scaling --
                 for (int i = 0; i < this.WaterBodyNodes.Length; ++i)
                 {
                     if (useBaseScenaroVolumes)
@@ -961,7 +961,7 @@ namespace STEDI.ModelRun
                 //Console.WriteLine($"    RVD checkpoint 1 (volume scaling):          {sw.ElapsedMilliseconds - lastMs,6}ms  [{this.WaterBodyNodes.Length} nodes]");
                 lastMs = sw.ElapsedMilliseconds;
 
-                // ── Checkpoint 2: Surface area recalculation ──
+                // -- Checkpoint 2: Surface area recalculation --
                 // If base SA values are provided, reset SA to base values and apply analytical scaling
                 // directly. This avoids all calls to EvaluateSurfaceAreaVolumeEquation (~2ms each),
                 // reducing the cost from ~6s to <1ms for 1542 dams.
@@ -972,7 +972,7 @@ namespace STEDI.ModelRun
                     if (hasBaseSA)
                     {
                         // Fast path: reset SA to base values, then scale analytically.
-                        // SA_new = SA_base × scaleFactor^(1/n)
+                        // SA_new = SA_base � scaleFactor^(1/n)
                         // No forward evaluations needed because we're working from known base values.
                         for (int i = 0; i < this.WaterBodyNodes.Length; ++i)
                         {
@@ -1013,7 +1013,7 @@ namespace STEDI.ModelRun
 
                             double exponent = this.WaterBodyNodes[i].VolumeSurfaceAreaRelationshipExponent;
 
-                            double currentVolume = stediSettings.EvaluateSurfaceAreaVolumeEquation(currentSA);
+                            double currentVolume = rodisSettings.EvaluateSurfaceAreaVolumeEquation(currentSA);
                             double volumeRatio = (currentVolume > 0.0)
                                 ? targetVolume / currentVolume
                                 : volumeScaleFactorWithSurfaceAreaChange;
@@ -1024,7 +1024,7 @@ namespace STEDI.ModelRun
                                 estimatedSA = currentSA * Math.Pow(volumeRatio, 1.0 / exponent);
                             }
 
-                            double checkVolume = stediSettings.EvaluateSurfaceAreaVolumeEquation(estimatedSA);
+                            double checkVolume = rodisSettings.EvaluateSurfaceAreaVolumeEquation(estimatedSA);
                             double relativeError = Math.Abs(checkVolume - targetVolume) / targetVolume;
 
                             if (relativeError <= SATolerance)
@@ -1039,7 +1039,7 @@ namespace STEDI.ModelRun
 
                                 for (int iter = 0; iter < MaxNewtonIterations; ++iter)
                                 {
-                                    double evaluatedVolume = stediSettings.EvaluateSurfaceAreaVolumeEquation(sa);
+                                    double evaluatedVolume = rodisSettings.EvaluateSurfaceAreaVolumeEquation(sa);
                                     double residual = evaluatedVolume - targetVolume;
 
                                     if (Math.Abs(residual) / targetVolume <= SATolerance)
@@ -1049,8 +1049,8 @@ namespace STEDI.ModelRun
                                     }
 
                                     double h = Math.Max(sa * DerivativeStepFraction, 1e-6);
-                                    double vPlus = stediSettings.EvaluateSurfaceAreaVolumeEquation(sa + h);
-                                    double vMinus = stediSettings.EvaluateSurfaceAreaVolumeEquation(sa - h);
+                                    double vPlus = rodisSettings.EvaluateSurfaceAreaVolumeEquation(sa + h);
+                                    double vMinus = rodisSettings.EvaluateSurfaceAreaVolumeEquation(sa - h);
                                     double dVdSA = (vPlus - vMinus) / (2.0 * h);
 
                                     if (Math.Abs(dVdSA) < 1e-20)
@@ -1089,7 +1089,7 @@ namespace STEDI.ModelRun
 
                 lastMs = sw.ElapsedMilliseconds;
 
-                // ── Checkpoint 3: Volume scale without SA change ──
+                // -- Checkpoint 3: Volume scale without SA change --
                 for (int i = 0; i < this.WaterBodyNodes.Length; ++i)
                 {
                     this.WaterBodyNodes[i].MaxStorageCapacityVolumeAtSpill *= volumeScaleFactorNoSurfaceAreaChange;
@@ -1098,7 +1098,7 @@ namespace STEDI.ModelRun
                 //Console.WriteLine($"    RVD checkpoint 3 (vol no-SA scale):         {sw.ElapsedMilliseconds - lastMs,6}ms");
                 lastMs = sw.ElapsedMilliseconds;
 
-                // ── Checkpoint 4: Initial conditions ──
+                // -- Checkpoint 4: Initial conditions --
                 for (int i = 0; i < this.WaterBodyNodes.Length; ++i)
                 {
                     // Reset per-node climate multipliers to neutral (U9/U10 Apply methods will overwrite if active)
@@ -1136,7 +1136,7 @@ namespace STEDI.ModelRun
             //Console.WriteLine($"    RVD TOTAL:                                  {sw.ElapsedMilliseconds,6}ms");
         }
 
-        /// <summary>Resets demand-model storage capacities to base × scaleFactor when base capacities are supplied; otherwise falls back to legacy *= behaviour for single-run callers.</summary>
+        /// <summary>Resets demand-model storage capacities to base � scaleFactor when base capacities are supplied; otherwise falls back to legacy *= behaviour for single-run callers.</summary>
         /// <param name="models">Demand-model array (TS or RM) to update; null-safe.</param>
         /// <param name="scaleFactor">Scenario LOD volume scale factor with surface-area change applied.</param>
         /// <param name="baseCapacities">Pristine base capacities captured before the MC loop; null for non-MC callers.</param>
@@ -1220,21 +1220,21 @@ namespace STEDI.ModelRun
         }
 
         /// <summary>
-        /// Gets repeating monthly demand model for the node of a legacy STEDI model from the demand group index.
+        /// Gets repeating monthly demand model for the node of a legacy RODIS model from the demand group index.
         /// </summary>
-        /// <param name="legacySTEDIDamNode">Legacy STEDI farm dam node.</param>
-        /// <param name="settings">Overall settings of legacy STEDI model, which contain the repeating monthly demand group patterns.</param>
+        /// <param name="legacyRODISDamNode">Legacy RODIS farm dam node.</param>
+        /// <param name="settings">Overall settings of legacy RODIS model, which contain the repeating monthly demand group patterns.</param>
         /// <param name="demandGroupIndex">Index of demand pattern group for this farm dam node.</param>
         /// <returns>Repeating monthly demand model for water body node.</returns>
-        private FarmDamRepeatingMonthlyDemandModel GetRepeatingMonthlyDemandModel(LegacySTEDIDamNode legacySTEDIDamNode, STEDISettings settings, string demandGroupIndex)
+        private FarmDamRepeatingMonthlyDemandModel GetRepeatingMonthlyDemandModel(LegacyRODISDamNode legacyRODISDamNode, RODISSettings settings, string demandGroupIndex)
         {
             FarmDamRepeatingMonthlyDemandModel selectedModel = settings.RepeatingMonthlyDemandGroups[demandGroupIndex];
 
             FarmDamRepeatingMonthlyDemandModel newDemandModel = new FarmDamRepeatingMonthlyDemandModel()
             {
                 AnnualDemandFactor = selectedModel.AnnualDemandFactor,
-                DamStorageCapacityVolumeAtSpill = legacySTEDIDamNode.VolumeML,
-                DemandGroup = legacySTEDIDamNode.DemandGroup,
+                DamStorageCapacityVolumeAtSpill = legacyRODISDamNode.VolumeML,
+                DemandGroup = legacyRODISDamNode.DemandGroup,
             };
 
             newDemandModel.MonthlyDemandProportions = new double[selectedModel.MonthlyDemandProportions.Length];
@@ -1249,21 +1249,21 @@ namespace STEDI.ModelRun
         }
 
         /// <summary>
-        /// Gets time series demand model for the node of a legacy STEDI model from the demand group index.
+        /// Gets time series demand model for the node of a legacy RODIS model from the demand group index.
         /// </summary>
-        /// <param name="legacySTEDIDamNode">Legacy STEDI farm dam node.</param>
-        /// <param name="settings">Overall settings of legacy STEDI model, which contain the time series demand data.</param>
+        /// <param name="legacyRODISDamNode">Legacy RODIS farm dam node.</param>
+        /// <param name="settings">Overall settings of legacy RODIS model, which contain the time series demand data.</param>
         /// <param name="demandGroupIndex">Index of demand pattern group for this farm dam node.</param>
         /// <returns>Time series demand model for water body node.</returns>
-        private FarmDamTimeSeriesDemandModel GetTimeSeriesDemandModel(LegacySTEDIDamNode legacySTEDIDamNode, STEDISettings settings, string demandGroupIndex)
+        private FarmDamTimeSeriesDemandModel GetTimeSeriesDemandModel(LegacyRODISDamNode legacyRODISDamNode, RODISSettings settings, string demandGroupIndex)
         {
             FarmDamTimeSeriesDemandModel selectedModel = settings.TimeSeriesDemandGroups[demandGroupIndex];
 
             FarmDamTimeSeriesDemandModel newDemandModel = new FarmDamTimeSeriesDemandModel()
             {
                 AnnualDemandFactor = selectedModel.AnnualDemandFactor,
-                DamStorageCapacityVolumeAtSpill = legacySTEDIDamNode.VolumeML,
-                DemandGroup = legacySTEDIDamNode.DemandGroup,
+                DamStorageCapacityVolumeAtSpill = legacyRODISDamNode.VolumeML,
+                DemandGroup = legacyRODISDamNode.DemandGroup,
             };
 
             newDemandModel.InputPattern = new Series.TimeSeriesValue[selectedModel.InputPattern.Length];
@@ -1280,11 +1280,11 @@ namespace STEDI.ModelRun
         /// <summary>
         /// Calculates total upstream catchment areas at all nodes by traversing the network in ElementModelCalculationOrder. 
         /// TotalCatchmentAreaKM2 is read from the outlet node's traversal result. A diagnostic check verifies that the traversal result matches the direct sum of 
-        /// all SubcatchmentInflowModel.AreaKM2 values — a mismatch indicates a routing or calculation order defect.
+        /// all SubcatchmentInflowModel.AreaKM2 values � a mismatch indicates a routing or calculation order defect.
         /// </summary>
         private void CalculateTotalCatchmentAreas()
         {
-            // ── Zero all node-level accumulators ──
+            // -- Zero all node-level accumulators --
             for (int i = 0; i < this.WaterBodyNodes.Length; i++)
             {
                 this.WaterBodyNodes[i].TotalUpstreamCatchmentAreaKM2 = 0.0;
@@ -1295,7 +1295,7 @@ namespace STEDI.ModelRun
                 this.ConfluenceNodes[i].TotalUpstreamCatchmentAreaKM2 = 0.0;
             }
 
-            // ── Traverse network to accumulate upstream catchment area at each node ──
+            // -- Traverse network to accumulate upstream catchment area at each node --
             for (int i = 0; i < this.ElementModelCalculationOrder.Length; i++)
             {
                 int thisIndex = this.ElementModelCalculationOrder[i].IndexForElementType;
@@ -1342,7 +1342,7 @@ namespace STEDI.ModelRun
                 }
             }
 
-            // ── Set TotalCatchmentAreaKM2 from the outlet traversal result ──
+            // -- Set TotalCatchmentAreaKM2 from the outlet traversal result --
             int lastIndex = this.ElementModelCalculationOrder.Last().IndexForElementType;
             switch (this.ElementModelCalculationOrder.Last().ElementType)
             {
@@ -1357,7 +1357,7 @@ namespace STEDI.ModelRun
                     break;
             }
 
-            // ── Diagnostic: verify direct sum matches traversal ──
+            // -- Diagnostic: verify direct sum matches traversal --
             double directSumArea = 0.0;
             for (int i = 0; i < this.SubcatchmentsInflowModels.Length; i++)
             {
@@ -1367,15 +1367,15 @@ namespace STEDI.ModelRun
             if (Math.Abs(this.TotalCatchmentAreaKM2 - directSumArea) > 1.0E-6)
             {
                 Console.WriteLine(
-                    $"ERROR: TotalCatchmentAreaKM2 from traversal ({this.TotalCatchmentAreaKM2:F6} km²) "
-                    + $"differs from direct sum ({directSumArea:F6} km²). "
-                    + $"Difference = {directSumArea - this.TotalCatchmentAreaKM2:F6} km². "
+                    $"ERROR: TotalCatchmentAreaKM2 from traversal ({this.TotalCatchmentAreaKM2:F6} km�) "
+                    + $"differs from direct sum ({directSumArea:F6} km�). "
+                    + $"Difference = {directSumArea - this.TotalCatchmentAreaKM2:F6} km�. "
                     + "Check calculation order and routing link downstream types.");
             }
         }
 
         /// <summary>
-        /// Calculates non-water body areas upstream of all model elements (nodes and links), as STEDI handles catchment runoff separately from direct net rainfall and evaporation on water bodies.
+        /// Calculates non-water body areas upstream of all model elements (nodes and links), as RODIS handles catchment runoff separately from direct net rainfall and evaporation on water bodies.
         /// </summary>
         private void CalculateNonWaterbodyAreas()
         {
@@ -1408,7 +1408,7 @@ namespace STEDI.ModelRun
                             if (dsType == ModelElementType.WaterBodyNode)
                             {
                                 this.SubcatchmentsInflowModels[thisIndex].WaterBodyAreaKM2 = this.WaterBodyNodes[dsIndex].SurfaceAreaStored * 1.0E-6;
-                                this.SubcatchmentsInflowModels[thisIndex].BeforeRunTimeStep(this.IsLegacySTEDICalculationMethods);
+                                this.SubcatchmentsInflowModels[thisIndex].BeforeRunTimeStep(this.IsLegacyRODISCalculationMethods);
 
                                 this.WaterBodyNodes[dsIndex].TotalUpstreamNonWaterCatchmentAreaKM2 += this.SubcatchmentsInflowModels[thisIndex].NonWaterBodyAreaKM2;
                                 this.WaterBodyNodes[dsIndex].NonWaterCatchmentAreaUpstreamOfDamsKM2 = this.WaterBodyNodes[dsIndex].TotalUpstreamNonWaterCatchmentAreaKM2;
@@ -1419,7 +1419,7 @@ namespace STEDI.ModelRun
                                 if (dsType == ModelElementType.ConfluenceNode)
                                 {
                                     this.SubcatchmentsInflowModels[thisIndex].WaterBodyAreaKM2 = 0;
-                                    this.SubcatchmentsInflowModels[thisIndex].BeforeRunTimeStep(this.IsLegacySTEDICalculationMethods);
+                                    this.SubcatchmentsInflowModels[thisIndex].BeforeRunTimeStep(this.IsLegacyRODISCalculationMethods);
                                     this.ConfluenceNodes[dsIndex].TotalUpstreamNonWaterCatchmentAreaKM2 += this.SubcatchmentsInflowModels[thisIndex].NonWaterBodyAreaKM2;
                                     this.ConfluenceNodes[dsIndex].NonWaterCatchmentAreaDownstreamOfDamsKM2 += this.SubcatchmentsInflowModels[thisIndex].NonWaterBodyAreaKM2;
                                 }
@@ -1512,7 +1512,7 @@ namespace STEDI.ModelRun
             }
         }
 
-        /// <summary>Calculates flows at the time step through the STEDI model network for a single run.</summary>
+        /// <summary>Calculates flows at the time step through the RODIS model network for a single run.</summary>
         /// <param name="timeStep">Datetime of this time step, which controls which water bodies are in place, which farm dams have bypasses etc.</param>
         /// <param name="isAdoptedRun">Flag set to true if this is a single run (for impacted from unimpacted) or the last run to adopt for the time step.</param>
         private void CalculateFlowsAtTimeStep(TimeSpan timeStep, bool isAdoptedRun = true)
@@ -1590,7 +1590,7 @@ namespace STEDI.ModelRun
 
                     case ModelElementType.WaterBodyNode:
                         {
-                            // ── U5: Independent topology — strip out upstream dam cascade flows ──
+                            // -- U5: Independent topology � strip out upstream dam cascade flows --
                             // When IgnoreUpstreamDamFlows is set, this dam only receives local subcatchment runoff. Upstream dam spill and bypass flows are stripped before RunTimeStep
                             // and passed through to the downstream routing link afterwards, preserving system mass balance.
 
@@ -1605,9 +1605,9 @@ namespace STEDI.ModelRun
 
                             this.WaterBodyNodes[thisIndex].Rainfall = this.Rainfall * this.RainfallMultiplier * this.WaterBodyNodes[thisIndex].LocalRainfallMultiplier;
                             this.WaterBodyNodes[thisIndex].Evaporation = this.Evaporation * this.PETMultiplier * this.WaterBodyNodes[thisIndex].LocalEvaporationMultiplier;
-                            this.WaterBodyNodes[thisIndex].RunTimeStep(this.SimulationDateTime, timeStep, this.IsLegacySTEDICalculationMethods, isAdoptedRun);
+                            this.WaterBodyNodes[thisIndex].RunTimeStep(this.SimulationDateTime, timeStep, this.IsLegacyRODISCalculationMethods, isAdoptedRun);
 
-                            // U5: Pass stripped upstream dam flows through — they bypass this dam entirely and continue downstream as catchment-attributed flow to preserve flow attribution identity:
+                            // U5: Pass stripped upstream dam flows through � they bypass this dam entirely and continue downstream as catchment-attributed flow to preserve flow attribution identity:
                             // DownstreamFlow = DownstreamFlowFromBypass + DownstreamFlowFromSpill + DownstreamFlowFromCatchment
                             if (strippedUpstreamDamFlow > 0.0)
                             {
@@ -1629,7 +1629,7 @@ namespace STEDI.ModelRun
 
                     case ModelElementType.ConfluenceNode:
                         {
-                            this.ConfluenceNodes[thisIndex].RunTimeStep(this.SimulationDateTime, timeStep, this.IsLegacySTEDICalculationMethods);
+                            this.ConfluenceNodes[thisIndex].RunTimeStep(this.SimulationDateTime, timeStep, this.IsLegacyRODISCalculationMethods);
 
                             // Set downstream flow as upstream flow for relevant downstream link
                             if (dsType == ModelElementType.StraightThroughRoutingLink && dsIndex >= 0 && dsIndex < this.StraightThroughRoutingLinks.Length)
@@ -1950,8 +1950,8 @@ namespace STEDI.ModelRun
         ///
         ///   Inputs  = TotalSubcatchmentRunoff + RainfallVolume + PumpedInflow
         ///   Outputs = DownstreamFlow + EvaporationVolume + SeepageLossVolume
-        ///           + DemandVolumeExtracted + ΔStorage + DamRemovalStorageLoss
-        ///   TopDownMisclosure = Inputs − Outputs
+        ///           + DemandVolumeExtracted + ?Storage + DamRemovalStorageLoss
+        ///   TopDownMisclosure = Inputs - Outputs
         ///
         /// TotalSubcatchmentRunoff is the direct sum of all SubcatchmentInflowModel.DownstreamFlow values, computed in SumTotalsForTimeStep(). 
         /// It reflects the actual runoff entering the system at each time step, including the effect of dam surface area deductions.
@@ -1970,12 +1970,12 @@ namespace STEDI.ModelRun
 
             this.TopDownVolumeBalanceMisclosure = totalInputs - totalOutputsAndStorage;
 
-            // ── Update cumulative trackers ──
+            // -- Update cumulative trackers --
             this.CumulativeBottomUpMisclosure += this.VolumeBalanceMisclosure;
             this.CumulativeTopDownMisclosure += this.TopDownVolumeBalanceMisclosure;
             this.CumulativeDamRemovalStorageLoss += this.DamRemovalStorageLoss;
 
-            // ── Track worst-case bottom-up misclosure ──
+            // -- Track worst-case bottom-up misclosure --
             double absBottomUp = Math.Abs(this.VolumeBalanceMisclosure);
             if (absBottomUp > this.MaxAbsBottomUpMisclosure)
             {
@@ -1983,7 +1983,7 @@ namespace STEDI.ModelRun
                 this.MaxAbsBottomUpMisclosureDate = this.SimulationDateTime;
             }
 
-            // ── Track worst-case top-down misclosure ──
+            // -- Track worst-case top-down misclosure --
             double absTopDown = Math.Abs(this.TopDownVolumeBalanceMisclosure);
             if (absTopDown > this.MaxAbsTopDownMisclosure)
             {
@@ -1991,7 +1991,7 @@ namespace STEDI.ModelRun
                 this.MaxAbsTopDownMisclosureDate = this.SimulationDateTime;
             }
 
-            // ── Warning if either check exceeds tolerance ──
+            // -- Warning if either check exceeds tolerance --
             if (absBottomUp > MassBalanceTolerance || absTopDown > MassBalanceTolerance)
             {
                 this.MassBalanceWarningCount++;
@@ -1999,7 +1999,7 @@ namespace STEDI.ModelRun
                 if (this.MassBalanceWarningCount <= 10)
                 {
                     Console.WriteLine(
-                        $"WARNING: Mass balance misclosure at {this.SimulationDateTime:yyyy-MM-dd} — "
+                        $"WARNING: Mass balance misclosure at {this.SimulationDateTime:yyyy-MM-dd} � "
                         + $"bottom-up={this.VolumeBalanceMisclosure:E3} ML, "
                         + $"top-down={this.TopDownVolumeBalanceMisclosure:E3} ML "
                         + $"(tolerance={MassBalanceTolerance:E3} ML).");
@@ -2036,7 +2036,7 @@ namespace STEDI.ModelRun
             if (this.MassBalanceWarningCount > 0)
             {
                 Console.WriteLine("Run completed.");
-                Console.WriteLine("══ Mass Balance Summary ══════════════════════════════════════════════════════");
+                Console.WriteLine("-- Mass Balance Summary ------------------------------------------------------");
                 Console.WriteLine($"  Water body nodes:    {this.WaterBodyNodes.Length} total");
                 Console.WriteLine($"  Bottom-up (sum of node misclosures):");
                 Console.WriteLine($"    Cumulative:      {this.CumulativeBottomUpMisclosure,14:E4} ML");
@@ -2047,28 +2047,28 @@ namespace STEDI.ModelRun
                 Console.WriteLine($"  Dam removal losses:");
                 Console.WriteLine($"    Cumulative:      {this.CumulativeDamRemovalStorageLoss,14:F4} ML");
                 Console.WriteLine($"  Warning count:     {this.MassBalanceWarningCount} time steps exceeded tolerance ({MassBalanceTolerance:E3} ML)");
-                Console.WriteLine("  ⚠ Non-zero misclosure detected. Investigate dam removal events or routing logic.");
-                Console.WriteLine("══════════════════════════════════════════════════════════════════════════════");
+                Console.WriteLine("  ? Non-zero misclosure detected. Investigate dam removal events or routing logic.");
+                Console.WriteLine("------------------------------------------------------------------------------");
                 Console.WriteLine();
             }
             else
             {
-                Console.WriteLine("Run completed: ✓ Mass balance OK.");
+                Console.WriteLine("Run completed: ? Mass balance OK.");
             }
         }
 
         /// <summary>
-        /// Fits the exponent of a power-law relationship between surface area in m² and storage volume in ML.
+        /// Fits the exponent of a power-law relationship between surface area in m� and storage volume in ML.
         /// General solution, which works for both simple power law relationships and more complicated relationships, such as line segments applying over different volume ranges.
         /// </summary>
-        /// <param name="stediSettings">Settings of STEDI model, containing the surface area evaluatedVolume volume relationship.</param>
+        /// <param name="rodisSettings">Settings of RODIS model, containing the surface area evaluatedVolume volume relationship.</param>
         /// <param name="volumeAtFull">Storage volume at full for this water body.</param>
         /// <returns>Fitted exponent of surface area to volume relationship.</returns>
-        private double FitSurfaceAreaVolumeExponent (STEDISettings stediSettings, double volumeAtFull)
+        private double FitSurfaceAreaVolumeExponent (RODISSettings rodisSettings, double volumeAtFull)
         {
             double surfaceAreaVolumeExponent = 1.3;
 
-            string volumeSAEquation = stediSettings.VolumeSurfaceAreaEquation.Equation;
+            string volumeSAEquation = rodisSettings.VolumeSurfaceAreaEquation.Equation;
 
             if (!string.IsNullOrEmpty(volumeSAEquation))
             {
@@ -2086,7 +2086,7 @@ namespace STEDI.ModelRun
                     // Slow way: try fitting a log-log regression to fit an approximate power law equation to the relationship provided
                     if (volumeAtFull > 0)
                     {
-                        double surfaceAreaAtFull = stediSettings.SolveForSurfaceAreaFromVolume(volumeAtFull);
+                        double surfaceAreaAtFull = rodisSettings.SolveForSurfaceAreaFromVolume(volumeAtFull);
 
                         const int numPoints = 10;
                         double[] logSurfAreas = new double[numPoints];
@@ -2095,7 +2095,7 @@ namespace STEDI.ModelRun
                         for (int i = 0; i < numPoints; i++)
                         {
                             double surfArea = ((double)(i + 1) / (double)numPoints) * surfaceAreaAtFull;
-                            double volume = stediSettings.EvaluateSurfaceAreaVolumeEquation(surfArea);
+                            double volume = rodisSettings.EvaluateSurfaceAreaVolumeEquation(surfArea);
                             logSurfAreas[i] = Math.Log(surfArea);
                             logVolumes[i] = Math.Log(volume);
                         }
@@ -2167,7 +2167,7 @@ namespace STEDI.ModelRun
 
         /// <summary>
         /// Clamps bypass and pumped inflow existence dates on all water body nodes
-        /// so they fall within each node's current StartDate–EndDate window.
+        /// so they fall within each node's current StartDate�EndDate window.
         /// Call after any operation that modifies water body existence dates.
         /// </summary>
         public void ClampBypassAndPumpingDatesToWaterBodyExistence()
@@ -2248,12 +2248,12 @@ namespace STEDI.ModelRun
                 Map(m => m.EndDate).Index(6).Name("End Existence Date");
 
                 Map(m => m.MaxStorageCapacityVolumeAtSpill).Index(7).Name("Storage Capacity when Full (ML)");
-                Map(m => m.SurfaceAreaAtSpill).Index(8).Name("Surface Area when Full (m²)");
+                Map(m => m.SurfaceAreaAtSpill).Index(8).Name("Surface Area when Full (m�)");
 
-                Map(m => m.NonWaterCatchmentAreaUpstreamOfDamsKM2).Index(9).Name("Non-Water Catchment Area Upstream of Dams (km²)");
-                Map(m => m.NonWaterCatchmentAreaDownstreamOfDamsKM2).Index(10).Name("Non-Water Catchment Area Downstream of Dams (km²)");
-                Map(m => m.TotalUpstreamCatchmentAreaKM2).Index(11).Name("Total Upstream Catchment Area (km²)");
-                Map(m => m.TotalUpstreamNonWaterCatchmentAreaKM2).Index(12).Name("Total Upstream Non-Water Catchment Area (km²)");
+                Map(m => m.NonWaterCatchmentAreaUpstreamOfDamsKM2).Index(9).Name("Non-Water Catchment Area Upstream of Dams (km�)");
+                Map(m => m.NonWaterCatchmentAreaDownstreamOfDamsKM2).Index(10).Name("Non-Water Catchment Area Downstream of Dams (km�)");
+                Map(m => m.TotalUpstreamCatchmentAreaKM2).Index(11).Name("Total Upstream Catchment Area (km�)");
+                Map(m => m.TotalUpstreamNonWaterCatchmentAreaKM2).Index(12).Name("Total Upstream Non-Water Catchment Area (km�)");
 
                 Map(m => m.BypassFlowCapacity).Index(13).Name("Bypass Capacity (ML/d)");
                 Map(m => m.StartBypassDate).Index(14).Name("Start Bypass Date");

@@ -1,15 +1,15 @@
-﻿namespace STEDIUnitTests.ModelComponentTests
+namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;
-    using STEDI.ModelRun;
+    using RODIS.ModelRun;
     using System;
 
     [TestClass]
-    public class LegacySTEDIDamNodeTests
+    public class LegacyRODISDamNodeTests
     {
-        private static LegacySTEDIDamNode MakeDamNode(double volumeML = 5.0, double saM2 = 10000.0, double caKM2 = 50.0)
+        private static LegacyRODISDamNode MakeDamNode(double volumeML = 5.0, double saM2 = 10000.0, double caKM2 = 50.0)
         {
-            return new LegacySTEDIDamNode
+            return new LegacyRODISDamNode
             {
                 Identifier = 42,
                 VolumeML = volumeML,
@@ -25,9 +25,9 @@
             };
         }
 
-        // ────────────────────────────────────────────────────
-        // GetWaterBodyModelNode — basic property mapping
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // GetWaterBodyModelNode � basic property mapping
+        // ----------------------------------------------------
 
         [TestMethod]
         public void GetWaterBodyModelNode_MapsProperties()
@@ -42,9 +42,9 @@
             Assert.AreEqual("Default", node.ReportingGroup);
         }
 
-        // ────────────────────────────────────────────────────
-        // GetWaterBodyModelNode — bypass enabled
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // GetWaterBodyModelNode � bypass enabled
+        // ----------------------------------------------------
 
         [TestMethod]
         public void GetWaterBodyModelNode_BypassEnabled_SetsCapacityAndDates()
@@ -63,9 +63,9 @@
             Assert.AreEqual(new DateOnly(2000, 10, 31), node.BypassSeasonEndDateIgnoreYear);
         }
 
-        // ────────────────────────────────────────────────────
-        // GetWaterBodyModelNode — bypass disabled
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // GetWaterBodyModelNode � bypass disabled
+        // ----------------------------------------------------
 
         [TestMethod]
         public void GetWaterBodyModelNode_BypassDisabled_ZeroCapacity()
@@ -78,9 +78,9 @@
             Assert.AreEqual(0.0, node.BypassFlowCapacity, 0.001);
         }
 
-        // ────────────────────────────────────────────────────
-        // GetWaterBodyModelNode — winterfill (pumped inflow)
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // GetWaterBodyModelNode � winterfill (pumped inflow)
+        // ----------------------------------------------------
 
         [TestMethod]
         public void GetWaterBodyModelNode_WinterfillEnabled_SetsPumpedInflow()
@@ -97,9 +97,9 @@
             Assert.AreEqual(new DateOnly(2000, 6, 1), node.PumpedInflowSeasonStartDateIgnoreYear);
         }
 
-        // ────────────────────────────────────────────────────
-        // GetConfluenceModelNode — zero-volume node
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
+        // GetConfluenceModelNode � zero-volume node
+        // ----------------------------------------------------
 
         [TestMethod]
         public void GetConfluenceModelNode_CorrectType()
@@ -111,9 +111,9 @@
             Assert.AreEqual("42", node.Label);
         }
 
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
         // GetSubcatchmentInflowModel
-        // ────────────────────────────────────────────────────
+        // ----------------------------------------------------
 
         [TestMethod]
         public void GetUniformInflowSubcatchmentModel_SetsArea()
@@ -121,7 +121,7 @@
             var legacy = MakeDamNode();
             legacy.IntermediateCatchmentAreaKM2 = 25.0;
 
-            var subcatch = legacy.GetSubcatchmentInflowModel(IsLegacySTEDICatchmentInflows: true);
+            var subcatch = legacy.GetSubcatchmentInflowModel(IsLegacyRODISCatchmentInflows: true);
 
             Assert.AreEqual(25.0, subcatch.AreaKM2, 0.001);
         }
