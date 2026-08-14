@@ -296,6 +296,18 @@ namespace RODIS.ModelRun
             List<ModelElementTypeIndex> calculationOrderList = new List<ModelElementTypeIndex>();
             HashSet<string> reportingGroupsHashSet = new HashSet<string>();
 
+            // Legacy STEDI arrays are supplied OUTLET-FIRST (node 1 = catchment outlet).
+            // The forward Pass 1-3 below assume upstream-first order so that the true outlet is built LAST and the "[Length-1] = Outlet" override targets it.
+            // Topologically sort into upstream-first order (outlet last) to satisfy that assumption for both single-stem and branched networks.
+            legacySTEDIDamNodes = TopologicalSortLegacySTEDINodes(legacySTEDIDamNodes);
+
+            // Map node Identifier -> array index so downstream lookups in Pass 2 are position-independent after the sort.
+            Dictionary<int, int> identifierToIndex = new Dictionary<int, int>(legacySTEDIDamNodes.Length);
+            for (int i = 0; i < legacySTEDIDamNodes.Length; i++)
+            {
+                identifierToIndex[legacySTEDIDamNodes[i].Identifier] = i;
+            }
+
             // -- Pass 1: classify each node (water body vs confluence), assign its per-array IDs, and build the typed model objects. --
             // Forward order matches the array's assumed topological (upstream-first) layout, matching the existing NextDownstreamIdentifier - 1 indexing convention used below.
             for (int i = 0; i < legacySTEDIDamNodes.Length; i++)
@@ -395,19 +407,15 @@ namespace RODIS.ModelRun
                 }
             }
 
-            // -- Pass 2: resolve each node's downstream water body / confluence ID, now that every node has its own ID assigned from Pass 1. --
+            // -- Pass 2: resolve each node's downstream water body / confluence ID by Identifier (position-independent after the topological sort). --
             for (int i = 0; i < legacySTEDIDamNodes.Length; i++)
             {
                 LegacySTEDIDamNode node = legacySTEDIDamNodes[i];
-                if (node.NextDownstreamIdentifier > 0)
+                if (node.NextDownstreamIdentifier > 0 && identifierToIndex.TryGetValue(node.NextDownstreamIdentifier, out int dsArrayIndex))
                 {
-                    int dsArrayIndex = node.NextDownstreamIdentifier - 1;
-                    if (dsArrayIndex >= 0 && dsArrayIndex < legacySTEDIDamNodes.Length)
-                    {
-                        LegacySTEDIDamNode dsNode = legacySTEDIDamNodes[dsArrayIndex];
-                        node.NextDownstreamWaterBodyID = dsNode.WaterBodyNodeID;
-                        node.NextDownstreamConfluenceID = dsNode.ConfluenceNodeID;
-                    }
+                    LegacySTEDIDamNode dsNode = legacySTEDIDamNodes[dsArrayIndex];
+                    node.NextDownstreamWaterBodyID = dsNode.WaterBodyNodeID;
+                    node.NextDownstreamConfluenceID = dsNode.ConfluenceNodeID;
                 }
             }
 
@@ -1236,6 +1244,88 @@ namespace RODIS.ModelRun
             }
 
             Array.Copy(sorted, allWaterBodies, n);
+        }
+
+        /// <summary>Topologically sorts legacy STEDI nodes upstream-first (leaves first, catchment outlet last) using Kahn's algorithm on NextDownstreamIdentifier.
+        /// Legacy input is supplied outlet-first, so this reordering lets the forward build passes leave the true outlet last. Any nodes left unprocessed by a cycle
+        /// are appended in their original order and a warning is written.</summary>
+        /// <param name="nodes">Legacy STEDI dam nodes to sort (not modified in place; a reordered copy is returned).</param>
+        /// <returns>New array of the same nodes in upstream-first (outlet-last) order.</returns>
+        private static LegacySTEDIDamNode[] TopologicalSortLegacySTEDINodes(LegacySTEDIDamNode[] nodes)
+        {
+            int n = nodes.Length;
+            // Map Identifier -> index so NextDownstreamIdentifier (an Identifier, not an index) can be resolved.
+            Dictionary<int, int> idToIndex = new Dictionary<int, int>(n);
+            for (int i = 0; i < n; i++)
+            {
+                idToIndex[nodes[i].Identifier] = i;
+            }
+
+            // In-degree = number of nodes draining INTO each node.
+            int[] inDegree = new int[n];
+            for (int i = 0; i < n; i++)
+            {
+                int dsId = nodes[i].NextDownstreamIdentifier;
+                if (dsId > 0 && idToIndex.TryGetValue(dsId, out int dsIndex))
+                {
+                    inDegree[dsIndex]++;
+                }
+            }
+
+            // Seed the queue with leaf nodes (nothing drains into them).
+            Queue<int> queue = new Queue<int>();
+            for (int i = 0; i < n; i++)
+            {
+                if (inDegree[i] == 0)
+                {
+                    queue.Enqueue(i);
+                }
+            }
+
+            // BFS: emit each node, then decrement its downstream node's in-degree; the outlet (highest in-degree) is emitted last.
+            int[] sortedOrder = new int[n];
+            int count = 0;
+            while (queue.Count > 0)
+            {
+                int current = queue.Dequeue();
+                sortedOrder[count++] = current;
+                int dsId = nodes[current].NextDownstreamIdentifier;
+                if (dsId > 0 && idToIndex.TryGetValue(dsId, out int dsIndex))
+                {
+                    inDegree[dsIndex]--;
+                    if (inDegree[dsIndex] == 0)
+                    {
+                        queue.Enqueue(dsIndex);
+                    }
+                }
+            }
+
+            LegacySTEDIDamNode[] sorted = new LegacySTEDIDamNode[n];
+            for (int i = 0; i < count; i++)
+            {
+                sorted[i] = nodes[sortedOrder[i]];
+            }
+
+            if (count != n)
+            {
+                // Cycle safety: append any unprocessed nodes in original order so nothing is lost.
+                Console.WriteLine($"WARNING: Legacy STEDI topological sort processed {count} of {n} nodes. Possible cycle in network.");
+                bool[] placed = new bool[n];
+                for (int i = 0; i < count; i++)
+                {
+                    placed[sortedOrder[i]] = true;
+                }
+                int fill = count;
+                for (int i = 0; i < n; i++)
+                {
+                    if (!placed[i])
+                    {
+                        sorted[fill++] = nodes[i];
+                    }
+                }
+            }
+
+            return sorted;
         }
 
         /// <summary>
