@@ -80,6 +80,18 @@ namespace RODIS.Tests.Legacy
         /// <returns>Display name for the test case.</returns>
         public static string ScenarioName(System.Reflection.MethodInfo methodInfo, object[] data) => $"Scenario {(int)data[0]:D2}";
 
+        [TestMethod]
+        public void PreFlight_ListScenarioFileCoverage()
+        {
+            for (int n = 1; n <= 50; n++)
+            {
+                bool f = File.Exists(SimpleTestsPaths.FortranFdy(n));
+                bool r = File.Exists(SimpleTestsPaths.RodisRes(n));
+                bool m = File.Exists(SimpleTestsPaths.MarchRes(n));
+                TestContext.WriteLine($"Scenario {n:D2}: Fortran={(f ? "Y" : "-")}  RODIS={(r ? "Y" : "-")}  March={(m ? "Y" : "-")}");
+            }
+        }
+
         /// <summary>PRIMARY test: compares each scenario's RODIS output against the Fortran STEDI 1.2 reference, failing only when a metric differs on a NON-spill day.
         /// Spill-only differences are logged for investigation but do not fail the test, reflecting the known spill-cascade difference between the two engines.</summary>
         /// <param name="scenario">Scenario number (1-50) supplied by the data source.</param>
@@ -193,13 +205,16 @@ namespace RODIS.Tests.Legacy
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"=== Scenario {r.Scenario:D2}  (RODIS vs Fortran 1.2, {r.OverlapDays} overlapping days) ===");
-            sb.AppendLine($"{"Metric",-15}{"max_abs",12}{"rmse",12}{"flagged",9}{"fails",7}{"carried",11}  {"worst",-12} tier");
+            sb.AppendLine($"{"Metric",-15}{"max_abs (ML)",14}{"rmse (ML)",12}{"flagged",9}{"fails",7}{"carried (ML)",14}  {"worst",-12} tier");
+
             foreach (MetricResult m in r.Metrics)
             {
                 string worst = m.WorstDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "-";
-                string carried = m.CumulativeOffsetMax > 0 ? m.CumulativeOffsetMax.ToString("0.###e+00", CultureInfo.InvariantCulture) : "-";
-                sb.AppendLine($"{m.Name,-15}{m.MaxAbs,12:0.###e+00}{m.Rmse,12:0.###e+00}{m.SpillExceedances,9}{m.NonSpillExceedances,7}{carried,11}  {worst,-12} {m.Tier}");
+                // Fixed 3 dp: anything < 0.0005 ML renders as 0.000, which is close enough for reporting.
+                string carried = m.CumulativeOffsetMax >= 0.0005 ? m.CumulativeOffsetMax.ToString("0.000", CultureInfo.InvariantCulture) : "-";
+                sb.AppendLine($"{m.Name,-15}{m.MaxAbs,14:0.000}{m.Rmse,12:0.000}{m.SpillExceedances,9}{m.NonSpillExceedances,7}{carried,14}  {worst,-12} {m.Tier}");
             }
+
             return sb.ToString();
         }
     }

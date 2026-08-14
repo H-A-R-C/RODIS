@@ -83,55 +83,57 @@ namespace RODIS.ModelRun
         {
             this.VolumeInStorage = this.StartTimeStepVolumeInStorage;
 
-            // -- Mass balance: capture starting volume before pre-existence block may zero it --
+            // Mass balance: capture starting volume before the pre-existence block may zero it.
             double trueStartingVolume = this.StartTimeStepVolumeInStorage;
 
-            // Calculate opening surface area based on starting volume
+            // Calculate opening surface area based on starting volume.
             this.SurfaceAreaStored = this.CalculateSurfaceArea();
-
 
             if (simulationDateTime < this.StartDate || simulationDateTime >= this.EndDate)
             {
-                // Before dam start date or after dam end date, so just do a straight pass through
+                // Before dam start date or after dam end date, so just do a straight pass through.
                 this.DownstreamFlow = this.UpstreamFlow;
                 this.DownstreamFlowFromBypass = this.UpstreamFlowFromBypass;
                 this.DownstreamFlowFromSpill = this.UpstreamFlowFromSpill;
                 this.DownstreamFlowFromCatchment = this.UpstreamFlowFromCatchment;
-                this.RainfallVolume = 0;
-                this.EvaporationVolume = 0;
-                this.NetRainfallVolume = 0;
-                this.SeepageLossVolume = 0;
+
+                this.RainfallVolume = 0.0;
+                this.EvaporationVolume = 0.0;
+                this.NetRainfallVolume = 0.0;
+                this.SeepageLossVolume = 0.0;
                 this.UnrestrictedDemand = 0.0;
                 this.DemandVolumeExtracted = 0.0;
                 this.PumpedInflowCapacityAtTimeStep = 0.0;
                 this.PumpedInflow = 0.0;
+
                 this.StartTimeStepVolumeInStorage = 0.0;
                 this.VolumeInStorage = 0.0;
                 this.SurfaceAreaStored = 0.0;
                 this.StorageCapacityVolumeAtSpill = 0.0;
+
                 this.DamRemovalStorageLoss = trueStartingVolume;
-            } 
+            }
             else
             {
-                // Mass balance: no removal loss when dam is active
+                // Mass balance: no removal loss while the dam is active.
                 this.DamRemovalStorageLoss = 0.0;
 
-                // Dam exists, so storage capacity to spill is the maximum volume of the dam for any time step
+                // Dam exists, so storage capacity to spill is the maximum volume of the dam for any time step.
                 this.StorageCapacityVolumeAtSpill = this.MaxStorageCapacityVolumeAtSpill;
 
-                // First deal with bypass
+                // First deal with bypass.
                 if (simulationDateTime >= this.StartBypassDate && simulationDateTime <= this.EndBypassDate && this.BypassFlowCapacity > 0.0)
                 {
-                    // Bypass flow capacity is specified in ML/d so need to calculate capacity for this modelling time step
+                    // Bypass flow capacity is specified in ML/d, so calculate capacity for this modelling time step.
                     double bypassVolumeCapacityAtTimeStep = 0.0;
-
                     DateTime endPeriod = simulationDateTime.Add(timeStep);
                     TimeSpan oneDay = new TimeSpan(1, 0, 0, 0);
+
                     for (DateTime dateTime = simulationDateTime; dateTime < endPeriod; dateTime = dateTime.Add(oneDay))
                     {
                         if (InSeason.IsInSeason(dateTime, this.BypassSeasonStartDateIgnoreYear, this.BypassSeasonEndDateIgnoreYear))
                         {
-                            bypassVolumeCapacityAtTimeStep += this.BypassFlowCapacity; // 1 day's capacity per iteration
+                            bypassVolumeCapacityAtTimeStep += this.BypassFlowCapacity;
                         }
                     }
 
@@ -150,67 +152,41 @@ namespace RODIS.ModelRun
                     this.BypassFlowCapacityAtTimeStep = this.DownstreamFlowFromBypass = 0.0;
                 }
 
-                // Losses are applied sequentially, each capped to remaining volume:
-                // 1. Net rainfall (evaporation capped at volume + rainfall)
-                // 2. Seepage (capped at volume after net rainfall)
-                // 3. Demand (capped at volume after seepage)
+                // Water body accounting order:
+                // 1. Upstream inflow after bypass is added.
+                // 2. Pumped inflow is added.
+                // 3. Net rainfall/climate is applied, capped against water available before demand.
+                // 4. Seepage is applied.
+                // 5. Demand is extracted from the residual water.
+                // 6. Spill is calculated from the resulting storage.
+                //
+                // This matches the legacy STEDI behaviour observed in the regression scenarios:
+                // same-day inflow is available to the dam, climate has priority over demand,
+                // and demand receives only the residual after climate and seepage losses.
 
-                // Next deal with net rainfall
-                // Rainfall in mm, Surface area in m2, Unit conversion to get ML
-                double surfaceAreaForRainfall = 0;
-                if (isLegacySTEDICalculationMethods)
-                {
-                    // Legacy STEDI version 1.20 assumes surface area is constant value at full level
-                    surfaceAreaForRainfall = this.SurfaceAreaAtSpill;
-                }
-                else
-                {
-                    // Calculate opening surface area based on starting volume
-                    surfaceAreaForRainfall = this.SurfaceAreaStored;
-                }
-
-                this.RainfallVolume = this.Rainfall * surfaceAreaForRainfall * 1.0E-6;
-
-                // Evaporation in mm, Surface area in m2, Unit conversion to get ML
-                // this.EvaporationVolume = this.Evaporation * this.SurfaceAreaStored * 1.0E-6;
-                this.EvaporationVolume = this.Evaporation * surfaceAreaForRainfall * 1.0E-6;
-                // Evaporation volume cannot exceed volume in storage plus rainfall volume
-                this.EvaporationVolume = Math.Min(this.StartTimeStepVolumeInStorage + this.RainfallVolume, this.EvaporationVolume);
-
-                this.NetRainfallVolume = this.RainfallVolume - this.EvaporationVolume;
-                this.VolumeInStorage = this.StartTimeStepVolumeInStorage + this.NetRainfallVolume;
-
-                // Next deal with seepage loss
-                this.SeepageLossVolume = this.CalculateSeepageLoss();
-                this.VolumeInStorage -= this.SeepageLossVolume;
-
-                // Next deal with demands
-                this.DemandVolumeExtracted = Math.Min(this.UnrestrictedDemand, this.VolumeInStorage);
-                this.VolumeInStorage -= this.DemandVolumeExtracted;
-
-                // Next deal with inflows after bypass
+                // Add upstream inflows after bypass.
                 this.VolumeInStorage += this.UpstreamFlow - this.DownstreamFlowFromBypass;
 
-                // Next deal with pumped inflows
+                // Add pumped inflows.
                 if (simulationDateTime >= this.StartPumpedInflowDate && simulationDateTime <= this.EndPumpedInflowDate && this.PumpedInflowCapacity > 0.0)
                 {
-                    // Pumped inflow capacity is specified in ML/d so need to calculate capacity for this modelling time step
+                    // Pumped inflow capacity is specified in ML/d, so calculate capacity for this modelling time step.
                     double pumpVolumeCapacityAtTimeStep = 0.0;
-
                     DateTime endPeriod = simulationDateTime.Add(timeStep);
                     TimeSpan oneDay = new TimeSpan(1, 0, 0, 0);
+
                     for (DateTime dateTime = simulationDateTime; dateTime < endPeriod; dateTime = dateTime.Add(oneDay))
                     {
                         if (InSeason.IsInSeason(dateTime, this.PumpedInflowSeasonStartDateIgnoreYear, this.PumpedInflowSeasonEndDateIgnoreYear))
                         {
-                            pumpVolumeCapacityAtTimeStep += this.PumpedInflowCapacity; // 1 day's capacity per iteration
+                            pumpVolumeCapacityAtTimeStep += this.PumpedInflowCapacity;
                         }
                     }
 
                     if (pumpVolumeCapacityAtTimeStep > 0.0)
                     {
                         this.PumpedInflowCapacityAtTimeStep = pumpVolumeCapacityAtTimeStep / (endPeriod - simulationDateTime).TotalDays;
-                        // Pump can only fill spare capacity
+
                         double spareCapacity = Math.Max(0.0, this.StorageCapacityVolumeAtSpill - this.VolumeInStorage);
                         this.PumpedInflow = Math.Min(pumpVolumeCapacityAtTimeStep, spareCapacity);
                     }
@@ -223,14 +199,58 @@ namespace RODIS.ModelRun
                 {
                     this.PumpedInflowCapacityAtTimeStep = this.PumpedInflow = 0.0;
                 }
+
                 this.VolumeInStorage += this.PumpedInflow;
 
-                // Sum upstream inflows and duration over which upstream inflows are summed
+                // Sum upstream inflows and duration over which upstream inflows are summed.
                 this.SumUpstreamAndPumpedInflows += this.PumpedInflow + this.UpstreamFlow;
                 this.SumDaysOfUpstreamAndPumpedInflows += timeStep.TotalDays;
 
-                // Finally, deal with spills
-                this.DownstreamFlowFromSpill = Math.Max(0, this.VolumeInStorage - this.StorageCapacityVolumeAtSpill);
+                // Capture the water available before demand. Climate must be capped against this value so demand cannot take water that legacy STEDI reports as climate.
+                double volumeAvailableBeforeDemand = Math.Max(0.0, this.VolumeInStorage);
+
+                // Net rainfall / climate.
+                double surfaceAreaForRainfall = 0.0;
+                if (isLegacySTEDICalculationMethods)
+                {
+                    // Legacy STEDI version 1.20 assumes surface area is constant at full level.
+                    surfaceAreaForRainfall = this.SurfaceAreaAtSpill;
+                }
+                else
+                {
+                    // Use the surface area calculated from opening storage at the start of this timestep.
+                    surfaceAreaForRainfall = this.SurfaceAreaStored;
+                }
+
+                // Rainfall in mm, surface area in m2, unit conversion to ML.
+                this.RainfallVolume = this.Rainfall * surfaceAreaForRainfall * 1.0E-6;
+
+                // Evaporation in mm, surface area in m2, unit conversion to ML.
+                this.EvaporationVolume = this.Evaporation * surfaceAreaForRainfall * 1.0E-6;
+
+                // Climate has priority over demand, so evaporation is capped against pre-demand available water plus same-day rainfall.
+                this.EvaporationVolume = Math.Min(volumeAvailableBeforeDemand + this.RainfallVolume, this.EvaporationVolume);
+
+                this.NetRainfallVolume = this.RainfallVolume - this.EvaporationVolume;
+                this.VolumeInStorage += this.NetRainfallVolume;
+
+                // Seepage after climate.
+                this.SeepageLossVolume = this.CalculateSeepageLoss();
+                this.VolumeInStorage -= this.SeepageLossVolume;
+
+                if (this.VolumeInStorage < 0.0 && this.VolumeInStorage > -1.0E-9)
+                    this.VolumeInStorage = 0.0;
+
+                // Demand receives only the residual after climate and seepage.
+                double demandRequest = Math.Max(0.0, this.UnrestrictedDemand);
+                this.DemandVolumeExtracted = Math.Min(demandRequest, Math.Max(0.0, this.VolumeInStorage));
+                this.VolumeInStorage -= this.DemandVolumeExtracted;
+
+                if (this.VolumeInStorage < 0.0 && this.VolumeInStorage > -1.0E-9)
+                    this.VolumeInStorage = 0.0;
+
+                // Finally, deal with spills.
+                this.DownstreamFlowFromSpill = Math.Max(0.0, this.VolumeInStorage - this.StorageCapacityVolumeAtSpill);
                 this.VolumeInStorage -= this.DownstreamFlowFromSpill;
 
                 // Re-attribute spills that originated as upstream bypass flows:
@@ -240,25 +260,26 @@ namespace RODIS.ModelRun
                 this.DownstreamFlowFromBypass += bypassInflowsSpilled;
                 this.DownstreamFlowFromSpill -= bypassInflowsSpilled;
 
-                // Calculate total downstream flow
+                // Calculate total downstream flow.
                 this.DownstreamFlow = this.DownstreamFlowFromBypass + this.DownstreamFlowFromSpill;
                 this.DownstreamFlowFromCatchment = 0.0;
             }
 
-            // Calculate change in volume in storage over time step
+            // Calculate change in volume in storage over time step.
             this.ChangeInVolumeInStorageForTimeStep = this.VolumeInStorage - trueStartingVolume;
 
-            // Calculate mass balance misclosure
+            // Calculate mass balance misclosure.
             // NOTE: When a dam is removed (simulationDateTime >= EndDate), stored volume is set to zero.
-            // Water previously in storage is not released downstream — this is a known simplification.
+            // Water previously in storage is not released downstream. This is a known simplification.
             this.VolumeBalanceMisclosure = this.NetRainfallVolume + this.PumpedInflow + this.UpstreamFlow
                 - (this.ChangeInVolumeInStorageForTimeStep + this.SeepageLossVolume + this.DemandVolumeExtracted + this.DownstreamFlow + this.DamRemovalStorageLoss);
 
             if (isAdoptedRun)
             {
-                // Set the volume in storage for the start of the net time step to the end of time step volume in storage
+                // Set the volume in storage for the start of the next time step to the end-of-time-step volume in storage.
                 this.StartTimeStepVolumeInStorage = this.VolumeInStorage;
-                // Calculate opening surface area based on starting volume
+
+                // Calculate opening surface area based on starting volume.
                 this.SurfaceAreaStored = this.CalculateSurfaceArea();
             }
         }
