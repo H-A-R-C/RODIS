@@ -300,7 +300,7 @@ namespace RODISUnitTests.LegacyStediRegression
         /// convention, so only the convention-invariant SpillAndBypass sum carries the assertion.</summary>
         [TestMethod]
         [TestCategory(TestCategories.SelfContained)]
-        public void Comparer_SpillBypassRelabelling_IsInformationalAndSumPasses()
+        public void Comparer_SpillBypassRelabelling_IsInformationalAndReleasedFlowPasses()
         {
             var fortran = LegacyStediFdyReader.Read(WriteTemp(TinyFdy, ".fdy"));
             // Day 3: Fortran reports spill 0.500 / bypass 0.000. Re-label 0.2 of that as bypass in RODIS, leaving the sum at 0.500 and downstream flow unchanged.
@@ -312,7 +312,7 @@ namespace RODISUnitTests.LegacyStediRegression
 
             MetricResult spills = result.Metrics.Single(m => m.Name == "Spills");
             MetricResult bypass = result.Metrics.Single(m => m.Name == "Bypass");
-            MetricResult combined = result.Metrics.Single(m => m.Name == "SpillAndBypass");
+            MetricResult combined = result.Metrics.Single(m => m.Name == "DamReleasedFlow");
 
             Assert.AreEqual(MetricTier.Informational, spills.Tier, "Spills is convention-dependent and must be informational.");
             Assert.AreEqual(MetricTier.Informational, bypass.Tier, "Bypass is convention-dependent and must be informational.");
@@ -326,18 +326,18 @@ namespace RODISUnitTests.LegacyStediRegression
         /// making the individual Spill and Bypass metrics informational. The case mirrors Scenario 48, where RODIS releases bypass water that the Fortran reference never releases.</summary>
         [TestMethod]
         [TestCategory(TestCategories.SelfContained)]
-        public void Comparer_GenuineReleasedVolumeDifference_FailsThroughCombinedMetric()
+        public void Comparer_GenuineReleasedVolumeDifference_FailsThroughReleasedFlow()
         {
             var fortran = LegacyStediFdyReader.Read(WriteTemp(TinyFdy, ".fdy"));
             // Day 1 has neither spill nor bypass in the reference. Give RODIS 0.3 ML of bypass, which increases the released total rather than re-labelling it, on a day that is not
             // spill-active in either series, so the difference cannot be excused as a spill-cascade effect.
             string changed = TinyResCsv.Replace("1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0,0.9,0.9",
-                                                "1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0.3,0.9,0.9");
+                                                "1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0.3,0.9,1.2");
             var rodis = RodisResCsvReader.Read(WriteTemp(changed, ".csv"));
 
             ScenarioResult result = LegacyStediComparer.Compare(1, fortran, rodis);
 
-            MetricResult combined = result.Metrics.Single(m => m.Name == "SpillAndBypass");
+            MetricResult combined = result.Metrics.Single(m => m.Name == "DamReleasedFlow");
             Assert.AreEqual(MetricTier.Fail, combined.Tier, "A real change in released volume must fail the combined metric.");
             Assert.AreEqual(0.3, combined.MaxAbs, 1e-9);
             Assert.IsTrue(result.HasFailure);

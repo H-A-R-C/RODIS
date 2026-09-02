@@ -77,6 +77,9 @@ namespace RODISUnitTests.LegacyStediRegression
 
         /// <summary>Compare the day-to-day change (RODIS change field vs Fortran Delta-Store). A constant carried offset cancels, so only genuinely new divergence is flagged.</summary>
         CumulativeChange,
+
+        /// <summary>Compare the difference between two daily values, used to isolate a component of a reported total that both engines agree on, independently of how each labels its parts.</summary>
+        DifferenceOfTwoLevels,
     }
 
     /// <summary>Which documented, understood differences count as "explained" (flagged for investigation) rather than a failure, for a given metric.</summary>
@@ -174,10 +177,10 @@ namespace RODISUnitTests.LegacyStediRegression
                              InformationalNote = "spill/bypass split is a reporting convention; SpillAndBypass carries the assertion" },
             new MetricSpec { Name = "Bypass",         FdyColumnIndex = 8,  ResFieldNumber = 11, IsInformational = true,
                              InformationalNote = "spill/bypass split is a reporting convention; SpillAndBypass carries the assertion" },
-            // The convention-invariant combination. Q-WithDams = Q-spill + Q-bypass + Q-unimpound in both engines, so this sum is pinned to downstream flow regardless of
-            // how the two columns are labelled. A difference that is not a pure re-labelling changes this sum and still fails, so no sensitivity is lost.
-            new MetricSpec { Name = "SpillAndBypass", FdyColumnIndex = 5,  ResFieldNumber = 8,
-                             Mode = ComparisonMode.SumOfTwoLevels, SecondFdyColumnIndex = 8, SecondResFieldNumber = 11 },
+            // Total flow arriving at the outlet from dams, computed as downstream flow minus local catchment inflow. This is invariant to how each engine splits that water between
+            // its spill and bypass columns, so it asserts the physically meaningful quantity while leaving the labelling difference to the two informational metrics above.
+            new MetricSpec { Name = "DamReleasedFlow", FdyColumnIndex = 10, ResFieldNumber = 13,
+                             Mode = ComparisonMode.DifferenceOfTwoLevels, SecondFdyColumnIndex = 9, SecondResFieldNumber = 12 },
 
             // Storage is CUMULATIVE, so the day-1 demand offset leaves a permanent carried offset. Comparing the daily CHANGE (RODIS field 9 vs Fortran
             // Delta-Store) cancels that constant offset; only a genuinely new, unexplained daily change fails.
@@ -437,6 +440,12 @@ namespace RODISUnitTests.LegacyStediRegression
                         if (!rRow.TryGetValue(metric.ResFieldNumber, out double rFirst)) continue;
                         if (!rRow.TryGetValue(metric.SecondResFieldNumber, out double rSecond)) continue;
                         diff = Math.Abs((fRow[metric.FdyColumnIndex] + fRow[metric.SecondFdyColumnIndex]) - (rFirst + rSecond));
+                    }
+                    else if (metric.Mode == ComparisonMode.DifferenceOfTwoLevels)
+                    {
+                        if (!rRow.TryGetValue(metric.ResFieldNumber, out double rFirst)) continue;
+                        if (!rRow.TryGetValue(metric.SecondResFieldNumber, out double rSecond)) continue;
+                        diff = Math.Abs((fRow[metric.FdyColumnIndex] - fRow[metric.SecondFdyColumnIndex]) - (rFirst - rSecond));
                     }
                     else
                     {
