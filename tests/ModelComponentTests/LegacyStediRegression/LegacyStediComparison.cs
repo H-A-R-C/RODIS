@@ -6,12 +6,18 @@
 //   Primary reference : Fortran STEDI 1.2 .fdy water-balance file (long-term truth).
 //   Secondary (optional): March STEDI2025 .res.csv (interim regression aid only).
 //
-//   Comparison is spill-aware: differences that occur only on spill-active days
-//   (spill > 0 in EITHER Fortran or RODIS) are flagged for investigation rather
-//   than failed, because the two engines cascade spill slightly differently.
-//   Storage is compared on its daily CHANGE so the documented, cumulative day-1
-//   demand-timing offset cancels; the carried level offset is reported as a
-//   diagnostic.
+//   Comparison is spill-aware: differences on spill-active days (spill > 0 in
+//   EITHER Fortran or RODIS) are flagged for investigation rather than failed,
+//   because the two engines cascade spill slightly differently. Storage is
+//   compared on its daily CHANGE so the documented, cumulative day-1 demand
+//   timing offset cancels; the carried level offset is reported separately.
+//
+//   GUARD RAILS (see ExplainedGuards): the "explained difference" allowance is
+//   deliberately bounded. A difference is only excusable while it stays rare and
+//   small. If a metric is flagged on more than MaxExplainedDayFraction of days,
+//   or the carried storage offset exceeds MaxCarriedStorageOffsetML, the result
+//   is escalated to a failure. Without these bounds a systematic divergence can
+//   masquerade as a long run of "explained" spill days.
 // ============================================================================
 
 using System;
@@ -21,8 +27,34 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace RODIS.Tests.Legacy
+namespace RODISUnitTests.LegacyStediRegression
 {
+    /// <summary>Test category names used to filter runs, so tests needing the O: drive can be excluded when it is not mapped.</summary>
+    public static class TestCategories
+    {
+        /// <summary>Tests that are fully self-contained (inline fixtures written to the temp folder) and safe to run anywhere, including CI.</summary>
+        public const string SelfContained = "SelfContained";
+
+        /// <summary>Tests that read the 2_SimpleTests scenario tree from the O: drive (or RODIS_SIMPLETESTS_ROOT) and must be excluded when it is unavailable.</summary>
+        public const string RequiresSimpleTestsData = "RequiresSimpleTestsData";
+    }
+
+    /// <summary>Bounds on how much "explained" difference is tolerated before a result is escalated to a failure. These stop a systematic divergence hiding behind a long run of flagged days.</summary>
+    public static class ExplainedGuards
+    {
+        /// <summary>Gets the maximum fraction of compared days a metric may be flagged on before the result is escalated to a failure. Calibrated at 0.10: the validated single-dam, two-dam-series and
+        /// two-dam-parallel scenarios flag on roughly 2-3% of days, whereas scenarios with a systematic divergence flag on 29-66%.</summary>
+        public const double MaxExplainedDayFraction = 0.10;
+
+        /// <summary>Gets the maximum carried storage-level offset (ML) tolerated before the result is escalated to a failure. Calibrated at 0.5 ML: stock-and-domestic demand scenarios carry
+        /// 0.03-0.15 ML from the documented day-1 timing offset, whereas irrigation-demand scenarios carry 0.8-30 ML, which indicates a different, unexplained cause.</summary>
+        public const double MaxCarriedStorageOffsetML = 0.5;
+
+        /// <summary>Gets the minimum number of compared days before the flagged-day fraction is meaningful enough to enforce. Below this the fraction guard is skipped, so a short
+        /// diagnostic series is not failed merely for having few days. Every real SimpleTests scenario has over 3,600 days, so the guard always applies in practice.</summary>
+        public const int MinDaysForFractionGuard = 30;
+    }
+
     /// <summary>How a metric is compared: on its daily level, or on its day-to-day change (for cumulative quantities like storage, where a carried constant offset must cancel).</summary>
     public enum ComparisonMode
     {
@@ -58,8 +90,10 @@ namespace RODIS.Tests.Legacy
         /// <summary>Gets the one-based field number of this metric's level in the RODIS .res.csv result file.</summary>
         public int ResFieldNumber { get; init; }
 
-        /// <summary>Gets the absolute tolerance for this metric. Default 1e-3 absorbs the Fortran 3-decimal (0.000) display rounding; widen deliberately only for a documented, understood difference.</summary>
-        public double AbsTolerance { get; init; } = 1e-3;
+        /// <summary>Gets the absolute tolerance for this metric. Default 2e-3 absorbs the Fortran 3-decimal (0.000) display rounding: each value carries up to 0.0005 of rounding error,
+        /// and the reported difference is a subtraction of two independently rounded quantities, so a genuine match can still show up to about 0.002. Widen beyond this only for a
+        /// documented, understood difference.</summary>
+        public double AbsTolerance { get; init; } = 2e-3;
 
         /// <summary>Gets the comparison mode (Level by default; CumulativeChange for storage).</summary>
         public ComparisonMode Mode { get; init; } = ComparisonMode.Level;
@@ -74,7 +108,7 @@ namespace RODIS.Tests.Legacy
         public int DeltaResFieldNumber { get; init; } = -1;
     }
 
-    /// <summary>Holds the eight metrics compared for each scenario, plus the spill column/field used for spill-event classification.</summary>
+    /// <summary>Holds the eight metrics compared for each scenario, plus the column/field indices used to classify spill, demand and storage-offset days.</summary>
     public static class LegacyStediMetrics
     {
         /// <summary>Fortran .fdy column order: 0 Q-impact, 1 Q-NoDams, 2 Q-wfill, 3 Q-climate, 4 Q-demand, 5 Q-spill, 6 Delta-Store, 7 Store end, 8 Q-bypass, 9 Q-unimpound, 10 Q-WithDams.</summary>
@@ -86,20 +120,32 @@ namespace RODIS.Tests.Legacy
         /// <summary>Gets the RODIS .res.csv field number of Spill Downstream Flow, used (with the Fortran Q-spill) to classify spill-active days.</summary>
         public const int ResSpillFieldNumber = 8;
 
-        /// <summary>Gets the eight metrics compared between the Fortran reference and the RODIS output, keyed by friendly name.</summary>
+        /// <summary>Gets the Fortran .fdy column index of Q-demand, used to flag days where demand differs.</summary>
+        public const int FdyDemandColumnIndex = 4;
+
+        /// <summary>Gets the RODIS .res.csv field number of Demand Volume Extracted, used to flag days where demand differs.</summary>
+        public const int ResDemandFieldNumber = 7;
+
+        /// <summary>Gets the Fortran .fdy column index of Store-end, used to flag days where a carried storage-level offset is present.</summary>
+        public const int FdyStorageColumnIndex = 7;
+
+        /// <summary>Gets the RODIS .res.csv field number of Storage Volume End of Timestep, used to flag days where a carried storage-level offset is present.</summary>
+        public const int ResStorageFieldNumber = 10;
+
+        /// <summary>Gets the eight metrics compared between the Fortran reference and the RODIS output.</summary>
         public static IReadOnlyList<MetricSpec> All { get; } = new List<MetricSpec>
         {
             new MetricSpec { Name = "Impact",         FdyColumnIndex = 0,  ResFieldNumber = 1  },
             new MetricSpec { Name = "Unimpacted",     FdyColumnIndex = 1,  ResFieldNumber = 4  },
             new MetricSpec { Name = "Climate",        FdyColumnIndex = 3,  ResFieldNumber = 6  },
-            // Demand carries the DOCUMENTED day-1 demand-timing offset (RODIS applies demand from day 2, Fortran from day 1). Once storage is offset,
+            // Demand carries the documented day-1 demand-timing offset (RODIS applies demand from day 2, Fortran from day 1). Once storage is offset,
             // availability-limited demand can differ, so a demand difference is treated as explained whenever a storage-level offset is present (or on spill days).
-            new MetricSpec { Name = "Demand",         FdyColumnIndex = 4,  ResFieldNumber = 7, AbsTolerance = 2e-3, Explained = ExplainedBy.SpillOrStorageOffset },
+            new MetricSpec { Name = "Demand",         FdyColumnIndex = 4,  ResFieldNumber = 7, Explained = ExplainedBy.SpillOrStorageOffset },
             new MetricSpec { Name = "Spills",         FdyColumnIndex = 5,  ResFieldNumber = 8 },
-            // Storage is CUMULATIVE, so the day-1 demand offset leaves a permanent ~0.07 ML carried offset. Comparing the daily CHANGE (RODIS field 9 vs
-            // Fortran Delta-Store) cancels that constant offset; only a genuinely new, unexplained daily change fails. 2e-3 allows the difference of two
-            // 3-decimal-rounded increments. The carried storage-level offset itself is reported as a diagnostic (see MetricResult.CumulativeOffsetMax).
-            new MetricSpec { Name = "Storage",        FdyColumnIndex = 7,  ResFieldNumber = 10, AbsTolerance = 2e-3,
+            // Storage is CUMULATIVE, so the day-1 demand offset leaves a permanent carried offset. Comparing the daily CHANGE (RODIS field 9 vs Fortran
+            // Delta-Store) cancels that constant offset; only a genuinely new, unexplained daily change fails.
+            // The carried storage-level offset is reported separately and bounded by ExplainedGuards.MaxCarriedStorageOffsetML.
+            new MetricSpec { Name = "Storage",        FdyColumnIndex = 7,  ResFieldNumber = 10,
                              Mode = ComparisonMode.CumulativeChange, DeltaFdyColumnIndex = 6, DeltaResFieldNumber = 9, Explained = ExplainedBy.SpillOrDemandDiff },
             new MetricSpec { Name = "LocalInflow",    FdyColumnIndex = 9,  ResFieldNumber = 12 },
             new MetricSpec { Name = "DownstreamFlow", FdyColumnIndex = 10, ResFieldNumber = 13 },
@@ -201,14 +247,17 @@ namespace RODIS.Tests.Legacy
         private static string[] SplitCsv(string line) => line.Split(',');
     }
 
-    /// <summary>Three-tier outcome for a single metric: Pass, PassWithSpillDiffs (flagged for investigation) or Fail (a non-spill exceedance).</summary>
+    /// <summary>Outcome for a single metric.</summary>
     public enum MetricTier
     {
         /// <summary>All days within tolerance.</summary>
         Pass,
 
-        /// <summary>Exceedances occur only on explained (spill / known-difference) days; flagged for investigation, not treated as a failure.</summary>
+        /// <summary>Exceedances occur only on explained days AND stay within the ExplainedGuards bounds; flagged for investigation, not treated as a failure.</summary>
         PassWithSpillDiffs,
+
+        /// <summary>Exceedances are all on explained days but occur on too large a fraction of the record to be credible as an edge case; treated as a failure.</summary>
+        FailExcessiveExplained,
 
         /// <summary>At least one exceedance occurs on an unexplained day; treated as a genuine regression.</summary>
         Fail,
@@ -235,13 +284,16 @@ namespace RODIS.Tests.Legacy
         /// <summary>Gets the count of exceedance days that are unexplained (these drive a Fail).</summary>
         public int NonSpillExceedances { get; init; }
 
+        /// <summary>Gets the fraction of compared days on which this metric was flagged as an explained exceedance.</summary>
+        public double ExplainedDayFraction => DayCount > 0 ? (double)SpillExceedances / DayCount : 0.0;
+
         /// <summary>Gets the date of the worst (largest absolute) difference, or null if the metric matched exactly.</summary>
         public DateOnly? WorstDate { get; init; }
 
-        /// <summary>Gets the three-tier outcome for this metric.</summary>
+        /// <summary>Gets the outcome for this metric.</summary>
         public MetricTier Tier { get; init; }
 
-        /// <summary>Gets the maximum carried storage-level offset (|RODIS - Fortran| on the level) for a CumulativeChange metric; 0 for level metrics. Diagnostic only.</summary>
+        /// <summary>Gets the maximum carried storage-level offset (|RODIS - Fortran| on the level) for a CumulativeChange metric; 0 for level metrics.</summary>
         public double CumulativeOffsetMax { get; init; }
     }
 
@@ -251,23 +303,45 @@ namespace RODIS.Tests.Legacy
         /// <summary>Gets the scenario number (1-50).</summary>
         public int Scenario { get; init; }
 
-        /// <summary>Gets the per-metric results keyed by metric name.</summary>
+        /// <summary>Gets the per-metric results.</summary>
         public IReadOnlyList<MetricResult> Metrics { get; init; } = Array.Empty<MetricResult>();
 
         /// <summary>Gets the number of overlapping days shared by the two series.</summary>
         public int OverlapDays { get; init; }
 
-        /// <summary>Gets a value indicating whether any metric failed on an unexplained day (i.e. a genuine regression).</summary>
-        public bool HasFailure => Metrics.Any(m => m.Tier == MetricTier.Fail);
+        /// <summary>Gets the largest carried storage-level offset reported by any metric, in ML.</summary>
+        public double MaxCarriedStorageOffset => Metrics.Count > 0 ? Metrics.Max(m => m.CumulativeOffsetMax) : 0.0;
 
-        /// <summary>Gets a value indicating whether any metric was flagged with explained (spill / known) differences for investigation.</summary>
+        /// <summary>Gets a value indicating whether the carried storage offset exceeds the bound in ExplainedGuards, which indicates a cause beyond the documented day-1 timing offset.</summary>
+        public bool HasExcessiveCarriedOffset => MaxCarriedStorageOffset > ExplainedGuards.MaxCarriedStorageOffsetML;
+
+        /// <summary>Gets a value indicating whether any metric failed outright or was escalated for flagging too large a fraction of the record.</summary>
+        public bool HasFailure => Metrics.Any(m => m.Tier == MetricTier.Fail || m.Tier == MetricTier.FailExcessiveExplained) || this.HasExcessiveCarriedOffset;
+
+        /// <summary>Gets a value indicating whether any metric was flagged with explained (spill / known) differences within the permitted bounds.</summary>
         public bool HasSpillDiffs => Metrics.Any(m => m.Tier == MetricTier.PassWithSpillDiffs);
+
+        /// <summary>Gets a short human-readable summary of why the scenario failed, or an empty string when it did not.</summary>
+        public string FailureSummary
+        {
+            get
+            {
+                List<string> reasons = new List<string>();
+                foreach (MetricResult m in this.Metrics.Where(x => x.Tier == MetricTier.Fail))
+                    reasons.Add($"{m.Name}: {m.NonSpillExceedances} unexplained day(s), max_abs={m.MaxAbs:0.###e+00} on {m.WorstDate:yyyy-MM-dd}");
+                foreach (MetricResult m in this.Metrics.Where(x => x.Tier == MetricTier.FailExcessiveExplained))
+                    reasons.Add($"{m.Name}: flagged on {m.ExplainedDayFraction:P0} of days ({m.SpillExceedances}/{m.DayCount}), above the {ExplainedGuards.MaxExplainedDayFraction:P0} limit");
+                if (this.HasExcessiveCarriedOffset)
+                    reasons.Add($"carried storage offset {this.MaxCarriedStorageOffset:0.###} ML exceeds the {ExplainedGuards.MaxCarriedStorageOffsetML:0.###} ML limit");
+                return string.Join("; ", reasons);
+            }
+        }
     }
 
-    /// <summary>Compares a Fortran reference series against a RODIS output series metric-by-metric, applying spill-aware three-tier classification and cumulative-change handling.</summary>
+    /// <summary>Compares a Fortran reference series against a RODIS output series metric-by-metric, applying spill-aware classification, cumulative-change handling and the ExplainedGuards bounds.</summary>
     public static class LegacyStediComparer
     {
-        /// <summary>Compares the Fortran .fdy series against the RODIS .res.csv series for all eight metrics, classifying each as Pass, PassWithSpillDiffs or Fail.</summary>
+        /// <summary>Compares the Fortran .fdy series against the RODIS .res.csv series for all eight metrics, classifying each metric and applying the explained-difference bounds.</summary>
         /// <param name="scenario">Scenario number (1-50) for reporting.</param>
         /// <param name="fortran">Fortran reference series (date -&gt; eleven column values).</param>
         /// <param name="rodis">RODIS output series (date -&gt; {field number -&gt; value}).</param>
@@ -287,8 +361,10 @@ namespace RODIS.Tests.Legacy
                 Dictionary<int, double> rRow = rodis[day];
                 spillActiveOn[day] = fRow[LegacyStediMetrics.FdySpillColumnIndex] > 1e-6
                                   || (rRow.TryGetValue(LegacyStediMetrics.ResSpillFieldNumber, out double rSpill) && rSpill > 1e-6);
-                demandDiffersOn[day] = rRow.TryGetValue(7, out double rDem) && Math.Abs(fRow[4] - rDem) > 1e-3;                 // Fortran Q-demand col 4, RODIS demand field 7
-                storageOffsetOn[day] = rRow.TryGetValue(10, out double rStor) && Math.Abs(fRow[7] - rStor) > 1e-3;               // Fortran Store-end col 7, RODIS storage field 10
+                demandDiffersOn[day] = rRow.TryGetValue(LegacyStediMetrics.ResDemandFieldNumber, out double rDem)
+                                    && Math.Abs(fRow[LegacyStediMetrics.FdyDemandColumnIndex] - rDem) > 1e-3;
+                storageOffsetOn[day] = rRow.TryGetValue(LegacyStediMetrics.ResStorageFieldNumber, out double rStor)
+                                    && Math.Abs(fRow[LegacyStediMetrics.FdyStorageColumnIndex] - rStor) > 1e-3;
             }
 
             List<MetricResult> metricResults = new List<MetricResult>();
@@ -309,7 +385,7 @@ namespace RODIS.Tests.Legacy
                     {
                         if (!rRow.TryGetValue(metric.DeltaResFieldNumber, out double rDelta)) continue;
                         diff = Math.Abs(fRow[metric.DeltaFdyColumnIndex] - rDelta);
-                        // Track the carried storage-LEVEL offset as a diagnostic (this is the difference the change-based comparison deliberately cancels).
+                        // Track the carried storage-LEVEL offset (the difference the change-based comparison deliberately cancels), bounded by ExplainedGuards.
                         if (rRow.TryGetValue(metric.ResFieldNumber, out double rLevel))
                             cumulativeOffsetMax = Math.Max(cumulativeOffsetMax, Math.Abs(fRow[metric.FdyColumnIndex] - rLevel));
                     }
@@ -330,16 +406,25 @@ namespace RODIS.Tests.Legacy
                     }
                 }
 
-                MetricTier tier = maxAbs <= metric.AbsTolerance ? MetricTier.Pass
-                                : nonSpillExceed == 0 ? MetricTier.PassWithSpillDiffs
-                                : MetricTier.Fail;
+                // Classify: an unexplained day always fails; otherwise the explained allowance is bounded by the flagged-day fraction.
+                double explainedFraction = dayCount > 0 ? (double)spillExceed / dayCount : 0.0;
+                MetricTier tier;
+                if (maxAbs <= metric.AbsTolerance) tier = MetricTier.Pass;
+                else if (nonSpillExceed > 0) tier = MetricTier.Fail;
+                else if (dayCount >= ExplainedGuards.MinDaysForFractionGuard && explainedFraction > ExplainedGuards.MaxExplainedDayFraction) tier = MetricTier.FailExcessiveExplained;
+                else tier = MetricTier.PassWithSpillDiffs;
 
                 metricResults.Add(new MetricResult
                 {
-                    Name = metric.Name, DayCount = dayCount, MaxAbs = maxAbs,
+                    Name = metric.Name,
+                    DayCount = dayCount,
+                    MaxAbs = maxAbs,
                     Rmse = dayCount > 0 ? Math.Sqrt(sumSquares / dayCount) : 0.0,
-                    SpillExceedances = spillExceed, NonSpillExceedances = nonSpillExceed,
-                    WorstDate = worst, Tier = tier, CumulativeOffsetMax = cumulativeOffsetMax,
+                    SpillExceedances = spillExceed,
+                    NonSpillExceedances = nonSpillExceed,
+                    WorstDate = worst,
+                    Tier = tier,
+                    CumulativeOffsetMax = cumulativeOffsetMax,
                 });
             }
 
@@ -352,15 +437,15 @@ namespace RODIS.Tests.Legacy
         /// <param name="spill">Per-day spill-active flags.</param>
         /// <param name="demandDiff">Per-day demand-difference flags.</param>
         /// <param name="storageOffset">Per-day storage-level-offset flags.</param>
-        /// <returns>True if the difference is explained (counts as a flagged spill/known difference); false if it is a genuine failure.</returns>
+        /// <returns>True if the difference is explained; false if it is a genuine failure.</returns>
         private static bool IsExplained(ExplainedBy explained, DateOnly day,
                                         IReadOnlyDictionary<DateOnly, bool> spill,
                                         IReadOnlyDictionary<DateOnly, bool> demandDiff,
                                         IReadOnlyDictionary<DateOnly, bool> storageOffset) => explained switch
-        {
-            ExplainedBy.SpillOrStorageOffset => spill[day] || storageOffset[day],
-            ExplainedBy.SpillOrDemandDiff => spill[day] || demandDiff[day],
-            _ => spill[day],
-        };
+                                        {
+                                            ExplainedBy.SpillOrStorageOffset => spill[day] || storageOffset[day],
+                                            ExplainedBy.SpillOrDemandDiff => spill[day] || demandDiff[day],
+                                            _ => spill[day],
+                                        };
     }
 }

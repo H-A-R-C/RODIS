@@ -33,37 +33,28 @@ namespace RODIS.ModelRun
 
             this.annualDemandVolume = Math.Max(0, this.AnnualDemandFactor * this.DamStorageCapacityVolumeAtSpill);
 
-            // Pass 1: sum proportions and total period
-            double totalProportions = 0.0;
-            TimeSpan totalPeriodForPattern = TimeSpan.Zero;
-            for (int i = 0; i < this.InputPattern.Length; i++)
+            // Normalise using complete calendar years only. A partial year at either end of the pattern covers only part of the seasonal cycle, so including it would
+            // bias the mean by whichever season it happens to span. Falls back to the whole-series mean when the pattern is shorter than one complete calendar year.
+            double meanAnnualProportions = this.CalculateMeanAnnualProportions(out int completeYearCount);
+
+            if (completeYearCount == 0)
             {
-                if (this.InputPattern[i].IsValid)
-                {
-                    totalProportions += this.InputPattern[i].Value;
-                    TimeSpan step = (i == 0)
-                        ? this.InputPattern[1].Time - this.InputPattern[0].Time
-                        : this.InputPattern[i].Time - this.InputPattern[i - 1].Time;
-                    totalPeriodForPattern += step;
-                }
+                Console.WriteLine($"WARNING: Demand group '{this.DemandGroup}': demand pattern '{this.InputFilePath}' does not span a complete calendar year. "
+                    + "Normalising over the whole series instead, which may bias the annual demand volume.");
             }
 
-            double totalYears = totalPeriodForPattern.Days / 365.25;
-            double totalProportionsPerYear = (totalYears > 0.0) ? totalProportions / totalYears : 0.0;
-
-            // Pass 2: build output array directly (no List, no DeepCopy)
             this.timeStepDemandVolume = new TimeSeriesValue[this.InputPattern.Length];
             for (int i = 0; i < this.InputPattern.Length; i++)
             {
                 double scaledValue;
-                if (totalProportionsPerYear > 0.0)
+                if (meanAnnualProportions > 0.0)
                 {
-                    scaledValue = this.InputPattern[i].Value / totalProportionsPerYear * this.annualDemandVolume;
+                    scaledValue = this.InputPattern[i].Value / meanAnnualProportions * this.annualDemandVolume;
                 }
                 else
                 {
-                    // All proportions zero — distribute uniformly
-                    scaledValue = this.annualDemandVolume / totalYears;
+                    // Every proportion is zero, so the pattern carries no shape. Spread the annual volume evenly across the time steps, preserving the annual total.
+                    scaledValue = this.annualDemandVolume * this.CalculateMeanTimeStepDays() / 365.25;
                 }
 
                 this.timeStepDemandVolume[i] = new TimeSeriesValue
@@ -83,6 +74,93 @@ namespace RODIS.ModelRun
             int iTS = TimeSeriesValue.GetIndexForTimestep(this.timeStepDemandVolume, simulationDateTime);
             TimeSeriesValue demandAtTimestep = this.timeStepDemandVolume[iTS];
             this.UnrestrictedDemand = demandAtTimestep.Value * this.MonthlyScaleFactors[simulationDateTime.Month - 1];
+        }
+
+        /// <summary>Calculates the mean sum of pattern proportions per complete calendar year. A calendar year counts as complete only when the pattern spans it from
+        /// 1 January to 31 December, so a partial year at either end of the file is excluded from the mean. When no complete year is present the whole-series mean is
+        /// returned as a fallback, scaled to a nominal 365.25-day year.</summary>
+        /// <param name="completeYearCount">Output: the number of complete calendar years found in the pattern; 0 when the fallback was used.</param>
+        /// <returns>Mean sum of proportions per year, or 0.0 when every proportion is zero.</returns>
+        private double CalculateMeanAnnualProportions(out int completeYearCount)
+        {
+            DateTime firstTime = this.InputPattern[0].Time;
+            DateTime lastTime = this.InputPattern[this.InputPattern.Length - 1].Time;
+
+            // Sum the valid proportions in each calendar year the pattern touches.
+            Dictionary<int, double> proportionsByYear = new Dictionary<int, double>();
+            for (int i = 0; i < this.InputPattern.Length; i++)
+            {
+                if (!this.InputPattern[i].IsValid)
+                {
+                    continue;
+                }
+                int year = this.InputPattern[i].Time.Year;
+                proportionsByYear.TryGetValue(year, out double runningTotal);
+                proportionsByYear[year] = runningTotal + this.InputPattern[i].Value;
+            }
+
+            // Keep only the years the pattern covers end to end.
+            double completeYearTotal = 0.0;
+            completeYearCount = 0;
+            foreach (KeyValuePair<int, double> yearTotal in proportionsByYear)
+            {
+                if (firstTime <= new DateTime(yearTotal.Key, 1, 1) && lastTime >= new DateTime(yearTotal.Key, 12, 31))
+                {
+                    completeYearTotal += yearTotal.Value;
+                    completeYearCount++;
+                }
+            }
+
+            if (completeYearCount > 0)
+            {
+                return completeYearTotal / completeYearCount;
+            }
+
+            // Fallback: pattern is shorter than one calendar year, so use the whole-series mean scaled to a nominal year.
+            double totalProportions = 0.0;
+            for (int i = 0; i < this.InputPattern.Length; i++)
+            {
+                if (this.InputPattern[i].IsValid)
+                {
+                    totalProportions += this.InputPattern[i].Value;
+                }
+            }
+
+            double totalDays = this.CalculateTotalPeriodDays();
+            return (totalDays > 0.0) ? totalProportions * 365.25 / totalDays : 0.0;
+        }
+
+        /// <summary>Calculates the total period covered by the pattern in days, treating the first time step as having the same length as the second.</summary>
+        /// <returns>Total period covered by the pattern, in days.</returns>
+        private double CalculateTotalPeriodDays()
+        {
+            double totalDays = 0.0;
+            for (int i = 0; i < this.InputPattern.Length; i++)
+            {
+                if (this.InputPattern[i].IsValid)
+                {
+                    TimeSpan step = (i == 0) ? this.InputPattern[1].Time - this.InputPattern[0].Time : this.InputPattern[i].Time - this.InputPattern[i - 1].Time;
+                    totalDays += step.TotalDays;
+                }
+            }
+            return totalDays;
+        }
+
+        /// <summary>Calculates the mean length of a time step in the pattern, used to spread demand evenly when the pattern carries no shape.</summary>
+        /// <returns>Mean time step length in days; defaults to 1.0 when it cannot be determined.</returns>
+        private double CalculateMeanTimeStepDays()
+        {
+            int validCount = 0;
+            for (int i = 0; i < this.InputPattern.Length; i++)
+            {
+                if (this.InputPattern[i].IsValid)
+                {
+                    validCount++;
+                }
+            }
+
+            double totalDays = this.CalculateTotalPeriodDays();
+            return (validCount > 0 && totalDays > 0.0) ? totalDays / validCount : 1.0;
         }
     }
 }
