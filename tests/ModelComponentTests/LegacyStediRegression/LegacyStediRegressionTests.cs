@@ -16,7 +16,9 @@
 //   when the drive is not mapped, e.g.:
 //       dotnet test --filter TestCategory!=RequiresSimpleTestsData
 //
-//   A roll-up (one row per scenario) is written on class cleanup.
+//   The roll-up CSV reports max_abs for EVERY metric, not just failing ones, so
+//   a flagged or informational metric can be judged on magnitude as well as on
+//   the number of days affected.
 // ============================================================================
 
 using System;
@@ -145,26 +147,41 @@ namespace RODISUnitTests.LegacyStediRegression
                 $"Scenario {scenario:D2} diverged from the March interim build: {worstMetric} differs by {worst:0.###e+00} on {worstDate:yyyy-MM-dd} (tol {AbsToleranceMarch:0.###e+00}).");
         }
 
-        /// <summary>Writes the roll-up (one row per scenario and metric outcome) to the console and a timestamped CSV beside the SimpleTests root.</summary>
+        /// <summary>Writes the roll-up to the console and a timestamped CSV beside the SimpleTests root. Each metric contributes two columns: its outcome and its max_abs, so a flagged or
+        /// informational metric can be judged on magnitude as well as on the number of days affected.</summary>
         [ClassCleanup]
         public static void WriteRollUp()
         {
             if (RollUp.Count == 0) return;
 
+            IReadOnlyList<MetricSpec> metrics = LegacyStediMetrics.All;
             StringBuilder sb = new StringBuilder();
-            sb.AppendLine("scenario,overlap_days,result," + string.Join(",", LegacyStediMetrics.All.Select(m => m.Name)) + ",carried_storage_offset,failure_reason");
+            sb.Append("scenario,overlap_days,result");
+            foreach (MetricSpec m in metrics) sb.Append(CultureInfo.InvariantCulture, $",{m.Name}");
+            foreach (MetricSpec m in metrics) sb.Append(CultureInfo.InvariantCulture, $",{m.Name}_max_abs");
+            sb.AppendLine(",carried_storage_offset,failure_reason");
+
             foreach (ScenarioResult r in RollUp.OrderBy(x => x.Scenario))
             {
                 string overall = r.HasFailure ? "FAIL" : r.HasSpillDiffs ? "PASS(spill)" : "PASS";
-                IEnumerable<string> cells = r.Metrics.Select(m => m.Tier switch
+                sb.Append(CultureInfo.InvariantCulture, $"{r.Scenario:D2},{r.OverlapDays},{overall}");
+
+                foreach (MetricResult m in r.Metrics)
                 {
-                    MetricTier.Pass => "PASS",
-                    MetricTier.PassWithSpillDiffs => $"spill:{m.SpillExceedances}",
-                    MetricTier.FailExcessiveExplained => $"EXCESS:{m.SpillExceedances}({m.ExplainedDayFraction:P0})",
-                    _ => $"FAIL:{m.NonSpillExceedances}",
-                });
-                sb.AppendLine($"{r.Scenario:D2},{r.OverlapDays},{overall}," + string.Join(",", cells) +
-                              $",{r.MaxCarriedStorageOffset:0.####},\"{r.FailureSummary}\"");
+                    string cell = m.Tier switch
+                    {
+                        MetricTier.Pass => "PASS",
+                        MetricTier.PassWithSpillDiffs => $"spill:{m.SpillExceedances}",
+                        MetricTier.FailExcessiveExplained => $"EXCESS:{m.SpillExceedances}({m.ExplainedDayFraction:P0})",
+                        MetricTier.Informational => m.TotalExceedances > 0 ? $"info:{m.TotalExceedances}" : "info:0",
+                        _ => $"FAIL:{m.NonSpillExceedances}",
+                    };
+                    sb.Append(CultureInfo.InvariantCulture, $",{cell}");
+                }
+
+                foreach (MetricResult m in r.Metrics) sb.Append(CultureInfo.InvariantCulture, $",{m.MaxAbs:0.###e+00}");
+
+                sb.AppendLine(CultureInfo.InvariantCulture, $",{r.MaxCarriedStorageOffset:0.####},\"{r.FailureSummary}\"");
             }
 
             string csv = sb.ToString();
@@ -175,19 +192,19 @@ namespace RODISUnitTests.LegacyStediRegression
             Console.WriteLine(Environment.NewLine + "===== Legacy STEDI roll-up (RODIS vs Fortran STEDI 1.2) =====" + Environment.NewLine + csv);
         }
 
-        /// <summary>Builds a readable per-metric table for one scenario for the test output.</summary>
+        /// <summary>Builds a readable per-metric table for one scenario for the test output, reporting max_abs for every metric regardless of outcome.</summary>
         /// <param name="r">The scenario result to format.</param>
         /// <returns>Multi-line table string.</returns>
         private static string FormatScenarioTable(ScenarioResult r)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"=== Scenario {r.Scenario:D2}  (RODIS vs Fortran STEDI 1.2, {r.OverlapDays} overlapping days) ===");
-            sb.AppendLine($"{"Metric",-15}{"max_abs",12}{"rmse",12}{"flagged",9}{"flag%",8}{"fails",7}{"carried",11}  {"worst",-12} tier");
+            sb.AppendLine($"{"Metric",-16}{"max_abs",12}{"rmse",12}{"flagged",9}{"flag%",8}{"fails",7}{"carried",11}  {"worst",-12} tier");
             foreach (MetricResult m in r.Metrics)
             {
                 string worst = m.WorstDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "-";
                 string carried = m.CumulativeOffsetMax > 0 ? m.CumulativeOffsetMax.ToString("0.###e+00", CultureInfo.InvariantCulture) : "-";
-                sb.AppendLine($"{m.Name,-15}{m.MaxAbs,12:0.###e+00}{m.Rmse,12:0.###e+00}{m.SpillExceedances,9}{m.ExplainedDayFraction,8:P0}{m.NonSpillExceedances,7}{carried,11}  {worst,-12} {m.Tier}");
+                sb.AppendLine($"{m.Name,-16}{m.MaxAbs,12:0.###e+00}{m.Rmse,12:0.###e+00}{m.SpillExceedances,9}{m.ExplainedDayFraction,8:P0}{m.NonSpillExceedances,7}{carried,11}  {worst,-12} {m.Tier}");
             }
             if (r.HasFailure) sb.AppendLine($"FAILURE: {r.FailureSummary}");
             return sb.ToString();

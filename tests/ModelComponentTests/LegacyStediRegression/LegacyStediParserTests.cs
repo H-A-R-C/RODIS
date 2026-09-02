@@ -9,8 +9,9 @@
 //   They guard against the parsers silently breaking if the Source .res.csv
 //   layout evolves (field count, EOH placement, header "N>..." format, missing
 //   values, "-0" values) or if the .fdy column order changes, and they lock in
-//   the comparer's classification, cumulative-change handling and the guard
-//   rails that stop a systematic divergence hiding behind "explained" days.
+//   the comparer's classification, cumulative-change handling, the spill/bypass
+//   reporting-convention treatment, and the guard rails that stop a systematic
+//   divergence hiding behind "explained" days.
 //
 //   NOTE: TinyFdy and TinyResCsv deliberately encode IDENTICAL values in the two
 //   formats, so any difference the comparer reports is a genuine logic error.
@@ -69,14 +70,8 @@ namespace RODISUnitTests.LegacyStediRegression
             "19500102           0.100          1.000          0.000          0.000          0.069          0.000          0.031          0.063          0.000          0.900          0.900\n" +
             "19500103           0.250          1.000          0.000          0.010          0.069          0.500          0.031          0.094          0.000          0.900          0.750\n";
 
-        /// <summary>A three-day RODIS .res.csv fixture encoding the SAME nine mapped values as TinyFdy, exercising the EOM/EOC/EOH markers, the "N&gt;..." header, a "-0" value and ISO dates.</summary>
-        private const string TinyResCsv = ResCsvPreamble +
-            "EOH\n" +
-            "1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0.9,0.9\n" +
-            "1950-01-02,0.1,1,-0,0.069,0,0.031,0.063,0.9,0.9\n" +
-            "1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0.9,0.75\n";
-
-        /// <summary>The RODIS .res.csv metadata block and Date header shared by the inline fixtures, up to but excluding the EOH marker.</summary>
+        /// <summary>The RODIS .res.csv metadata block and Date header shared by the inline fixtures, up to but excluding the EOH marker. Field order in the data rows is
+        /// 1 Impact, 4 Unimpacted, 6 Net Rainfall, 7 Demand, 8 Spill, 9 Change in Storage, 10 Storage, 11 Bypass, 12 Local Inflow, 13 Downstream.</summary>
         private const string ResCsvPreamble =
             "File version,3\n" +
             "Missing data value,-9999\n" +
@@ -87,7 +82,7 @@ namespace RODISUnitTests.LegacyStediRegression
             "Simulation time,1950-01-01 - 1950-02-09\n" +
             "Field,Units,RunName,ScenarioName,ScenarioInputSetName,Name,Site,ElementName,WaterFeatureType,ElementType,Structure,Custom\n" +
             "EOC\n" +
-            "13\n" +
+            "14\n" +
             "1,ML,,tiny,,Confluence: X: Impact,X,Impact,Confluence,Node,Impact,abc\n" +
             "4,ML,,tiny,,Confluence: X: Unimpacted Flow,X,Unimpacted Flow,Confluence,Node,Unimpacted Flow,abc\n" +
             "6,ML,,tiny,,Confluence: X: Net Rainfall Volume,X,Net Rainfall Volume,Confluence,Node,Net Rainfall Volume,abc\n" +
@@ -95,9 +90,17 @@ namespace RODISUnitTests.LegacyStediRegression
             "8,ML,,tiny,,Confluence: X: Spill Downstream Flow,X,Spill Downstream Flow,Confluence,Node,Spill Downstream Flow,abc\n" +
             "9,ML,,tiny,,Confluence: X: Change in Storage Volume,X,Change in Storage Volume,Confluence,Node,Change in Storage Volume,abc\n" +
             "10,ML,,tiny,,Confluence: X: Storage Volume End of Timestep,X,Storage Volume End of Timestep,Confluence,Node,Storage Volume End of Timestep,abc\n" +
+            "11,ML,,tiny,,Confluence: X: Bypass Downstream Flow,X,Bypass Downstream Flow,Confluence,Node,Bypass Downstream Flow,abc\n" +
             "12,ML,,tiny,,Confluence: X: Local Catchment Inflow,X,Local Catchment Inflow,Confluence,Node,Local Catchment Inflow,abc\n" +
             "13,ML,,tiny,,Confluence: X: Downstream Flow,X,Downstream Flow,Confluence,Node,Downstream Flow,abc\n" +
-            "Date,1>Confluence> X> Impact,4>Confluence> X> Unimpacted Flow,6>Confluence> X> Net Rainfall Volume,7>Confluence> X> Demand Volume Extracted,8>Confluence> X> Spill Downstream Flow,9>Confluence> X> Change in Storage Volume,10>Confluence> X> Storage Volume End of Timestep,12>Confluence> X> Local Catchment Inflow,13>Confluence> X> Downstream Flow\n";
+            "Date,1>Confluence> X> Impact,4>Confluence> X> Unimpacted Flow,6>Confluence> X> Net Rainfall Volume,7>Confluence> X> Demand Volume Extracted,8>Confluence> X> Spill Downstream Flow,9>Confluence> X> Change in Storage Volume,10>Confluence> X> Storage Volume End of Timestep,11>Confluence> X> Bypass Downstream Flow,12>Confluence> X> Local Catchment Inflow,13>Confluence> X> Downstream Flow\n";
+
+        /// <summary>A three-day RODIS .res.csv fixture encoding the SAME values as TinyFdy, exercising the EOM/EOC/EOH markers, the "N&gt;..." header, a "-0" value and ISO dates.</summary>
+        private const string TinyResCsv = ResCsvPreamble +
+            "EOH\n" +
+            "1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0,0.9,0.9\n" +
+            "1950-01-02,0.1,1,-0,0.069,0,0.031,0.063,0,0.9,0.9\n" +
+            "1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0,0.9,0.75\n";
 
         /// <summary>Builds a matching pair of multi-day .fdy and .res.csv fixtures, long enough for the flagged-day fraction guard to apply.
         /// Every day spills, so any perturbation counts as an "explained" difference; this isolates the fraction guard from the explained/unexplained logic.</summary>
@@ -119,7 +122,7 @@ namespace RODISUnitTests.LegacyStediRegression
 
                 double downstream = i < perturbedDays ? 0.95 : 0.75;      // perturb only the leading days
                 res.Append(day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
-                res.Append(CultureInfo.InvariantCulture, $",0.25,1,-0,0.069,0.5,0.031,0.031,0.9,{downstream}\n");
+                res.Append(CultureInfo.InvariantCulture, $",0.25,1,-0,0.069,0.5,0.031,0.031,0,0.9,{downstream}\n");
             }
             return (fdy.ToString(), res.ToString());
         }
@@ -155,6 +158,7 @@ namespace RODISUnitTests.LegacyStediRegression
             Assert.AreEqual(0.500, day3[5], 1e-9, "Q-spill");
             Assert.AreEqual(0.031, day3[6], 1e-9, "Delta-Store");
             Assert.AreEqual(0.094, day3[7], 1e-9, "Store end");
+            Assert.AreEqual(0.000, day3[8], 1e-9, "Q-bypass");
             Assert.AreEqual(0.900, day3[9], 1e-9, "Q-unimpound");
             Assert.AreEqual(0.750, day3[10], 1e-9, "Q-WithDams");
         }
@@ -189,6 +193,7 @@ namespace RODISUnitTests.LegacyStediRegression
             Assert.AreEqual(0.5, day3[8], 1e-9, "field 8 Spill");
             Assert.AreEqual(0.031, day3[9], 1e-9, "field 9 Change in Storage");
             Assert.AreEqual(0.094, day3[10], 1e-9, "field 10 Storage");
+            Assert.AreEqual(0.0, day3[11], 1e-9, "field 11 Bypass");
             Assert.AreEqual(0.75, day3[13], 1e-9, "field 13 Downstream");
 
             Dictionary<int, double> day1 = series[new DateOnly(1950, 1, 1)];
@@ -208,7 +213,7 @@ namespace RODISUnitTests.LegacyStediRegression
 
         // ---------------------------------------------------------------- end-to-end comparer
 
-        /// <summary>Verifies that identical .fdy and .res.csv series produce all-Pass metrics and no failures (the two fixtures encode the same nine values).</summary>
+        /// <summary>Verifies that identical .fdy and .res.csv series produce no failures, that every asserting metric passes, and that the informational metrics report zero difference.</summary>
         [TestMethod]
         [TestCategory(TestCategories.SelfContained)]
         public void Comparer_IdenticalSeries_AllPass()
@@ -220,8 +225,9 @@ namespace RODISUnitTests.LegacyStediRegression
 
             Assert.IsFalse(result.HasFailure, "Identical series must not fail: " + result.FailureSummary);
             Assert.AreEqual(3, result.OverlapDays);
-            Assert.IsTrue(result.Metrics.All(m => m.Tier == MetricTier.Pass),
-                "Every metric should Pass: " + string.Join(", ", result.Metrics.Select(m => $"{m.Name}={m.Tier}")));
+            Assert.IsTrue(result.Metrics.Where(m => m.Tier != MetricTier.Informational).All(m => m.Tier == MetricTier.Pass),
+                "Every asserting metric should Pass: " + string.Join(", ", result.Metrics.Select(m => $"{m.Name}={m.Tier}")));
+            Assert.IsTrue(result.Metrics.All(m => m.MaxAbs <= 2e-3), "Identical series must show no material difference on any metric.");
         }
 
         /// <summary>Verifies a divergence on an unexplained (non-spill) day is classified as a genuine Fail, confirming the harness stays sensitive to real regressions such as the historical x10 scaling bug.</summary>
@@ -231,8 +237,8 @@ namespace RODISUnitTests.LegacyStediRegression
         {
             var fortran = LegacyStediFdyReader.Read(WriteTemp(TinyFdy, ".fdy"));
             // Perturb Impact on day 1 (a non-spill day) well beyond tolerance in the RODIS series.
-            string perturbed = TinyResCsv.Replace("1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0.9,0.9",
-                                                  "1950-01-01,0.5,1,-0,0.069,0,0.031,0.031,0.9,0.9");
+            string perturbed = TinyResCsv.Replace("1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0,0.9,0.9",
+                                                  "1950-01-01,0.5,1,-0,0.069,0,0.031,0.031,0,0.9,0.9");
             var rodis = RodisResCsvReader.Read(WriteTemp(perturbed, ".csv"));
 
             ScenarioResult result = LegacyStediComparer.Compare(1, fortran, rodis);
@@ -251,8 +257,8 @@ namespace RODISUnitTests.LegacyStediRegression
         {
             var fortran = LegacyStediFdyReader.Read(WriteTemp(TinyFdy, ".fdy"));
             // Perturb Downstream Flow on day 3 only (day 3 has spill = 0.5 in both series).
-            string perturbed = TinyResCsv.Replace("1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0.9,0.75",
-                                                  "1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0.9,0.85");
+            string perturbed = TinyResCsv.Replace("1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0,0.9,0.75",
+                                                  "1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0,0.9,0.85");
             var rodis = RodisResCsvReader.Read(WriteTemp(perturbed, ".csv"));
 
             ScenarioResult result = LegacyStediComparer.Compare(1, fortran, rodis);
@@ -273,9 +279,9 @@ namespace RODISUnitTests.LegacyStediRegression
             var fortran = LegacyStediFdyReader.Read(WriteTemp(TinyFdy, ".fdy"));
             // Add a constant +0.05 to every Storage LEVEL (field 10) while leaving the daily Change (field 9) unchanged.
             string offsetCsv = TinyResCsv
-                .Replace("1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0.9,0.9", "1950-01-01,0.1,1,-0,0.069,0,0.031,0.081,0.9,0.9")
-                .Replace("1950-01-02,0.1,1,-0,0.069,0,0.031,0.063,0.9,0.9", "1950-01-02,0.1,1,-0,0.069,0,0.031,0.113,0.9,0.9")
-                .Replace("1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0.9,0.75", "1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.144,0.9,0.75");
+                .Replace("1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0,0.9,0.9", "1950-01-01,0.1,1,-0,0.069,0,0.031,0.081,0,0.9,0.9")
+                .Replace("1950-01-02,0.1,1,-0,0.069,0,0.031,0.063,0,0.9,0.9", "1950-01-02,0.1,1,-0,0.069,0,0.031,0.113,0,0.9,0.9")
+                .Replace("1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0,0.9,0.75", "1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.144,0,0.9,0.75");
             var rodis = RodisResCsvReader.Read(WriteTemp(offsetCsv, ".csv"));
 
             ScenarioResult result = LegacyStediComparer.Compare(1, fortran, rodis);
@@ -287,10 +293,60 @@ namespace RODISUnitTests.LegacyStediRegression
             Assert.IsFalse(result.HasFailure, "A 0.05 ML carried offset is within the permitted bound.");
         }
 
+        // ---------------------------------------------------------------- spill / bypass reporting convention
+
+        /// <summary>Verifies that moving water between the Spill and Bypass columns, without changing their total, is reported on the individual metrics but does not fail the scenario.
+        /// RODIS reports an upstream dam's bypass release as bypass for its whole journey, whereas legacy STEDI re-labels it as spill at the downstream dam; the split is a reporting
+        /// convention, so only the convention-invariant SpillAndBypass sum carries the assertion.</summary>
+        [TestMethod]
+        [TestCategory(TestCategories.SelfContained)]
+        public void Comparer_SpillBypassRelabelling_IsInformationalAndSumPasses()
+        {
+            var fortran = LegacyStediFdyReader.Read(WriteTemp(TinyFdy, ".fdy"));
+            // Day 3: Fortran reports spill 0.500 / bypass 0.000. Re-label 0.2 of that as bypass in RODIS, leaving the sum at 0.500 and downstream flow unchanged.
+            string relabelled = TinyResCsv.Replace("1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0,0.9,0.75",
+                                                   "1950-01-03,0.25,1,0.01,0.069,0.3,0.031,0.094,0.2,0.9,0.75");
+            var rodis = RodisResCsvReader.Read(WriteTemp(relabelled, ".csv"));
+
+            ScenarioResult result = LegacyStediComparer.Compare(1, fortran, rodis);
+
+            MetricResult spills = result.Metrics.Single(m => m.Name == "Spills");
+            MetricResult bypass = result.Metrics.Single(m => m.Name == "Bypass");
+            MetricResult combined = result.Metrics.Single(m => m.Name == "SpillAndBypass");
+
+            Assert.AreEqual(MetricTier.Informational, spills.Tier, "Spills is convention-dependent and must be informational.");
+            Assert.AreEqual(MetricTier.Informational, bypass.Tier, "Bypass is convention-dependent and must be informational.");
+            Assert.AreEqual(0.2, spills.MaxAbs, 1e-9, "The re-labelled volume must still be reported as a Spills difference.");
+            Assert.AreEqual(0.2, bypass.MaxAbs, 1e-9, "The re-labelled volume must still be reported as a Bypass difference.");
+            Assert.AreEqual(MetricTier.Pass, combined.Tier, "The convention-invariant sum must Pass when water is merely re-labelled.");
+            Assert.IsFalse(result.HasFailure, "A pure re-labelling must not fail the scenario: " + result.FailureSummary);
+        }
+
+        /// <summary>Verifies that a genuine change in released volume, as opposed to a re-labelling, still fails through the SpillAndBypass metric. This confirms no sensitivity is lost by
+        /// making the individual Spill and Bypass metrics informational. The case mirrors Scenario 48, where RODIS releases bypass water that the Fortran reference never releases.</summary>
+        [TestMethod]
+        [TestCategory(TestCategories.SelfContained)]
+        public void Comparer_GenuineReleasedVolumeDifference_FailsThroughCombinedMetric()
+        {
+            var fortran = LegacyStediFdyReader.Read(WriteTemp(TinyFdy, ".fdy"));
+            // Day 1 has neither spill nor bypass in the reference. Give RODIS 0.3 ML of bypass, which increases the released total rather than re-labelling it, on a day that is not
+            // spill-active in either series, so the difference cannot be excused as a spill-cascade effect.
+            string changed = TinyResCsv.Replace("1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0,0.9,0.9",
+                                                "1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0.3,0.9,0.9");
+            var rodis = RodisResCsvReader.Read(WriteTemp(changed, ".csv"));
+
+            ScenarioResult result = LegacyStediComparer.Compare(1, fortran, rodis);
+
+            MetricResult combined = result.Metrics.Single(m => m.Name == "SpillAndBypass");
+            Assert.AreEqual(MetricTier.Fail, combined.Tier, "A real change in released volume must fail the combined metric.");
+            Assert.AreEqual(0.3, combined.MaxAbs, 1e-9);
+            Assert.IsTrue(result.HasFailure);
+        }
+
         // ---------------------------------------------------------------- ExplainedGuards bounds
 
         /// <summary>Verifies a carried storage offset beyond ExplainedGuards.MaxCarriedStorageOffsetML escalates the scenario to a failure, even though every daily change still matches.
-        /// This stops a large systematic storage divergence (as seen in the irrigation-demand scenarios) from being silently absorbed by the change-based comparison.</summary>
+        /// This stops a large systematic storage divergence from being silently absorbed by the change-based comparison.</summary>
         [TestMethod]
         [TestCategory(TestCategories.SelfContained)]
         public void Comparer_ExcessiveCarriedStorageOffset_EscalatesToFailure()
@@ -298,9 +354,9 @@ namespace RODISUnitTests.LegacyStediRegression
             var fortran = LegacyStediFdyReader.Read(WriteTemp(TinyFdy, ".fdy"));
             // Add a constant +5.0 ML to every Storage LEVEL, an order of magnitude beyond the permitted bound, leaving the daily Change unchanged.
             string offsetCsv = TinyResCsv
-                .Replace("1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0.9,0.9", "1950-01-01,0.1,1,-0,0.069,0,0.031,5.031,0.9,0.9")
-                .Replace("1950-01-02,0.1,1,-0,0.069,0,0.031,0.063,0.9,0.9", "1950-01-02,0.1,1,-0,0.069,0,0.031,5.063,0.9,0.9")
-                .Replace("1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0.9,0.75", "1950-01-03,0.25,1,0.01,0.069,0.5,0.031,5.094,0.9,0.75");
+                .Replace("1950-01-01,0.1,1,-0,0.069,0,0.031,0.031,0,0.9,0.9", "1950-01-01,0.1,1,-0,0.069,0,0.031,5.031,0,0.9,0.9")
+                .Replace("1950-01-02,0.1,1,-0,0.069,0,0.031,0.063,0,0.9,0.9", "1950-01-02,0.1,1,-0,0.069,0,0.031,5.063,0,0.9,0.9")
+                .Replace("1950-01-03,0.25,1,0.01,0.069,0.5,0.031,0.094,0,0.9,0.75", "1950-01-03,0.25,1,0.01,0.069,0.5,0.031,5.094,0,0.9,0.75");
             var rodis = RodisResCsvReader.Read(WriteTemp(offsetCsv, ".csv"));
 
             ScenarioResult result = LegacyStediComparer.Compare(1, fortran, rodis);
