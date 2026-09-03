@@ -6,9 +6,22 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Copyright>HARC Services Pty Ltd ($([System.DateTime]::Now.ToString("yyyy")))</Copyright>
-    <AssemblyVersion>2.2.$([System.DateTime]::Now.ToString("yyyy")).$([System.DateTime]::Now.ToString("MMdd"))</AssemblyVersion>
-    <BaseOutputPath>bin\RODISv2.2</BaseOutputPath>
+
+    <Product>RODIS</Product>
+    <Description>Runoff Dam Impact Simulator</Description>
+    <Company>HARC Services Pty Ltd</Company>
+    <Authors>Phillip Jordan</Authors>
+    <Copyright>Copyright © 2026 HARC Services Pty Ltd</Copyright>
+
+    <Version>1.0.0-rc.1</Version>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <InformationalVersion>1.0.0-rc.1</InformationalVersion>
+
+    <PackageLicenseExpression>GPL-3.0-only</PackageLicenseExpression>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+    <BaseOutputPath>bin\RODIS\</BaseOutputPath>
   </PropertyGroup>
 
   <ItemGroup>

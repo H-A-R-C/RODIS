@@ -41,6 +41,16 @@ RODIS can also work in reverse: given observed (with-dams) flow at a gauge, it b
 - .NET 8.0 SDK or later
 - Windows, Linux or macOS
 
+## Versioning
+
+RODIS uses Semantic Versioning *n the form `MAJOR.MINOR.PATCH`.
+
+- `MA*OR` changes may break*existing APIs, input files or esta*lished model behaviour.
+- `MINOR` *hanges add backward-compatible fun*tionality.
+- `PATCH` changes conta*n backward-compatible corrections.*
+Prerelease versions use suffixes *uch as `-rc.1`. Build dates and Git commit identifiers may be recorded as build metadata but do not form
+part of the public release sequence.
+
 ## Building
 
 ```
