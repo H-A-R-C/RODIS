@@ -1,0 +1,80 @@
+﻿========================================
+STEDI  Version 1.20
+Scenario input file
+Created 23/10/2025 at 9:03
+========================================
+
+
+Stream name:
+Not real stream
+
+Gauging station name:
+Constant inflow of 1 ML/d
+
+Gauge number:
+1MLd
+
+Scenario title:
+1 dam; S&D demand monthly pattern; no bypass; no winterfill
+
+Calculation timestep:
+daily
+
+Calculation method - Calculate natural given observed?:
+False
+
+Catchment area (km²):
+10.00
+
+Output file (full):
+RODISOutputs\RODIS_RunSTEDILegacyVersion_Scenario01.out
+
+Output of flow time series:
+RODISOutputs\RODIS_RunSTEDILegacyVersion_Scenario01.fdy
+
+Input flow file:
+..\CommonInputs\Flow_Constant_1MLd.fdy
+1
+
+Rainfall file:
+..\CommonInputs\Climate_Constant_0Rain_0PET.cdy
+1
+
+Evaporation file:
+..\CommonInputs\Climate_Constant_0Rain_0PET.cdy
+2
+
+Enter details of each dam individually?:
+True
+(See below for individual dam details.)
+
+Number of demand groups:
+1
+
+Employ volume threshold between demand groups:
+False
+(Demand Groups specified by volume increment  OR  specified for each dam individually)
+
+Monthly demand details:
+Demand Group       Factor   Jan   Feb   Mar   Apr   May   Jun   Jul   Aug   Sep   Oct   Nov   Dec
+DandS                0.50 0.085 0.077 0.085 0.082 0.085 0.082 0.085 0.085 0.082 0.085 0.082 0.085
+
+
+Individual dam details:
+-----------------------
+
+Multiple demand groups?                True
+Multiple results groups?               True
+Winterfill pumping?                    False
+Low flow bypasses?                     False
+Spatial networking?                    True
+
+Dam Details:
+2
+             SA    Volume        CA       Demand     Results Winterfill    Bypass      Next
+ ID**      (m²)      (ML)     (km²)        Group        Group    (ML/d)    (ML/d)   Node ds
+    1      -99.    -99.00       10.          -99          -99  -99.0000  -99.0000       -99
+    2    55130.     50.00    1.0000        DandS        DandS  -99.0000  -99.0000         1
+
+**ID#1 refers to catchment outlet
+

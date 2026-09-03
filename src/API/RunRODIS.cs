@@ -26,13 +26,14 @@ namespace RODIS.CommandLineOptions
         {
             this.DisplayProgramDetailsOnConsole();
 
-            if (string.IsNullOrWhiteSpace(argumentPath))
-                throw new ArgumentException("ERROR: RODIS JSON scenario input file path is null or empty.");
-            if (!File.Exists(argumentPath))
-                throw new ArgumentException("ERROR: RODIS JSON input file does not exist or has incorrect file path.\n File specified was " + argumentPath);
-
             try
             {
+                if (string.IsNullOrWhiteSpace(argumentPath))
+                    throw new ArgumentException("ERROR: RODIS JSON scenario input file path is null or empty.");
+
+                if (!File.Exists(argumentPath))
+                    throw new ArgumentException("ERROR: RODIS JSON input file does not exist or has incorrect file path.\n File specified was " + argumentPath);
+
                 Console.WriteLine("Reading JSON scenario input file " + argumentPath);
 
                 var engine = new RODISEngine(this.ProgramName, this.ProgramVersion);
@@ -51,15 +52,18 @@ namespace RODIS.CommandLineOptions
             {
                 Console.WriteLine($"\nERROR: Invalid or inconsistent input data.\n  {ex.Message}");
                 Console.WriteLine("Please check that all input files are correctly formatted and consistent.");
+                Environment.ExitCode = 1;
             }
             catch (FormatException ex)
             {
                 Console.WriteLine($"\nERROR: Could not parse a value in the settings file.\n  {ex.Message}");
                 Console.WriteLine("Please check the JSON settings file format.");
+                Environment.ExitCode = 1;
             }
             catch (ArgumentException ex)
             {
                 Console.WriteLine($"\nERROR: {ex.Message}");
+                Environment.ExitCode = 1;
             }
             catch (FileNotFoundException ex)
             {
@@ -67,17 +71,20 @@ namespace RODIS.CommandLineOptions
                 Console.WriteLine($"  File: {ex.FileName}");
                 Console.WriteLine($"  {ex.Message}");
                 Console.WriteLine("Please check that all file paths in the JSON settings are correct.");
+                Environment.ExitCode = 1;
             }
             catch (IOException ex)
             {
                 Console.WriteLine($"\nERROR: File I/O failure.\n  {ex.Message}");
                 Console.WriteLine("Please check that output directories exist and files are not locked by another program.");
+                Environment.ExitCode = 1;
             }
             catch (InvalidOperationException ex)
             {
                 Console.WriteLine($"\nERROR: Model execution failed.\n  {ex.Message}");
                 if (ex.InnerException != null)
                     Console.WriteLine($"  Cause: {ex.InnerException.Message}");
+                Environment.ExitCode = 1;
             }
             catch (Exception ex)
             {
@@ -86,6 +93,7 @@ namespace RODIS.CommandLineOptions
                 Console.WriteLine($"  Message: {ex.Message}");
                 Console.WriteLine($"  Location: {ex.StackTrace?.Split('\n').FirstOrDefault()?.Trim()}");
                 Console.WriteLine("Please report this error to the development team.");
+                Environment.ExitCode = 1;
             }
         }
     }

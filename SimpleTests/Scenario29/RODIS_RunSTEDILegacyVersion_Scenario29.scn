@@ -1,0 +1,81 @@
+﻿========================================
+STEDI  Version 1.20
+Scenario input file
+Created 23/10/2025 at 9:03
+========================================
+
+
+Stream name:
+Not real stream
+
+Gauging station name:
+Sinusoidal inflow
+
+Gauge number:
+5MLd
+
+Scenario title:
+2 dams in parallel; S&D demand monthly pattern; no bypass; no winterfill
+
+Calculation timestep:
+daily
+
+Calculation method - Calculate natural given observed?:
+False
+
+Catchment area (km²):
+10.00
+
+Output file (full):
+RODISOutputs\RODIS_RunSTEDILegacyVersion_Scenario29.out
+
+Output of flow time series:
+RODISOutputs\RODIS_RunSTEDILegacyVersion_Scenario29.fdy
+
+Input flow file:
+..\CommonInputs\Flow_Seasonal_5MLdmax.fdy
+1
+
+Rainfall file:
+..\CommonInputs\Climate_Constant_SeasonalRain_0PET.cdy
+1
+
+Evaporation file:
+..\CommonInputs\Climate_Constant_0Rain_SeasonalPET.cdy
+2
+
+Enter details of each dam individually?:
+True
+(See below for individual dam details.)
+
+Number of demand groups:
+1
+
+Employ volume threshold between demand groups:
+False
+(Demand Groups specified by volume increment  OR  specified for each dam individually)
+
+Monthly demand details:
+Demand Group       Factor   Jan   Feb   Mar   Apr   May   Jun   Jul   Aug   Sep   Oct   Nov   Dec
+DandS                0.40 0.085 0.077 0.085 0.082 0.085 0.082 0.085 0.085 0.082 0.085 0.082 0.085
+
+
+Individual dam details:
+-----------------------
+
+Multiple demand groups?                True
+Multiple results groups?               True
+Winterfill pumping?                    False
+Low flow bypasses?                     False
+Spatial networking?                    True
+
+Dam Details:
+3
+             SA    Volume        CA       Demand     Results Winterfill    Bypass      Next
+ ID**      (m²)      (ML)     (km²)        Group        Group    (ML/d)    (ML/d)   Node ds
+    1      -99.    -99.00       10.          -99          -99  -99.0000  -99.0000       -99
+    2    25130.     50.00    0.5700        DandS        DandS  -99.0000  -99.0000         1
+	3    15130.     25.00    0.2800        DandS        DandS  -99.0000  -99.0000         1
+
+**ID#1 refers to catchment outlet
+

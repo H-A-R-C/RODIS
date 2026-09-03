@@ -1,0 +1,90 @@
+﻿========================================
+STEDI  Version 1.20
+Scenario input file
+Created 29/10/2025 at 14:03
+========================================
+
+
+Stream name:
+Not real stream
+
+Gauging station name:
+Sinusoidal inflow
+
+Gauge number:
+5MLd
+
+Scenario title:
+3 dams from PDF; No bypass; No winterfill
+
+Calculation timestep:
+Daily
+
+Calculation method - Calculate natural given observed?:
+False
+
+Catchment area (km²):
+10.00
+
+Output file (full):
+RODISOutputs\RODIS_RunSTEDILegacyVersion_Scenario47.out
+
+Output of flow time series:
+RODISOutputs\RODIS_RunSTEDILegacyVersion_Scenario47.fdy
+
+Input flow file:
+..\CommonInputs\Flow_Seasonal_5MLdmax.fdy
+1
+
+Rainfall file:
+..\CommonInputs\Climate_Constant_0Rain_0PET.cdy
+1
+
+Evaporation file:
+..\CommonInputs\Climate_Constant_0Rain_0PET.cdy
+2
+
+Enter details of each dam individually?:
+False
+
+Total volume of farm dams in catchment (ML):
+109.00
+
+Distribution of farm dam volumes:
+5
+Volume Class   Lower Volume (ML)   Upper Volume (ML)  Prop. total volume
+           1              0.0000              8.9980              0.0000
+           2              8.9990              9.0010              0.0100
+           3              9.0020             49.9980              0.0000
+           4             49.9990             50.0010              0.9900
+           5             50.0020           1000.0000              0.0000
+
+Dam Volume (ML) = A *  SurfaceArea(m²) ^ B:
+A:
+0.000700
+B:
+1.070900
+
+Volume Catchment Area Relationship:
+3
+          Dam Volume (ML)     Catchment Area (km²)
+                     0.00                   0.0000
+                    50.00                   0.8000
+                   100.00                   1.6000
+
+Number of demand groups:
+2
+
+Employ volume threshold between demand groups:
+True
+
+Threshold volume (ML): 
+10.00
+
+Demand Timeseries Input File:
+..\CommonInputs\IrrDemandPattern_Seasonal.ddy
+
+Demand Timeseries Details:
+Demand Grp Name    Col. in File        Demand Factor
+DandS                         2           0.30000
+Irrigation                    1           0.50000

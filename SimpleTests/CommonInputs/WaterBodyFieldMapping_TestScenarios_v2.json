@@ -1,0 +1,19 @@
+{
+	"Identifier": "ObjectID",
+	"LocalCatchmentID": "ObjectID",
+	"Label": "ObjectID",
+	"Comment": "Comment",
+	"Type": "Type",
+	"VolumeML": "Volume_ML",
+	"SurfaceAream2": "SurfAream2",
+	"BypassFlowRate": "BypassRate_MLperd",
+	"StartDate": "StartDate",
+	"EndDate": "EndDate",
+	"BypassStartDate": "BypassStart",
+	"BypassEndDate": "BypassEnd",
+	"PumpedInflowCapacity": "PumpInRate_MLperd",
+	"StartPumpedInflowDate": "PumpInStart",
+	"EndPumpedInflowDate": "PumpInEnd",
+	"DemandGroup": "DemandGrp",
+	"ResultsGroup": "ResultsGrp"
+}

@@ -1,0 +1,7 @@
+{
+	"Equation": "0.0001449275*SA^1.314",
+	"VariablesWithDescriptions":
+	{
+		"SA": "Surface area in m²"
+	}
+}

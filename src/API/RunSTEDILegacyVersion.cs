@@ -27,14 +27,14 @@ namespace RODIS.CommandLineOptions
         {
             this.DisplayProgramDetailsOnConsole();
 
-            if (string.IsNullOrWhiteSpace(argumentPath))
-                throw new ArgumentException("ERROR: Legacy STEDI scenario input file path is null or empty.");
-
-            if (!File.Exists(argumentPath))
-                throw new ArgumentException("ERROR: Legacy STEDI scenario input file does not exist or has incorrect file path.\n File specified was " + argumentPath);
-
             try
             {
+                if (string.IsNullOrWhiteSpace(argumentPath))
+                    throw new ArgumentException("ERROR: Legacy STEDI scenario input file path is null or empty.");
+
+                if (!File.Exists(argumentPath))
+                    throw new ArgumentException("ERROR: Legacy STEDI scenario input file does not exist or has incorrect file path.\n File specified was " + argumentPath);
+
                 Console.WriteLine("Reading legacy STEDI scenario input file " + argumentPath);
 
                 double catchmentAreaKM2;
@@ -66,15 +66,18 @@ namespace RODIS.CommandLineOptions
             {
                 Console.WriteLine($"\nERROR: Invalid or inconsistent input data.\n  {ex.Message}");
                 Console.WriteLine("Please check that all input time series files have the same timestep and overlapping date ranges.");
+                Environment.ExitCode = 1;
             }
             catch (FormatException ex)
             {
                 Console.WriteLine($"\nERROR: Could not parse a value in the scenario file.\n  {ex.Message}");
                 Console.WriteLine("Please check the scenario file format matches the expected legacy STEDI v1.2 format.");
+                Environment.ExitCode = 1;
             }
             catch (ArgumentException ex)
             {
                 Console.WriteLine($"\nERROR: {ex.Message}");
+                Environment.ExitCode = 1;
             }
             catch (FileNotFoundException ex)
             {
@@ -82,11 +85,13 @@ namespace RODIS.CommandLineOptions
                 Console.WriteLine($"  File: {ex.FileName}");
                 Console.WriteLine($"  {ex.Message}");
                 Console.WriteLine("Please check that all file paths in the scenario file are correct and that the files exist.");
+                Environment.ExitCode = 1;
             }
             catch (IOException ex)
             {
                 Console.WriteLine($"\nERROR: File I/O failure.\n  {ex.Message}");
                 Console.WriteLine("Please check that output directories exist and files are not locked by another program.");
+                Environment.ExitCode = 1;
             }
             catch (Exception ex)
             {
@@ -95,6 +100,7 @@ namespace RODIS.CommandLineOptions
                 Console.WriteLine($"  Message: {ex.Message}");
                 Console.WriteLine($"  Location: {ex.StackTrace?.Split('\n').FirstOrDefault()?.Trim()}");
                 Console.WriteLine("Please report this error to the development team.");
+                Environment.ExitCode = 1;
             }
         }
 
@@ -112,7 +118,9 @@ namespace RODIS.CommandLineOptions
             engine.LegacySTEDIDamNodes = legacySTEDIDamNodes;
 
             if (!engine.SetUpFirstRun(stediSettings.Settings))
-                return;
+            {
+                throw new InvalidDataException("Model setup failed. Review the preceding validation messages.");
+            }
 
             // Legacy-specific: force legacy calculation methods
             engine.CatchmentModelRunner.catchmentModel.IsLegacySTEDICalculationMethods = true;

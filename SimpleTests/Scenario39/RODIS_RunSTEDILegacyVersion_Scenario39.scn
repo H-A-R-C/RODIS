@@ -1,0 +1,85 @@
+﻿========================================
+STEDI  Version 1.20
+Scenario input file
+Created 29/10/2025 at 9:54
+========================================
+
+
+Stream name:
+Not real stream
+
+Gauging station name:
+Sinusoidal inflow
+
+Gauge number:
+5MLd
+
+Scenario title:
+2 dams in series; both types of demand timeseries; 0.05ML/d bypass on DS dam; no winterfill
+
+Calculation timestep:
+daily
+
+Calculation method - Calculate natural given observed?:
+False
+
+Catchment area (km²):
+10.00
+
+Output file (full):
+RODISOutputs\RODIS_RunSTEDILegacyVersion_Scenario39.out
+
+Output of flow time series:
+RODISOutputs\RODIS_RunSTEDILegacyVersion_Scenario39.fdy
+
+Input flow file:
+..\CommonInputs\Flow_Seasonal_5MLdmax.fdy
+1
+
+Rainfall file:
+..\CommonInputs\Climate_Constant_0Rain_0PET.cdy
+1
+
+Evaporation file:
+..\CommonInputs\Climate_Constant_0Rain_0PET.cdy
+2
+
+Enter details of each dam individually?:
+True
+(See below for individual dam details.)
+
+Number of demand groups:
+2
+
+Employ volume threshold between demand groups:
+False
+(Demand Groups specified by volume increment  OR  specified for each dam individually)
+
+Demand Timeseries Input File:
+..\CommonInputs\IrrDemandPattern_Seasonal.ddy
+
+Demand Timeseries Details:
+Demand Grp Name    Col. in File        Demand Factor
+T2                            1           0.40000
+T1                            2           0.40000
+
+
+Individual dam details:
+-----------------------
+
+Multiple demand groups?                True
+Multiple results groups?               True
+Winterfill pumping?                    False
+Low flow bypasses?                     True      0701 1031
+Spatial networking?                    True
+
+Dam Details:
+3
+             SA    Volume        CA       Demand     Results Winterfill    Bypass      Next
+ ID**      (m²)      (ML)     (km²)        Group        Group    (ML/d)    (ML/d)   Node ds
+    1      -99.    -99.00       10.          -99          -99  -99.0000  -99.0000       -99
+    2    25130.     50.00    0.8000           T2   Irrigation  -99.0000    0.0500         1
+    3    15130.     25.00    0.4000           T1        DandS  -99.0000    0.0000         2
+
+**ID#1 refers to catchment outlet
+

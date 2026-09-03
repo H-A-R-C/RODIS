@@ -1,0 +1,6 @@
+{
+	"WaterBodyID": "DamID",
+	"LocalCatchmentID": "CatID",
+	"DownstreamCatchmentID": "DS_CatID",
+	"LocalAreakm2": "Area_km2"
+}

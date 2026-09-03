@@ -75,6 +75,7 @@ namespace RODIS
                 // Finally show error
                 Console.WriteLine();
                 Console.WriteLine($"ERROR: {error}");
+                Environment.ExitCode = 1;
                 return;
             }
 

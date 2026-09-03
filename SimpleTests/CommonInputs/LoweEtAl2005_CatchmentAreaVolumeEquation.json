@@ -1,0 +1,7 @@
+{
+	"Equation": "if(V<50.0,0.8/50.0*V,0.8+(V-50.0)*(1.6-0.8)/(100.0-50.0))",
+	"VariablesWithDescriptions":
+	{
+		"V": "Volume in ML"
+	}
+}

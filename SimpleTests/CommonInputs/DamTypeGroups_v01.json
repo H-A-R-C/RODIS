@@ -1,0 +1,98 @@
+{
+	"Rural":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "DandS",
+		"ResultGroup": "DandS",
+		"DemandFactor": 0.5
+	},
+	"Rural likely irrigation":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "Irrigation",
+		"ResultGroup": "RuralIrr",
+		"DemandFactor": 0.83
+	},
+	"Rural licensed":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "Irrigation",
+		"ResultGroup": "RuralLic",
+		"DemandFactor": 0.83
+	},
+	"Golf course":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "Golf",
+		"ResultGroup": "Golf",
+		"DemandFactor": 0.83
+	},
+	"Golf course licensed":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "Golf",
+		"ResultGroup": "Golf",
+		"DemandFactor": 0.83
+	},
+	"Quarry":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "NoDemand",
+		"ResultGroup": "Quarry",
+		"DemandFactor": 0.0
+	},
+	"Quarry licensed":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "NoDemand",
+		"ResultGroup": "Quarry",
+		"DemandFactor": 0.0
+	},
+	"Natural":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "NoDemand",
+		"ResultGroup": "Other",
+		"DemandFactor": 0.0
+	},
+	"Large dam":
+	{
+		"Include": true,
+		"SAfactor": 0.0,
+		"DemandGroup": "NoDemand",
+		"ResultGroup": "NoImpact",
+		"DemandFactor": 0.0
+	},
+	"End of Source subcatchment":
+	{
+		"Include": true,
+		"SAfactor": 0.0,
+		"DemandGroup": "NoDemand",
+		"ResultGroup": "NoImpact",
+		"DemandFactor": 0.0
+	},
+	"Wastewater Treatment Plant":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "WWTP",
+		"ResultGroup": "WWTP",
+		"DemandFactor": 999.0
+	},
+	"default":
+	{
+		"Include": true,
+		"SAfactor": 1.0,
+		"DemandGroup": "NoDemand",
+		"ResultGroup": "Other",
+		"DemandFactor": 0.0
+	}
+}

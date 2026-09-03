@@ -1,0 +1,16 @@
+{
+	"T1":
+	{
+		"DemandGroup": "T1",
+		"AnnualDemandFactor": 0.40,
+		"InputFilePath": "O:\\2. Technical\\1. Software\\STEDI2025\\2_SimpleTests\\00_Inputs\\IrrDemandPattern_Seasonal.ddy",
+		"InputFileColumnNumber": 2
+	},
+	"T2":
+	{
+		"DemandGroup": "T2",
+		"AnnualDemandFactor": 0.40,
+		"InputFilePath": "O:\\2. Technical\\1. Software\\STEDI2025\\2_SimpleTests\\00_Inputs\\IrrDemandPattern_Seasonal.ddy",
+		"InputFileColumnNumber": 1
+	}
+}

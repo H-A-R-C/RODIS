@@ -1,0 +1,14 @@
+{
+	"T1":
+	{
+		"DemandGroup": "T1",
+		"AnnualDemandFactor": 0.40,
+		"MonthlyDemandProportions": [0.085,0.077,0.085,0.082,0.085,0.082,0.085,0.085,0.082,0.085,0.082,0.085]
+	},
+	"T2":
+	{
+		"DemandGroup": "T2",
+		"AnnualDemandFactor": 0.40,
+		"MonthlyDemandProportions": [0.230,0.185,0.128,0.023,0.000,0.000,0.000,0.000,0.000,0.069,0.150,0.215]
+	}
+}
