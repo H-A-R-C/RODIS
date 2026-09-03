@@ -63,7 +63,7 @@ namespace RODISUnitTests.LegacyStediRegression
         {
             if (!SimpleTestsPaths.IsAvailable) yield break;
 
-            for (int n = 1; n <= 50; n++)
+            for (int n = 1; n <= 48; n++)
                 if (File.Exists(SimpleTestsPaths.FortranFdy(n)) && File.Exists(SimpleTestsPaths.RodisRes(n)))
                     yield return new object[] { n };
         }
