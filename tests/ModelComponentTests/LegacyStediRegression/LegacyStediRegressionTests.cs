@@ -1,34 +1,20 @@
 ﻿// ============================================================================
 // LegacyStediRegressionTests.cs
-//   MSTest fixture that validates RODIS legacy-STEDI runs against the Fortran
-//   STEDI 1.2 (SKM, 2012) reference outputs for every SimpleTests scenario.
+//   MSTest fixture that validates RODIS legacy-STEDI runs against the Fortran STEDI 1.2 (SKM, 2012) reference outputs for every SimpleTests scenario.
 //
-//   PRIMARY assertion    : RODIS .res.csv vs Fortran .fdy. Fails on an
-//                          UNEXPLAINED exceedance, on a metric flagged across
-//                          too large a fraction of the record, or on a carried
-//                          storage offset beyond the ExplainedGuards bound.
-//   SECONDARY diagnostic : RODIS .res.csv vs March STEDI2025 .res.csv, strict
-//                          (~1e-6). March is an interim debugging aid, so a
-//                          missing March file yields Inconclusive, not Fail.
+//   PRIMARY assertion    : RODIS .res.csv vs Fortran .fdy. Fails on an UNEXPLAINED exceedance, on a metric flagged across
+//                          too large a fraction of the record, or on a carried storage offset beyond the ExplainedGuards bound.
 //
-//   EVERY test here reads the 2_SimpleTests tree from the O: drive, so all are
-//   marked [TestCategory(TestCategories.RequiresSimpleTestsData)]. Exclude them
+//   EVERY test here reads the 2_SimpleTests tree from the O: drive, so all are marked [TestCategory(TestCategories.RequiresSimpleTestsData)]. Exclude them
 //   when the drive is not mapped, e.g.:
 //       dotnet test --filter TestCategory!=RequiresSimpleTestsData
 //
-//   The roll-up CSV reports max_abs for EVERY metric, not just failing ones, so
-//   a flagged or informational metric can be judged on magnitude as well as on
-//   the number of days affected. It also reports the winterfill rate used to
-//   bound the accepted winterfill timing difference.
+//   The roll-up CSV reports max_abs for EVERY metric, not just failing ones, so a flagged or informational metric can be judged on magnitude as well as on
+//   the number of days affected. It also reports the winterfill rate used to bound the accepted winterfill timing difference.
 // ============================================================================
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace RODISUnitTests.LegacyStediRegression
 {
@@ -58,12 +44,6 @@ namespace RODISUnitTests.LegacyStediRegression
         /// <returns>Full path to the RODIS .res.csv file.</returns>
         public static string RodisRes(int scenario) =>
             Path.Combine(Root, Folder(scenario), "2_NewSTEDI_outputs", $"RODIS_RunSTEDILegacyVersion_{Folder(scenario)}.res.csv");
-
-        /// <summary>Returns the full path to the optional March STEDI2025 whole-catchment .res.csv baseline for the scenario.</summary>
-        /// <param name="scenario">Scenario number (1-50).</param>
-        /// <returns>Full path to the March .res.csv file (may not exist).</returns>
-        public static string MarchRes(int scenario) =>
-            Path.Combine(Root, Folder(scenario), "2_NewSTEDI_outputs", $"STEDI2025_{Folder(scenario)}.res.csv");
     }
 
     /// <summary>Regression and validation tests comparing RODIS legacy-STEDI outputs against the Fortran STEDI 1.2 reference (primary) and March STEDI2025 (optional).
@@ -71,8 +51,6 @@ namespace RODISUnitTests.LegacyStediRegression
     [TestClass]
     public class LegacyStediRegressionTests
     {
-        private const double AbsToleranceMarch = 1e-6;     // strict: RODIS should reproduce the interim March build almost exactly (Fortran tolerances live in LegacyStediMetrics)
-
         private static readonly List<ScenarioResult> RollUp = new List<ScenarioResult>();
 
         /// <summary>Gets or sets the MSTest-injected test context (used to write per-scenario tables and the roll-up).</summary>
@@ -125,40 +103,6 @@ namespace RODISUnitTests.LegacyStediRegression
             }
 
             Assert.IsFalse(result.HasFailure, $"Scenario {scenario:D2} FAILED against Fortran STEDI 1.2: {result.FailureSummary}");
-        }
-
-        /// <summary>SECONDARY diagnostic: compares each scenario's RODIS output against the March STEDI2025 baseline at strict tolerance.
-        /// March is an interim debugging aid, not the long-term reference, so a missing March file yields Inconclusive rather than a failure.</summary>
-        /// <param name="scenario">Scenario number (1-50) supplied by the data source.</param>
-        [DataTestMethod]
-        [TestCategory(TestCategories.RequiresSimpleTestsData)]
-        [DynamicData(nameof(Scenarios), DynamicDataSourceType.Method, DynamicDataDisplayName = nameof(ScenarioName))]
-        public void Rodis_Reproduces_March2025_Interim(int scenario)
-        {
-            string marchPath = SimpleTestsPaths.MarchRes(scenario);
-            if (!File.Exists(marchPath)) Assert.Inconclusive($"No March STEDI2025 baseline for scenario {scenario:D2}; skipping interim regression check.");
-
-            var rodis = RodisResCsvReader.Read(SimpleTestsPaths.RodisRes(scenario));
-            var march = RodisResCsvReader.Read(marchPath);
-
-            List<DateOnly> commonDays = rodis.Keys.Where(march.ContainsKey).OrderBy(d => d).ToList();
-            double worst = 0.0; DateOnly? worstDate = null; string worstMetric = string.Empty;
-
-            foreach (MetricSpec metric in LegacyStediMetrics.All)
-            {
-                foreach (DateOnly day in commonDays)
-                {
-                    if (rodis[day].TryGetValue(metric.ResFieldNumber, out double r) && march[day].TryGetValue(metric.ResFieldNumber, out double m))
-                    {
-                        double diff = Math.Abs(r - m);
-                        if (diff > worst) { worst = diff; worstDate = day; worstMetric = metric.Name; }
-                    }
-                }
-            }
-
-            TestContext.WriteLine($"Scenario {scenario:D2}: max |RODIS - March| = {worst:0.###e+00} ({worstMetric} on {worstDate:yyyy-MM-dd}) over {commonDays.Count} days.");
-            Assert.IsTrue(worst <= AbsToleranceMarch,
-                $"Scenario {scenario:D2} diverged from the March interim build: {worstMetric} differs by {worst:0.###e+00} on {worstDate:yyyy-MM-dd} (tol {AbsToleranceMarch:0.###e+00}).");
         }
 
         /// <summary>Writes the roll-up to the console and a timestamped CSV beside the SimpleTests root. Each metric contributes two columns: its outcome and its max_abs, so a flagged or

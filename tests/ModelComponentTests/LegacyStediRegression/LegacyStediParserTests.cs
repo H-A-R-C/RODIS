@@ -17,13 +17,8 @@
 //   formats, so any difference the comparer reports is a genuine logic error.
 // ============================================================================
 
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using System.Text;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace RODISUnitTests.LegacyStediRegression
 {
