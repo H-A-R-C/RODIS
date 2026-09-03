@@ -2,6 +2,8 @@
 
 RODIS reproduces Fortran STEDI v1.2 (SKM, 2012) closely, but not identically. Five differences remain and are accepted rather than fixed. Three are deliberate modelling choices in RODIS; two are defects in the Fortran executable, where it contradicts the STEDI user manual and RODIS follows the manual.
 
+RODIS also applies a stricter input-validation policy than legacy STEDI. That policy is documented separately below because it determines whether a simulation may proceed, rather than explaining a numerical difference for valid input.
+
 This note exists so that anyone comparing RODIS output against a legacy STEDI run can tell an expected difference from a real problem.
 
 Everything here was established by comparing 48 scenarios day by day over records of 3,653 to 3,744 days. The figures cited are from that comparison. The STEDI reference outputs themselves are not redistributed with this repository, as STEDI is third-party software; the values quoted below are given so that the findings can be checked by anyone who has access to STEDI v1.2 and runs the same scenario definitions through it.
@@ -13,7 +15,7 @@ Everything here was established by comparing 48 scenarios day by day over record
 | # | Difference | Type | Typical size |
 |---|---|---|---|
 | 1 | Spill and bypass labelling | RODIS design choice | Reallocation only; no change to flow at the outlet |
-| 2 | Winterfill pumping timing | RODIS design choice | ~0.1–2% of pumped volume |
+| 2 | Winterfill pumping timing | RODIS design choice | Approximately 0.1–2.2% of pumped volume in the tested scenarios |
 | 3 | Day-1 demand timing | RODIS design choice | ~0.0006–0.002 ML carried in storage |
 | 4 | Monthly demand interpolation | Fortran defect | Up to 0.19 ML/day; 6.7 ML carried in storage |
 | 5 | Bypass ignored in distribution mode | Fortran defect | Up to 0.63 ML/day; 32 ML carried in storage |
@@ -29,7 +31,7 @@ Where an upstream dam releases water through its low-flow bypass and that water 
 - **RODIS** continues to report it as **bypass**, tracked through the network to the outlet.
 - **Fortran** re-labels it as **spill** at the downstream dam.
 
-RODIS's treatment is the more honest representation: water released to satisfy a bypass obligation is bypass water, wherever it later travels.
+RODIS preserves the original bypass classification as water is routed through the network. This convention makes the reported bypass quantity traceable to the operational purpose of the release.
 
 There is a further consequence in the Fortran output. Its `Q-bypass` column reports the **raw volume released** by any dam's bypass, including water that flows into another dam rather than to the catchment outlet, and it excludes that volume from `Q-WithDams`. With a bypass on an upstream dam, Fortran therefore breaks the water-balance identity printed in its own output header:
 
@@ -111,7 +113,7 @@ The STEDI user manual, section 6.4, states that monthly demand proportions produ
 
 RODIS implements this: each month's daily rate is that month's share of annual demand divided by the actual number of days in the month.
 
-The Fortran executable instead interpolates the twelve values into a smooth daily curve, with an apparent one-month phase lag. The annual total is preserved, but individual months are not.
+The Fortran executable instead interpolates the monthly values into a smooth daily curve, with an apparent phase displacement. The annual total is preserved, but individual months do not deliver their specified proportions.
 
 **Worked example** — scenario 3, 30 ML annual demand:
 
@@ -157,16 +159,81 @@ Fortran's own water balance closes with `Q-bypass = 0` on every one of 3,653 day
 
 **How the comparison handles it:** as for scenario 3, registered as a documented defect with an envelope.
 
+## Isolated Fortran reference anomaly
+
+The reverse-solve Scenarios 36, 38 and 40 expose an isolated invalid Fortran STEDI result on 29 February 1960.
+
+On that date, Fortran reports `Q-demand = -2970.000 ML`. The negative demand behaves as an inflow, increasing storage to its 75 ML capacity and producing approximately 2956.564 ML of spill. RODIS reports demand of approximately 0.188 ML, consistent with the surrounding dates.
+
+The precise internal cause in the Fortran executable has not been established. The regression harness therefore does not attribute the anomaly to a specific implementation mechanism.
+
+The invalid reference row is excluded only for:
+
+- Scenario 36 on 29 February 1960;
+- Scenario 38 on 29 February 1960; and
+- Scenario 40 on 29 February 1960.
+
+The permanent Fortran storage-level shift caused by that row is rebased when reporting carried storage offset. Subsequent daily changes in storage and all other valid dates remain subject to the normal comparison rules.
+
+This is recorded separately from the five accepted model differences because it is an isolated invalid reference row, not an intended or persistent difference in model behaviour.
+
+## Input-validation policy
+
+RODIS deliberately applies a stricter demand time-series validation policy than the policy described in the legacy STEDI documentation.
+
+The STEDI user manual states that negative time-series values are treated as missing and replaced with the mean value for the relevant calendar month. RODIS does not reproduce this silent replacement behaviour.
+
+RODIS instead requires demand-pattern records to:
+
+- be unique and chronologically ordered;
+- use a consistent, positive timestep;
+- contain no missing timestamps within the series;
+- include 29 February where a daily series spans a leap year;
+- be marked as valid; and
+- contain finite, non-negative values.
+
+During initialisation, RODIS also validates that:
+
+- `AnnualDemandFactor` is finite and non-negative;
+- `DamStorageCapacityVolumeAtSpill` is finite and non-negative;
+- their product produces a finite annual demand volume; and
+- `MonthlyScaleFactors` contains exactly 12 finite, non-negative values.
+
+Where these requirements are not met, RODIS throws an `InvalidDataException` identifying the affected demand group and, where relevant, the date and value. Invalid values are not allowed to propagate into unrestricted demand or the water balance.
+
+This policy was adopted for transparency and robustness. Silent replacement can conceal errors in input preparation and may materially change the demand pattern without making that change visible to the user. Explicit rejection requires the input data to be corrected or deliberately preprocessed before the model is run.
+
+Zero values remain valid. A zero pattern value represents no relative demand at that timestep, while a zero monthly scale factor suppresses demand for that month. Where every time-series pattern value is zero, RODIS uses its documented uniform-demand fallback.
+
+### Regression protection
+
+Self-contained tests cover:
+
+- missing and duplicated leap-day records;
+- duplicate, out-of-order and irregular timestamps;
+- entries marked invalid;
+- negative pattern values;
+- `NaN` and positive or negative infinity;
+- negative or non-finite monthly scale factors;
+- monthly scale-factor arrays with an incorrect length;
+- negative or non-finite annual demand factors;
+- negative or non-finite dam storage capacities; and
+- finite, non-negative reverse-solve behaviour through 29 February 1960.
+
+This is an intentional input-validation difference rather than a numerical compatibility allowance. The scenario comparison tolerances are not widened to accommodate invalid inputs.
+
 ---
 
 ## Reproducing these findings
 
-The scenario definitions in `SimpleTests` are the same files used for the comparison. Running them through STEDI v1.2 and through RODIS, then comparing the daily output, reproduces every figure quoted above. The comparison harness in `Core.Tests` will do this automatically if STEDI `.fdy` outputs are placed in each scenario's `1_OldSTEDI_outputs` directory; see the README for details.
+The scenario definitions in `SimpleTests` are the files used for the validation comparison. Users with lawful access to STEDI v1.2 can run the same scenarios through STEDI and RODIS and compare their daily outputs.
+
+The comparison harness is retained in `tests` and runs when private Fortran `.fdy` outputs are supplied through the configured private test-data structure. The Fortran outputs, STEDI executable and STEDI documentation are not distributed with the public repository.
 
 ---
 
 ## References
 
-- Sinclair Knight Merz (2011) *STEDI: Spatial Tool for the Estimation of Dam Impacts, User Manual*, version 1.1, July 2011.
-- Nathan R, Jordan P and Morden R (2005) 'Assessing the impact of farm dams on streamflows, Part I: Development of simulation tools', *Australasian Journal of Water Resources*, 9(1):1–12.
+- Sinclair Knight Merz (2011), *STEDI: Estimating the Impact of Farm Dams on Streamflow: User Manual*, version 1.1, 11 July 2011.
+- Nathan R, Jordan P and Morden R (2005), 'Assessing the impact of farm dams on streamflows, Part I: Development of simulation tools', *Australasian Journal of Water Resources*, 9(1), 1–12, https://doi.org/10.1080/13241583.2005.11465259.
 - Fowler K, Morden R, Lowe L and Nathan R (2015) 'Advances in assessing the impact of hillside farm dams on streamflow', *Australasian Journal of Water Resources*, 19(2):96–108.
