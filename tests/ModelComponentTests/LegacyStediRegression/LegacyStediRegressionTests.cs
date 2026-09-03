@@ -29,18 +29,18 @@ namespace RODISUnitTests.LegacyStediRegression
         public static bool IsAvailable => Directory.Exists(Root);
 
         /// <summary>Builds the scenario folder name for a scenario number (e.g. 7 -&gt; "Scenario07", 27 -&gt; "Scenario27").</summary>
-        /// <param name="scenario">Scenario number (1-50).</param>
+        /// <param name="scenario">Scenario number (1-48).</param>
         /// <returns>Zero-padded scenario folder name.</returns>
         public static string Folder(int scenario) => $"Scenario{scenario:D2}";
 
         /// <summary>Returns the full path to the Fortran STEDI 1.2 whole-catchment .fdy reference for the scenario.</summary>
-        /// <param name="scenario">Scenario number (1-50).</param>
+        /// <param name="scenario">Scenario number (1-48).</param>
         /// <returns>Full path to the Fortran .fdy file.</returns>
         public static string FortranFdy(int scenario) =>
             Path.Combine(Root, Folder(scenario), "1_OldSTEDI_outputs", $"LegacySTEDI_{Folder(scenario)}.fdy");
 
         /// <summary>Returns the full path to the RODIS whole-catchment .res.csv output for the scenario.</summary>
-        /// <param name="scenario">Scenario number (1-50).</param>
+        /// <param name="scenario">Scenario number (1-48).</param>
         /// <returns>Full path to the RODIS .res.csv file.</returns>
         public static string RodisRes(int scenario) =>
             Path.Combine(Root, Folder(scenario), "2_NewSTEDI_outputs", $"RODIS_RunSTEDILegacyVersion_{Folder(scenario)}.res.csv");
@@ -76,7 +76,7 @@ namespace RODISUnitTests.LegacyStediRegression
 
         /// <summary>PRIMARY test: compares each scenario's RODIS output against the Fortran STEDI 1.2 reference. Fails on an unexplained daily difference, on a metric flagged across
         /// more than ExplainedGuards.MaxExplainedDayFraction of the record, or on a carried storage offset beyond ExplainedGuards.MaxCarriedStorageOffsetML.</summary>
-        /// <param name="scenario">Scenario number (1-50) supplied by the data source.</param>
+        /// <param name="scenario">Scenario number (1-48) supplied by the data source.</param>
         [DataTestMethod]
         [TestCategory(TestCategories.RequiresSimpleTestsData)]
         [DynamicData(nameof(Scenarios), DynamicDataSourceType.Method, DynamicDataDisplayName = nameof(ScenarioName))]

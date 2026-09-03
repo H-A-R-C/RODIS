@@ -4,40 +4,31 @@
 //   against the Fortran STEDI 1.2 (SKM, 2012) reference outputs.
 //
 //   Primary reference : Fortran STEDI 1.2 .fdy water-balance file (long-term truth).
-//   Secondary (optional): March STEDI2025 .res.csv (interim regression aid only).
 //
 //   ACCEPTED DIFFERENCES
-//   Three differences between the engines are deliberate and documented, so the
-//   comparison reports them without failing:
+//   Three differences between the engines are deliberate and documented, so the comparison reports them without failing:
 //
-//   1. Spill / bypass labelling. Fortran Q-bypass is the raw volume released
-//      through any dam's bypass, including water that then flows into another
-//      dam, and Fortran excludes it from Q-WithDams; with an upstream bypass it
-//      therefore breaks its own identity Q-WithDams = Q-spill + Q-bypass +
-//      Q-unimpound. RODIS reports bypass water that reaches the outlet, tracked
-//      through the network. Spills and Bypass are reported as informational and
+//   1. Spill / bypass labelling. Fortran Q-bypass is the raw volume released through any dam's bypass, including water that then flows into another
+//      dam, and Fortran excludes it from Q-WithDams; with an upstream bypass it therefore breaks its own identity Q-WithDams = Q-spill + Q-bypass + Q-unimpound.
+//      RODIS reports bypass water that reaches the outlet, tracked through the network. Spills and Bypass are reported as informational and
 //      the convention-invariant DamReleasedFlow carries the assertion.
 //
-//   2. Winterfill timing. RODIS limits pumping to the room available at the
-//      START of the timestep; Fortran resolves the water balance within the step
-//      and tops the dam up using room created during the day. RODIS therefore
-//      pumps up to one day's volume less when a full dam begins to draw down,
-//      and will pump into a dam that is already spilling. This is an accepted
-//      simplification: it avoids an implicit solver and the effect is about 0.1%
-//      of capacity. The daily difference is bounded by one day of pumping by
-//      construction, so a per-day assertion could never fail and Winterfill is
-//      reported as informational. Sensitivity is kept by asserting the TOTAL
-//      pumped volume instead (see ExplainedGuards.MaxWinterfillVolumeDifference),
+//   2. Winterfill timing. RODIS limits pumping to the room available at the START of the timestep; Fortran resolves the water balance within the step
+//      and tops the dam up using room created during the day. RODIS therefore pumps up to one day's volume less when a full dam begins to draw down,
+//      and will pump into a dam that is already spilling. This is an accepted simplification: it avoids an implicit solver and the effect is about 0.1%
+//      of capacity. The daily difference is bounded by one day of pumping by construction, so a per-day assertion could never fail and Winterfill is
+//      reported as informational. Sensitivity is kept by asserting the TOTAL pumped volume instead (see ExplainedGuards.MaxWinterfillVolumeDifference),
 //      which a real defect such as pumping in the wrong season would change.
 //
 //   3. Day-1 demand timing. RODIS applies demand from day 2, Fortran from day 1.
-//      Storage is compared on its daily CHANGE so this cumulative offset cancels;
-//      the carried level offset is reported and bounded separately.
+//      Storage is compared on its daily CHANGE so this cumulative offset cancels; the carried level offset is reported and bounded separately.
 //
-//   GUARD RAILS (see ExplainedGuards): the explained allowance is deliberately
-//   bounded. If a metric is flagged on more than MaxExplainedDayFraction of days,
-//   or the carried storage offset exceeds MaxCarriedStorageOffsetML, the result
-//   is escalated to a failure.
+//   KNOWN STEDI 1.2 FORTRAN DEFECTS
+//   Scenario-level defects are constrained by KnownFortranDefects. Isolated invalid reference rows are registered in KnownFortranReferenceAnomalies and
+//   excluded narrowly by scenario and date. An excluded row that creates a persistent storage-level shift is rebased, while subsequent daily storage changes remain subject to comparison.
+//
+//   GUARD RAILS (see ExplainedGuards): the explained allowance is deliberately bounded. If a metric is flagged on more than MaxExplainedDayFraction of days,
+//   or the carried storage offset exceeds MaxCarriedStorageOffsetML, the result is escalated to a failure.
 // ============================================================================
 
 using System.Globalization;
@@ -162,6 +153,60 @@ namespace RODISUnitTests.LegacyStediRegression
             }
 
             return breaches;
+        }
+    }
+
+    /// <summary>Identifies a specific invalid reference-output date that must not be used when comparing a scenario.</summary>
+    public sealed class KnownFortranReferenceAnomaly
+    {
+        /// <summary>Gets the affected scenario number.</summary>
+        public int Scenario { get; init; }
+
+        /// <summary>Gets the invalid date in the Fortran reference output.</summary>
+        public DateOnly Date { get; init; }
+
+        /// <summary>Gets the reason the reference row is excluded.</summary>
+        public string Description { get; init; } = string.Empty;
+    }
+
+    /// <summary>Registry of isolated invalid rows in the Fortran STEDI reference outputs.</summary>
+    public static class KnownFortranReferenceAnomalies
+    {
+        private static readonly IReadOnlyDictionary<int, IReadOnlyList<KnownFortranReferenceAnomaly>> Anomalies =
+            new List<KnownFortranReferenceAnomaly>
+            {
+            new KnownFortranReferenceAnomaly
+            {
+                Scenario = 36,
+                Date = new DateOnly(1960, 2, 29),
+                Description = "Fortran STEDI reports demand of -2970 ML on 29 February 1960 in this reverse-solve scenario, filling the dam and producing approximately 2957 ML of spill.",
+            },
+            new KnownFortranReferenceAnomaly
+            {
+                Scenario = 38,
+                Date = new DateOnly(1960, 2, 29),
+                Description = "Fortran STEDI reports demand of -2970 ML on 29 February 1960 in this reverse-solve scenario, filling the dam and producing approximately 2957 ML of spill.",
+            },
+            new KnownFortranReferenceAnomaly
+            {
+                Scenario = 40,
+                Date = new DateOnly(1960, 2, 29),
+                Description = "Fortran STEDI reports demand of -2970 ML on 29 February 1960 in this reverse-solve scenario, filling the dam and producing approximately 2957 ML of spill.",
+            },
+            }
+            .GroupBy(x => x.Scenario)
+            .ToDictionary(
+                x => x.Key,
+                x => (IReadOnlyList<KnownFortranReferenceAnomaly>)x.ToList());
+
+        /// <summary>Gets the known invalid reference rows for a scenario.</summary>
+        /// <param name="scenario">Scenario number.</param>
+        /// <returns>Known invalid rows, or an empty list when none are registered.</returns>
+        public static IReadOnlyList<KnownFortranReferenceAnomaly> ForScenario(int scenario)
+        {
+            return Anomalies.TryGetValue(scenario, out IReadOnlyList<KnownFortranReferenceAnomaly>? result)
+                ? result
+                : Array.Empty<KnownFortranReferenceAnomaly>();
         }
     }
 
@@ -424,7 +469,7 @@ namespace RODISUnitTests.LegacyStediRegression
         /// <summary>Gets the root-mean-square difference across all compared days.</summary>
         public double Rmse { get; init; }
 
-        /// <summary>Gets the tolerance actually applied to this metric, which may be widened from MetricSpec.AbsTolerance by the one-day pumping bound.</summary>
+        /// <summary>Gets the absolute tolerance applied to this metric.</summary>
         public double AppliedTolerance { get; init; }
 
         /// <summary>Gets the count of exceedance days that are explained (spill or another accepted cause).</summary>
@@ -452,7 +497,7 @@ namespace RODISUnitTests.LegacyStediRegression
     /// <summary>Aggregated comparison result for one scenario across all metrics.</summary>
     public sealed class ScenarioResult
     {
-        /// <summary>Gets the scenario number (1-50).</summary>
+        /// <summary>Gets the scenario number (1-48).</summary>
         public int Scenario { get; init; }
 
         /// <summary>Gets the per-metric results.</summary>
@@ -488,6 +533,13 @@ namespace RODISUnitTests.LegacyStediRegression
         /// <summary>Gets a value indicating whether any metric was flagged with explained differences within the permitted bounds.</summary>
         public bool HasSpillDiffs => Metrics.Any(m => m.Tier == MetricTier.PassWithSpillDiffs);
 
+        /// <summary>Gets the known invalid Fortran reference rows excluded from this comparison.</summary>
+        public IReadOnlyList<KnownFortranReferenceAnomaly> ExcludedReferenceRows { get; init; } =
+            Array.Empty<KnownFortranReferenceAnomaly>();
+
+        /// <summary>Gets the number of known invalid Fortran reference rows excluded from this comparison.</summary>
+        public int ExcludedReferenceDayCount => this.ExcludedReferenceRows.Count;
+
         /// <summary>Gets a short human-readable summary of why the scenario failed, or an empty string when it did not.</summary>
         public string FailureSummary
         {
@@ -508,23 +560,44 @@ namespace RODISUnitTests.LegacyStediRegression
         }
     }
 
-    /// <summary>Compares a Fortran reference series against a RODIS output series metric-by-metric, applying the accepted-difference rules, the one-day pumping bound and the ExplainedGuards limits.</summary>
+    /// <summary>
+    /// Compares a Fortran reference series against a RODIS output series metric by metric, applying known-reference exclusions, accepted-difference rules and the ExplainedGuards limits.
+    /// </summary>
+
     public static class LegacyStediComparer
     {
         /// <summary>Compares the Fortran .fdy series against the RODIS .res.csv series for all metrics, classifying each metric and applying the explained-difference bounds.</summary>
-        /// <param name="scenario">Scenario number (1-50) for reporting.</param>
+        /// <param name="scenario">Scenario number (1-48) for reporting.</param>
         /// <param name="fortran">Fortran reference series (date -&gt; eleven column values).</param>
         /// <param name="rodis">RODIS output series (date -&gt; {field number -&gt; value}).</param>
         /// <returns>Aggregated scenario result. Each metric is judged against its own tolerance, comparison mode and explained-difference rules.</returns>
         public static ScenarioResult Compare(int scenario, IReadOnlyDictionary<DateOnly, double[]> fortran,
                                              IReadOnlyDictionary<DateOnly, Dictionary<int, double>> rodis)
         {
-            List<DateOnly> commonDays = fortran.Keys.Where(rodis.ContainsKey).OrderBy(d => d).ToList();
+            List<DateOnly> commonDays = fortran.Keys
+                .Where(rodis.ContainsKey)
+                .OrderBy(x => x)
+                .ToList();
+
+            IReadOnlyList<KnownFortranReferenceAnomaly> registeredReferenceAnomalies = KnownFortranReferenceAnomalies.ForScenario(scenario);
+
+            IReadOnlyList<KnownFortranReferenceAnomaly> excludedReferenceRows =
+                registeredReferenceAnomalies
+                    .Where(x => fortran.ContainsKey(x.Date) && rodis.ContainsKey(x.Date))
+                    .ToList();
+
+            HashSet<DateOnly> excludedDates = excludedReferenceRows
+                .Select(x => x.Date)
+                .ToHashSet();
+
+            List<DateOnly> comparisonDays = commonDays
+                .Where(x => !excludedDates.Contains(x))
+                .ToList();
 
             // Pre-compute the per-day flags that classify whether a difference is explained, and the largest winterfill rate either engine applies.
             Dictionary<DateOnly, ExplainedBy> causesOn = new Dictionary<DateOnly, ExplainedBy>(commonDays.Count);
             double fortranWinterfillVolume = 0.0, rodisWinterfillVolume = 0.0;
-            foreach (DateOnly day in commonDays)
+            foreach (DateOnly day in comparisonDays)
             {
                 double[] fRow = fortran[day];
                 Dictionary<int, double> rRow = rodis[day];
@@ -551,12 +624,23 @@ namespace RODISUnitTests.LegacyStediRegression
             }
 
             List<MetricResult> metricResults = new List<MetricResult>();
+
             foreach (MetricSpec metric in LegacyStediMetrics.All)
             {
                 double tolerance = metric.AbsTolerance;
 
-                double maxAbs = 0.0, sumSquares = 0.0, cumulativeOffsetMax = 0.0;
-                int dayCount = 0, explainedExceed = 0, unexplainedExceed = 0;
+                double maxAbs = 0.0;
+                double sumSquares = 0.0;
+                double cumulativeOffsetMax = 0.0;
+
+                // A known invalid Fortran row can introduce a permanent storage-level shift.
+                // Record that shift on the excluded date and subtract it from subsequent level
+                // comparisons, while continuing to compare daily storage changes normally.
+                double cumulativeLevelAdjustment = 0.0;
+
+                int dayCount = 0;
+                int explainedExceed = 0;
+                int unexplainedExceed = 0;
                 DateOnly? worst = null;
 
                 foreach (DateOnly day in commonDays)
@@ -564,47 +648,107 @@ namespace RODISUnitTests.LegacyStediRegression
                     double[] fRow = fortran[day];
                     Dictionary<int, double> rRow = rodis[day];
 
+                    if (excludedDates.Contains(day))
+                    {
+                        if (metric.Mode == ComparisonMode.CumulativeChange && rRow.TryGetValue(metric.ResFieldNumber, out double excludedRLevel))
+                        {
+                            cumulativeLevelAdjustment = fRow[metric.FdyColumnIndex] - excludedRLevel;
+                        }
+
+                        continue;
+                    }
+
                     // Choose the compared quantity: the daily level, the difference of two levels, or the day-to-day change for a cumulative metric.
                     double diff;
+
                     if (metric.Mode == ComparisonMode.CumulativeChange)
                     {
-                        if (!rRow.TryGetValue(metric.SecondResFieldNumber, out double rDelta)) continue;
+                        if (!rRow.TryGetValue(metric.SecondResFieldNumber, out double rDelta))
+                        {
+                            continue;
+                        }
+
                         diff = Math.Abs(fRow[metric.SecondFdyColumnIndex] - rDelta);
-                        // Track the carried storage-LEVEL offset, the difference the change-based comparison deliberately cancels.
+
+                        // Track the carried storage-level offset after removing any permanent
+                        // shift introduced by a known invalid Fortran reference row.
                         if (rRow.TryGetValue(metric.ResFieldNumber, out double rLevel))
-                            cumulativeOffsetMax = Math.Max(cumulativeOffsetMax, Math.Abs(fRow[metric.FdyColumnIndex] - rLevel));
+                        {
+                            double adjustedLevelDifference = (fRow[metric.FdyColumnIndex] - rLevel) - cumulativeLevelAdjustment;
+                            cumulativeOffsetMax = Math.Max(cumulativeOffsetMax, Math.Abs(adjustedLevelDifference));
+                        }
                     }
                     else if (metric.Mode == ComparisonMode.DifferenceOfTwoLevels)
                     {
-                        if (!rRow.TryGetValue(metric.ResFieldNumber, out double rFirst)) continue;
-                        if (!rRow.TryGetValue(metric.SecondResFieldNumber, out double rSecond)) continue;
+                        if (!rRow.TryGetValue(metric.ResFieldNumber, out double rFirst))
+                        {
+                            continue;
+                        }
+
+                        if (!rRow.TryGetValue(metric.SecondResFieldNumber, out double rSecond))
+                        {
+                            continue;
+                        }
+
                         diff = Math.Abs((fRow[metric.FdyColumnIndex] - fRow[metric.SecondFdyColumnIndex]) - (rFirst - rSecond));
                     }
                     else
                     {
-                        if (!rRow.TryGetValue(metric.ResFieldNumber, out double rValue)) continue;
+                        if (!rRow.TryGetValue(metric.ResFieldNumber, out double rValue))
+                        {
+                            continue;
+                        }
+
                         diff = Math.Abs(fRow[metric.FdyColumnIndex] - rValue);
                     }
 
                     sumSquares += diff * diff;
                     dayCount++;
-                    if (diff > maxAbs) { maxAbs = diff; worst = day; }
+
+                    if (diff > maxAbs)
+                    {
+                        maxAbs = diff;
+                        worst = day;
+                    }
 
                     if (diff > tolerance)
                     {
-                        if ((causesOn[day] & metric.Explained) != ExplainedBy.None) explainedExceed++;
-                        else unexplainedExceed++;
+                        if ((causesOn[day] & metric.Explained) != ExplainedBy.None)
+                        {
+                            explainedExceed++;
+                        }
+                        else
+                        {
+                            unexplainedExceed++;
+                        }
                     }
                 }
 
-                // Classify. Informational metrics report their statistics but never fail, because their definition differs between the engines by reporting convention.
+                // Informational metrics report their statistics but never fail because their definitions differ between the engines by reporting convention.
                 double explainedFraction = dayCount > 0 ? (double)explainedExceed / dayCount : 0.0;
+
                 MetricTier tier;
-                if (metric.IsInformational) tier = MetricTier.Informational;
-                else if (maxAbs <= tolerance) tier = MetricTier.Pass;
-                else if (unexplainedExceed > 0) tier = MetricTier.Fail;
-                else if (dayCount >= ExplainedGuards.MinDaysForFractionGuard && explainedFraction > ExplainedGuards.MaxExplainedDayFraction) tier = MetricTier.FailExcessiveExplained;
-                else tier = MetricTier.PassWithSpillDiffs;
+
+                if (metric.IsInformational)
+                {
+                    tier = MetricTier.Informational;
+                }
+                else if (maxAbs <= tolerance)
+                {
+                    tier = MetricTier.Pass;
+                }
+                else if (unexplainedExceed > 0)
+                {
+                    tier = MetricTier.Fail;
+                }
+                else if (dayCount >= ExplainedGuards.MinDaysForFractionGuard && explainedFraction > ExplainedGuards.MaxExplainedDayFraction)
+                {
+                    tier = MetricTier.FailExcessiveExplained;
+                }
+                else
+                {
+                    tier = MetricTier.PassWithSpillDiffs;
+                }
 
                 metricResults.Add(new MetricResult
                 {
@@ -626,6 +770,7 @@ namespace RODISUnitTests.LegacyStediRegression
                 Scenario = scenario,
                 Metrics = metricResults,
                 OverlapDays = commonDays.Count,
+                ExcludedReferenceRows = excludedReferenceRows,
                 FortranWinterfillVolume = fortranWinterfillVolume,
                 RodisWinterfillVolume = rodisWinterfillVolume,
             };
