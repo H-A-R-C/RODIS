@@ -1,3 +1,6 @@
+// <copyright file="BypassAndPumpingDates.cs" company="HARC">
+// Copyright (c) HARC Services Pty Ltd. All rights reserved.
+// </copyright>
 
 namespace RODISUnitTests.ModelComponentTests
 {

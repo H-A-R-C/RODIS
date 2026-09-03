@@ -1,3 +1,6 @@
+// <copyright file="DigitFormattingTests.cs" company="HARC">
+// Copyright (c) HARC Services Pty Ltd. All rights reserved.
+// </copyright>
 using System.Numerics;
 
 namespace RODISUnitTests.FormattingTests

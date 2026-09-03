@@ -1,3 +1,6 @@
+// <copyright file="UniformInflowSubcatchmentModelTests.cs" company="HARC">
+// Copyright (c) HARC Services Pty Ltd. All rights reserved.
+// </copyright>
 namespace RODISUnitTests.ModelComponentTests
 {
     using Microsoft.VisualStudio.TestTools.UnitTesting;

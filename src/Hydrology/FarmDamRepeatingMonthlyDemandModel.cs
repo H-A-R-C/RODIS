@@ -4,6 +4,9 @@
 
 namespace RODIS.ModelRun
 {
+    using System.Globalization;
+    using System.IO;
+
     public class FarmDamRepeatingMonthlyDemandModel : BaseDemandModel
     {
         /// <summary>Gets or sets Column number for reading time series input. -1 = not set (must be configured before use).</summary>
@@ -19,32 +22,84 @@ namespace RODIS.ModelRun
         private double[] monthlyDemandVolume = new double[] { 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 };
 
         /// <summary>Initialises the repeating-monthly demand model, distributing annualDemandVolume according to MonthlyDemandProportions and (optionally) MonthlyScaleFactors.</summary>
+        /// <summary>Initialises the repeating-monthly demand model, distributing annual demand according to the monthly proportions and scale factors.</summary>
         public override void Initialise()
         {
-            if (this.MonthlyDemandProportions == null || this.MonthlyDemandProportions.Length == 0)
+            this.ValidateMonthlyScaleFactors();
+            this.ValidateAnnualDemandInputs();
+
+            if (this.MonthlyDemandProportions == null)
             {
                 throw new InvalidDataException(
-                    $"Demand group '{this.DemandGroup}': MonthlyDemandProportions is null or empty.");
+                    $"Demand group '{this.DemandGroup}': MonthlyDemandProportions must not be null.");
             }
 
-            this.annualDemandVolume = Math.Max(0, this.AnnualDemandFactor * this.DamStorageCapacityVolumeAtSpill);
-
-            double totalProportions = 0.0;
-            for (int i = 0; i < this.MonthlyDemandProportions.Length && i < this.monthlyDemandVolume.Length; i++)
+            if (this.MonthlyDemandProportions.Length != 12)
             {
-                totalProportions += this.MonthlyDemandProportions[i];
+                throw new InvalidDataException(
+                    $"Demand group '{this.DemandGroup}': MonthlyDemandProportions must contain exactly 12 values, "
+                    + $"but {this.MonthlyDemandProportions.Length} values were supplied.");
             }
 
-            if (totalProportions > 0.0)
+            double scaledProportionTotal = 0.0;
+
+            for (int monthIndex = 0; monthIndex < this.MonthlyDemandProportions.Length; monthIndex++)
             {
-                for (int i = 0; i < this.MonthlyDemandProportions.Length && i < this.monthlyDemandVolume.Length; i++)
+                double proportion = this.MonthlyDemandProportions[monthIndex];
+                string monthName = CultureInfo.InvariantCulture.DateTimeFormat.GetMonthName(monthIndex + 1);
+
+                if (!double.IsFinite(proportion))
                 {
-                    double scale = (this.MonthlyScaleFactors != null && i < this.MonthlyScaleFactors.Length) ? this.MonthlyScaleFactors[i] : 1.0;
-                    this.monthlyDemandVolume[i] = this.annualDemandVolume * this.MonthlyDemandProportions[i] * scale / totalProportions;
+                    string invalidValue = double.IsNaN(proportion)
+                        ? "NaN"
+                        : double.IsPositiveInfinity(proportion)
+                            ? "Infinity"
+                            : "-Infinity";
+
+                    throw new InvalidDataException(
+                        $"Demand group '{this.DemandGroup}': monthly demand proportion for {monthName} "
+                        + $"must be finite but was {invalidValue}.");
                 }
 
-                // The daily rate is deliberately NOT precomputed here: it depends on the actual length of the month in the simulation year, which Initialise cannot know.
-                // DailyDemandVolume(year, month) performs the conversion at the point of use in RunTimeStep.
+                if (proportion < 0.0)
+                {
+                    throw new InvalidDataException(
+                        $"Demand group '{this.DemandGroup}': monthly demand proportion for {monthName} "
+                        + $"must be zero or positive but was {proportion.ToString(CultureInfo.InvariantCulture)}.");
+                }
+
+                scaledProportionTotal += proportion * this.MonthlyScaleFactors[monthIndex];
+            }
+
+            this.annualDemandVolume =
+                this.AnnualDemandFactor * this.DamStorageCapacityVolumeAtSpill;
+
+            if (scaledProportionTotal > 0.0)
+            {
+                for (int monthIndex = 0; monthIndex < 12; monthIndex++)
+                {
+                    double scaledProportion =
+                        this.MonthlyDemandProportions[monthIndex]
+                        * this.MonthlyScaleFactors[monthIndex];
+
+                    this.monthlyDemandVolume[monthIndex] =
+                        this.annualDemandVolume
+                        * scaledProportion
+                        / scaledProportionTotal;
+                }
+            }
+            else
+            {
+                // The pattern contains no positive monthly weight. Spread annual demand
+                // evenly across the twelve months so the annual volume is preserved.
+                double uniformMonthlyDemand =
+                    this.annualDemandVolume / 12.0;
+
+                for (int monthIndex = 0; monthIndex < 12; monthIndex++)
+                {
+                    this.monthlyDemandVolume[monthIndex] =
+                        uniformMonthlyDemand;
+                }
             }
         }
 

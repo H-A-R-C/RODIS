@@ -37,7 +37,7 @@ namespace RODISUnitTests.ModelComponentTests
         // -- Settings helper ---------------------------------------------
 
         /// <summary>Builds minimal RODISSettings for a test run.</summary>
-        private static RODISSettings BuildSettings(double startFraction = 0.0)
+        private static RODISSettings BuildSettings(double startFraction = 0.0, double annualDemandFactor = 0.0)
         {
             return new RODISSettings
             {
@@ -61,7 +61,7 @@ namespace RODISUnitTests.ModelComponentTests
                     ["RunoffDams"] = new FarmDamRepeatingMonthlyDemandModel
                     {
                         DemandGroup = "RunoffDams",
-                        AnnualDemandFactor = 0.0, // Zero demand keeps these routing/mass-balance tests focused purely on topology and area, not demand extraction.
+                        AnnualDemandFactor = annualDemandFactor,
                         MonthlyDemandProportions = new double[] { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 },
                     },
                 },
@@ -90,7 +90,7 @@ namespace RODISUnitTests.ModelComponentTests
         /// <summary>
         /// Chain: D1 (0.5 km²) ? D2 (0.3 km²) ? Outlet(3, 0.2 km²). Total = 1.0 km².
         /// </summary>
-        public static CatchmentModelRunner BuildChainNetwork(double startFraction = 0.0)
+        public static CatchmentModelRunner BuildChainNetwork(double startFraction = 0.0, double annualDemandFactor = 0.0)
         {
             var nodes = new[]
             {
@@ -98,7 +98,8 @@ namespace RODISUnitTests.ModelComponentTests
                 MakeDam(2, 3, 400, 0.8, 0.3),
                 MakeOutlet(3, 0.2),
             };
-            return BuildRunner(nodes, startFraction);
+
+            return BuildRunner(nodes, startFraction, annualDemandFactor);
         }
 
         /// <summary>
@@ -163,11 +164,15 @@ namespace RODISUnitTests.ModelComponentTests
         }
 
         private static CatchmentModelRunner BuildRunner(
-            LegacySTEDIDamNode[] nodes, double startFraction)
+            LegacySTEDIDamNode[] nodes,
+            double startFraction,
+            double annualDemandFactor = 0.0)
         {
-            var settings = BuildSettings(startFraction);
-            var runner = new CatchmentModelRunner();
+            RODISSettings settings = BuildSettings(startFraction, annualDemandFactor);
+            CatchmentModelRunner runner = new CatchmentModelRunner();
+
             runner.catchmentModel.Initialise(nodes, settings);
+
             return runner;
         }
 
@@ -433,6 +438,269 @@ namespace RODISUnitTests.ModelComponentTests
 
             Assert.AreEqual(0, runner.catchmentModel.MassBalanceWarningCount,
                 "No mass balance warnings should fire when balance closes.");
+        }
+
+        // ------------------------------------------------------------------------
+        // Group 4: Reverse-solve calendar and physical-state tests
+        // ------------------------------------------------------------------------
+
+        [TestClass]
+        public class ReverseSolveLeapDayTests
+        {
+            private static readonly DateTime RunStart = new DateTime(1960, 2, 27);
+            private static readonly DateTime RunEnd = new DateTime(1960, 3, 2);
+
+            /// <summary>Verifies the reverse solver remains finite and physically bounded over a window containing 29 February 1960.</summary>
+            [TestMethod]
+            public void ReverseSolve_LeapDayWindow_AllStatesRemainFiniteAndPhysical()
+            {
+                CatchmentModelRunner runner = TestCatchmentBuilder.BuildChainNetwork(
+                    startFraction: 0.7,
+                    annualDemandFactor: 0.5);
+
+                TestCatchmentBuilder.RunAndReturn(
+                    runner,
+                    RunStart,
+                    RunEnd,
+                    rainfall: 3.0,
+                    pet: 4.0,
+                    observedFlow: 1.0);
+
+                CatchmentModel model = runner.catchmentModel;
+
+                foreach (WaterBodyModelNode node in model.WaterBodyNodes)
+                {
+                    AssertWaterBodyStateIsFiniteAndPhysical(node);
+                }
+
+                foreach (ConfluenceModelNode node in model.ConfluenceNodes)
+                {
+                    AssertConfluenceStateIsFiniteAndPhysical(node);
+                }
+
+                Assert.AreEqual(
+                    0.0,
+                    model.CumulativeTopDownMisclosure,
+                    1.0E-4,
+                    "The top-down mass balance should close across the leap-day window.");
+
+                Assert.AreEqual(
+                    0.0,
+                    model.CumulativeBottomUpMisclosure,
+                    1.0E-10,
+                    "The bottom-up mass balance should close across the leap-day window.");
+
+                Assert.AreEqual(
+                    0,
+                    model.MassBalanceWarningCount,
+                    "The leap-day reverse solve should not produce mass-balance warnings.");
+            }
+
+            /// <summary>Verifies a reverse solve ending on 29 February produces finite, non-negative demand and flow values.</summary>
+            [TestMethod]
+            public void ReverseSolve_EndingOnLeapDay_ProducesFiniteNonNegativeFluxes()
+            {
+                CatchmentModelRunner runner = TestCatchmentBuilder.BuildChainNetwork(
+                    startFraction: 0.7,
+                    annualDemandFactor: 0.5);
+
+                TestCatchmentBuilder.RunAndReturn(
+                    runner,
+                    new DateTime(1960, 2, 27),
+                    new DateTime(1960, 2, 29),
+                    rainfall: 3.0,
+                    pet: 4.0,
+                    observedFlow: 1.0);
+
+                foreach (WaterBodyModelNode node in runner.catchmentModel.WaterBodyNodes)
+                {
+                    Assert.IsTrue(
+                        double.IsFinite(node.UnrestrictedDemand),
+                        $"Unrestricted demand for node '{node.Label}' should be finite on 29 February 1960.");
+
+                    Assert.IsTrue(
+                        node.UnrestrictedDemand >= 0.0,
+                        $"Unrestricted demand for node '{node.Label}' should not be negative on 29 February 1960.");
+
+                    Assert.IsTrue(
+                        double.IsFinite(node.DemandVolumeExtracted),
+                        $"Extracted demand for node '{node.Label}' should be finite on 29 February 1960.");
+
+                    Assert.IsTrue(
+                        node.DemandVolumeExtracted >= 0.0,
+                        $"Extracted demand for node '{node.Label}' should not be negative on 29 February 1960.");
+
+                    Assert.IsTrue(
+                        double.IsFinite(node.DownstreamFlow),
+                        $"Downstream flow for node '{node.Label}' should be finite on 29 February 1960.");
+
+                    Assert.IsTrue(
+                        node.DownstreamFlow >= 0.0,
+                        $"Downstream flow for node '{node.Label}' should not be negative on 29 February 1960.");
+
+                    AssertWaterBodyStateIsFiniteAndPhysical(node);
+                }
+            }
+
+            /// <summary>Verifies extending a reverse run through leap day does not introduce an extreme discontinuity into the final physical state.</summary>
+            [TestMethod]
+            public void ReverseSolve_ExtendingThroughLeapDay_DoesNotCreateExtremeState()
+            {
+                DateTime runStart = new DateTime(1960, 2, 24);
+
+                CatchmentModelRunner beforeLeapDay = TestCatchmentBuilder.BuildChainNetwork(
+                    startFraction: 0.7,
+                    annualDemandFactor: 0.5);
+
+                TestCatchmentBuilder.RunAndReturn(
+                    beforeLeapDay,
+                    runStart,
+                    new DateTime(1960, 2, 28),
+                    rainfall: 3.0,
+                    pet: 4.0,
+                    observedFlow: 1.0);
+
+                CatchmentModelRunner throughLeapDay = TestCatchmentBuilder.BuildChainNetwork(
+                    startFraction: 0.7,
+                    annualDemandFactor: 0.5);
+
+                TestCatchmentBuilder.RunAndReturn(
+                    throughLeapDay,
+                    runStart,
+                    new DateTime(1960, 2, 29),
+                    rainfall: 3.0,
+                    pet: 4.0,
+                    observedFlow: 1.0);
+
+                Assert.AreEqual(
+                    beforeLeapDay.catchmentModel.WaterBodyNodes.Length,
+                    throughLeapDay.catchmentModel.WaterBodyNodes.Length,
+                    "Both runs should contain the same water bodies.");
+
+                for (int i = 0; i < throughLeapDay.catchmentModel.WaterBodyNodes.Length; i++)
+                {
+                    WaterBodyModelNode before = beforeLeapDay.catchmentModel.WaterBodyNodes[i];
+                    WaterBodyModelNode after = throughLeapDay.catchmentModel.WaterBodyNodes[i];
+
+                    AssertWaterBodyStateIsFiniteAndPhysical(after);
+
+                    Assert.IsTrue(
+                        Math.Abs(after.VolumeInStorage - before.VolumeInStorage) <= after.StorageCapacityVolumeAtSpill + 1.0E-10,
+                        $"Adding 29 February should not change storage for node '{after.Label}' by more than the dam's storage capacity.");
+
+                    Assert.IsTrue(
+                        after.UnrestrictedDemand <= after.MaxStorageCapacityVolumeAtSpill + 1.0E-10,
+                        $"One day of unrestricted demand for node '{after.Label}' should not exceed its storage capacity in this test configuration.");
+
+                    double physicallyAvailableWater =
+                        before.VolumeInStorage
+                        + after.UpstreamFlow
+                        + after.PumpedInflow
+                        + after.RainfallVolume;
+
+                    Assert.IsTrue(
+                        after.DownstreamFlow <= physicallyAvailableWater + 1.0E-8,
+                        $"Downstream flow for node '{after.Label}' should not exceed physically available water on 29 February 1960.");
+                }
+            }
+
+            /// <summary>Asserts that a water-body node contains only finite, physically admissible state and flux values.</summary>
+            /// <param name="node">Water-body node to check.</param>
+            private static void AssertWaterBodyStateIsFiniteAndPhysical(WaterBodyModelNode node)
+            {
+                AssertFinite(node.StartTimeStepVolumeInStorage, node.Label, nameof(node.StartTimeStepVolumeInStorage));
+                AssertFinite(node.VolumeInStorage, node.Label, nameof(node.VolumeInStorage));
+                AssertFinite(node.ChangeInVolumeInStorageForTimeStep, node.Label, nameof(node.ChangeInVolumeInStorageForTimeStep));
+                AssertFinite(node.UnrestrictedDemand, node.Label, nameof(node.UnrestrictedDemand));
+                AssertFinite(node.DemandVolumeExtracted, node.Label, nameof(node.DemandVolumeExtracted));
+                AssertFinite(node.RainfallVolume, node.Label, nameof(node.RainfallVolume));
+                AssertFinite(node.EvaporationVolume, node.Label, nameof(node.EvaporationVolume));
+                AssertFinite(node.NetRainfallVolume, node.Label, nameof(node.NetRainfallVolume));
+                AssertFinite(node.SeepageLossVolume, node.Label, nameof(node.SeepageLossVolume));
+                AssertFinite(node.PumpedInflow, node.Label, nameof(node.PumpedInflow));
+                AssertFinite(node.DownstreamFlow, node.Label, nameof(node.DownstreamFlow));
+                AssertFinite(node.DownstreamFlowFromBypass, node.Label, nameof(node.DownstreamFlowFromBypass));
+                AssertFinite(node.DownstreamFlowFromSpill, node.Label, nameof(node.DownstreamFlowFromSpill));
+                AssertFinite(node.VolumeBalanceMisclosure, node.Label, nameof(node.VolumeBalanceMisclosure));
+
+                Assert.IsTrue(
+                    node.VolumeInStorage >= -1.0E-10,
+                    $"Storage for node '{node.Label}' should not be negative.");
+
+                Assert.IsTrue(
+                    node.VolumeInStorage <= node.StorageCapacityVolumeAtSpill + 1.0E-10,
+                    $"Storage for node '{node.Label}' should not exceed capacity.");
+
+                Assert.IsTrue(
+                    node.UnrestrictedDemand >= 0.0,
+                    $"Unrestricted demand for node '{node.Label}' should not be negative.");
+
+                Assert.IsTrue(
+                    node.DemandVolumeExtracted >= 0.0,
+                    $"Extracted demand for node '{node.Label}' should not be negative.");
+
+                Assert.IsTrue(
+                    node.EvaporationVolume >= 0.0,
+                    $"Evaporation volume for node '{node.Label}' should not be negative.");
+
+                Assert.IsTrue(
+                    node.SeepageLossVolume >= 0.0,
+                    $"Seepage loss for node '{node.Label}' should not be negative.");
+
+                Assert.IsTrue(
+                    node.PumpedInflow >= 0.0,
+                    $"Pumped inflow for node '{node.Label}' should not be negative.");
+
+                Assert.IsTrue(
+                    node.DownstreamFlow >= 0.0,
+                    $"Downstream flow for node '{node.Label}' should not be negative.");
+
+                Assert.IsTrue(
+                    node.DownstreamFlowFromBypass >= 0.0,
+                    $"Bypass flow for node '{node.Label}' should not be negative.");
+
+                Assert.IsTrue(
+                    node.DownstreamFlowFromSpill >= 0.0,
+                    $"Spill flow for node '{node.Label}' should not be negative.");
+
+                Assert.AreEqual(
+                    0.0,
+                    node.VolumeBalanceMisclosure,
+                    1.0E-8,
+                    $"Water-balance misclosure for node '{node.Label}' should be near zero.");
+            }
+
+            /// <summary>Asserts that a confluence node contains only finite, non-negative flow values.</summary>
+            /// <param name="node">Confluence node to check.</param>
+            private static void AssertConfluenceStateIsFiniteAndPhysical(ConfluenceModelNode node)
+            {
+                AssertFinite(node.UpstreamFlow, node.Label, nameof(node.UpstreamFlow));
+                AssertFinite(node.DownstreamFlow, node.Label, nameof(node.DownstreamFlow));
+                AssertFinite(node.DownstreamFlowFromBypass, node.Label, nameof(node.DownstreamFlowFromBypass));
+                AssertFinite(node.DownstreamFlowFromSpill, node.Label, nameof(node.DownstreamFlowFromSpill));
+                AssertFinite(node.DownstreamFlowFromCatchment, node.Label, nameof(node.DownstreamFlowFromCatchment));
+                AssertFinite(node.VolumeBalanceMisclosure, node.Label, nameof(node.VolumeBalanceMisclosure));
+
+                Assert.IsTrue(node.UpstreamFlow >= 0.0, $"Upstream flow for confluence '{node.Label}' should not be negative.");
+                Assert.IsTrue(node.DownstreamFlow >= 0.0, $"Downstream flow for confluence '{node.Label}' should not be negative.");
+
+                Assert.AreEqual(
+                    0.0,
+                    node.VolumeBalanceMisclosure,
+                    1.0E-10,
+                    $"Water-balance misclosure for confluence '{node.Label}' should be near zero.");
+            }
+
+            /// <summary>Asserts that a model value is finite.</summary>
+            /// <param name="value">Value to check.</param>
+            /// <param name="nodeLabel">Node label used in the failure message.</param>
+            /// <param name="propertyName">Property name used in the failure message.</param>
+            private static void AssertFinite(double value, string nodeLabel, string propertyName)
+            {
+                Assert.IsTrue(
+                    double.IsFinite(value),
+                    $"{propertyName} for node '{nodeLabel}' should be finite but was {value}.");
+            }
         }
     }
 }

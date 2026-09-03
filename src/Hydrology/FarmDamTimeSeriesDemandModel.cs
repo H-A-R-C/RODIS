@@ -4,6 +4,7 @@
 
 namespace RODIS.ModelRun
 {
+    using System.Globalization;
     using RODIS.Series;
 
     public class FarmDamTimeSeriesDemandModel : BaseDemandModel
@@ -28,13 +29,19 @@ namespace RODIS.ModelRun
         {
             if (this.InputPattern == null || this.InputPattern.Length < 2)
             {
-                throw new InvalidDataException($"Demand group '{this.DemandGroup}': InputPattern must have at least 2 time steps.");
+                throw new InvalidDataException(
+                    $"Demand group '{this.DemandGroup}': InputPattern must have at least 2 time steps.");
             }
 
-            this.annualDemandVolume = Math.Max(0, this.AnnualDemandFactor * this.DamStorageCapacityVolumeAtSpill);
+            this.ValidateInputPattern();
+            this.ValidateInputPatternValues();
+            this.ValidateMonthlyScaleFactors();
+            this.ValidateAnnualDemandInputs();
 
-            // Normalise using complete calendar years only. A partial year at either end of the pattern covers only part of the seasonal cycle, so including it would
-            // bias the mean by whichever season it happens to span. Falls back to the whole-series mean when the pattern is shorter than one complete calendar year.
+            this.annualDemandVolume =
+                this.AnnualDemandFactor * this.DamStorageCapacityVolumeAtSpill;
+
+            // Normalise using complete calendar years only.
             double meanAnnualProportions = this.CalculateMeanAnnualProportions(out int completeYearCount);
 
             if (completeYearCount == 0)
@@ -161,6 +168,79 @@ namespace RODIS.ModelRun
 
             double totalDays = this.CalculateTotalPeriodDays();
             return (validCount > 0 && totalDays > 0.0) ? totalDays / validCount : 1.0;
+        }
+
+        /// <summary>Validates that valid time-series entries are unique, strictly increasing and contiguous at the inferred regular timestep.</summary>
+        private void ValidateInputPattern()
+        {
+            for (int i = 1; i < this.InputPattern.Length; i++)
+            {
+                DateTime previous = this.InputPattern[i - 1].Time;
+                DateTime current = this.InputPattern[i].Time;
+
+                if (current == previous)
+                {
+                    throw new InvalidDataException(
+                        $"Demand group '{this.DemandGroup}': demand pattern '{this.InputFilePath}' contains duplicate date {current:yyyy-MM-dd}.");
+                }
+
+                if (current < previous)
+                {
+                    throw new InvalidDataException(
+                        $"Demand group '{this.DemandGroup}': demand pattern '{this.InputFilePath}' is not in chronological order at {current:yyyy-MM-dd}.");
+                }
+            }
+
+            TimeSpan expectedTimeStep = this.InputPattern[1].Time - this.InputPattern[0].Time;
+
+            if (expectedTimeStep <= TimeSpan.Zero)
+            {
+                throw new InvalidDataException(
+                    $"Demand group '{this.DemandGroup}': demand pattern '{this.InputFilePath}' must have a positive timestep.");
+            }
+
+            for (int i = 1; i < this.InputPattern.Length; i++)
+            {
+                DateTime expected = this.InputPattern[i - 1].Time.Add(expectedTimeStep);
+                DateTime actual = this.InputPattern[i].Time;
+
+                if (actual != expected)
+                {
+                    throw new InvalidDataException(
+                        $"Demand group '{this.DemandGroup}': demand pattern '{this.InputFilePath}' is missing expected date {expected:yyyy-MM-dd}; "
+                        + $"the next available date is {actual:yyyy-MM-dd}.");
+                }
+            }
+        }
+
+        /// <summary>Validates that all valid demand-pattern values are finite and non-negative.</summary>
+        private void ValidateInputPatternValues()
+        {
+            for (int i = 0; i < this.InputPattern.Length; i++)
+            {
+                TimeSeriesValue value = this.InputPattern[i];
+
+                if (!value.IsValid)
+                {
+                    throw new InvalidDataException(
+                        $"Demand group '{this.DemandGroup}': demand pattern '{this.InputFilePath}' contains an entry on {value.Time:yyyy-MM-dd} that is marked as not valid.");
+                }
+
+                if (!double.IsFinite(value.Value))
+                {
+                    throw new InvalidDataException(
+                        $"Demand group '{this.DemandGroup}': demand pattern '{this.InputFilePath}' contains non-finite value "
+                        + $"{value.Value} on {value.Time:yyyy-MM-dd}.");
+                }
+
+                if (value.Value < 0.0)
+                {
+                    throw new InvalidDataException(
+                        $"Demand group '{this.DemandGroup}': demand pattern '{this.InputFilePath}' contains negative value "
+                        + $"{value.Value.ToString(CultureInfo.InvariantCulture)} on {value.Time:yyyy-MM-dd}. "
+                        + "Demand-pattern values must be zero or positive.");
+                }
+            }
         }
     }
 }

@@ -1,4 +1,7 @@
-﻿using System.Numerics;
+﻿// <copyright file="FormatHelpers.cs" company="HARC">
+// Copyright (c) HARC Services Pty Ltd. All rights reserved.
+// </copyright>
+using System.Numerics;
 
 public static class FormatHelpers
 {
