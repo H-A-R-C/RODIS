@@ -1,0 +1,19 @@
+RODIS - Runoff Dam Impact Simulator
+
+Copyright (C) 2026 HARC Services Pty Ltd
+
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, version 3 of the License.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+A copy of the GNU General Public License version 3 is included in the LICENSE
+file in the root of this repository.
+
+The RODIS source code and RODIS-generated example outputs are covered by this
+notice. Third-party names, publications, software and documentation referenced
+by the project remain the property of their respective owners. Fortran STEDI
+reference outputs are not distributed with this repository.
