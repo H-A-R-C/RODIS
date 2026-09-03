@@ -18,7 +18,8 @@
 //
 //   The roll-up CSV reports max_abs for EVERY metric, not just failing ones, so
 //   a flagged or informational metric can be judged on magnitude as well as on
-//   the number of days affected.
+//   the number of days affected. It also reports the winterfill rate used to
+//   bound the accepted winterfill timing difference.
 // ============================================================================
 
 using System;
@@ -70,7 +71,7 @@ namespace RODISUnitTests.LegacyStediRegression
     [TestClass]
     public class LegacyStediRegressionTests
     {
-        private const double AbsToleranceMarch = 1e-6;     // strict: RODIS should reproduce the interim March build almost exactly (per-metric Fortran tolerances live in LegacyStediMetrics)
+        private const double AbsToleranceMarch = 1e-6;     // strict: RODIS should reproduce the interim March build almost exactly (Fortran tolerances live in LegacyStediMetrics)
 
         private static readonly List<ScenarioResult> RollUp = new List<ScenarioResult>();
 
@@ -159,7 +160,7 @@ namespace RODISUnitTests.LegacyStediRegression
             sb.Append("scenario,overlap_days,result");
             foreach (MetricSpec m in metrics) sb.Append(CultureInfo.InvariantCulture, $",{m.Name}");
             foreach (MetricSpec m in metrics) sb.Append(CultureInfo.InvariantCulture, $",{m.Name}_max_abs");
-            sb.AppendLine(",carried_storage_offset,failure_reason");
+            sb.AppendLine(",carried_storage_offset,winterfill_fortran_ML,winterfill_rodis_ML,winterfill_diff_pct,failure_reason");
 
             foreach (ScenarioResult r in RollUp.OrderBy(x => x.Scenario))
             {
@@ -173,7 +174,7 @@ namespace RODISUnitTests.LegacyStediRegression
                         MetricTier.Pass => "PASS",
                         MetricTier.PassWithSpillDiffs => $"spill:{m.SpillExceedances}",
                         MetricTier.FailExcessiveExplained => $"EXCESS:{m.SpillExceedances}({m.ExplainedDayFraction:P0})",
-                        MetricTier.Informational => m.TotalExceedances > 0 ? $"info:{m.TotalExceedances}" : "info:0",
+                        MetricTier.Informational => $"info:{m.TotalExceedances}",
                         _ => $"FAIL:{m.NonSpillExceedances}",
                     };
                     sb.Append(CultureInfo.InvariantCulture, $",{cell}");
@@ -181,7 +182,8 @@ namespace RODISUnitTests.LegacyStediRegression
 
                 foreach (MetricResult m in r.Metrics) sb.Append(CultureInfo.InvariantCulture, $",{m.MaxAbs:0.###e+00}");
 
-                sb.AppendLine(CultureInfo.InvariantCulture, $",{r.MaxCarriedStorageOffset:0.####},\"{r.FailureSummary}\"");
+                sb.AppendLine(CultureInfo.InvariantCulture, $",{r.MaxCarriedStorageOffset:0.####},{r.FortranWinterfillVolume:0.###},"
+                            + $"{r.RodisWinterfillVolume:0.###},{r.WinterfillVolumeDifference:P2},\"{r.FailureSummary}\"");
             }
 
             string csv = sb.ToString();
@@ -192,19 +194,22 @@ namespace RODISUnitTests.LegacyStediRegression
             Console.WriteLine(Environment.NewLine + "===== Legacy STEDI roll-up (RODIS vs Fortran STEDI 1.2) =====" + Environment.NewLine + csv);
         }
 
-        /// <summary>Builds a readable per-metric table for one scenario for the test output, reporting max_abs for every metric regardless of outcome.</summary>
+        /// <summary>Builds a readable per-metric table for one scenario for the test output, reporting max_abs and the applied tolerance for every metric regardless of outcome.</summary>
         /// <param name="r">The scenario result to format.</param>
         /// <returns>Multi-line table string.</returns>
         private static string FormatScenarioTable(ScenarioResult r)
         {
             StringBuilder sb = new StringBuilder();
             sb.AppendLine($"=== Scenario {r.Scenario:D2}  (RODIS vs Fortran STEDI 1.2, {r.OverlapDays} overlapping days) ===");
-            sb.AppendLine($"{"Metric",-16}{"max_abs",12}{"rmse",12}{"flagged",9}{"flag%",8}{"fails",7}{"carried",11}  {"worst",-12} tier");
+            if (r.FortranWinterfillVolume > 0.0)
+                sb.AppendLine($"    winterfill total: Fortran {r.FortranWinterfillVolume:0.###} ML, RODIS {r.RodisWinterfillVolume:0.###} ML, "
+                            + $"differing by {r.WinterfillVolumeDifference:P2} (limit {ExplainedGuards.MaxWinterfillVolumeDifference:P0}).");
+            sb.AppendLine($"{"Metric",-16}{"max_abs",12}{"tol",11}{"rmse",12}{"flagged",9}{"flag%",8}{"fails",7}{"carried",11}  {"worst",-12} tier");
             foreach (MetricResult m in r.Metrics)
             {
                 string worst = m.WorstDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? "-";
                 string carried = m.CumulativeOffsetMax > 0 ? m.CumulativeOffsetMax.ToString("0.###e+00", CultureInfo.InvariantCulture) : "-";
-                sb.AppendLine($"{m.Name,-16}{m.MaxAbs,12:0.###e+00}{m.Rmse,12:0.###e+00}{m.SpillExceedances,9}{m.ExplainedDayFraction,8:P0}{m.NonSpillExceedances,7}{carried,11}  {worst,-12} {m.Tier}");
+                sb.AppendLine($"{m.Name,-16}{m.MaxAbs,12:0.###e+00}{m.AppliedTolerance,11:0.###e+00}{m.Rmse,12:0.###e+00}{m.SpillExceedances,9}{m.ExplainedDayFraction,8:P0}{m.NonSpillExceedances,7}{carried,11}  {worst,-12} {m.Tier}");
             }
             if (r.HasFailure) sb.AppendLine($"FAILURE: {r.FailureSummary}");
             return sb.ToString();
