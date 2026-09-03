@@ -476,5 +476,95 @@ namespace RODISUnitTests.LegacyStediRegression
             Assert.AreEqual(2, downstream.SpillExceedances);
             Assert.IsFalse(result.HasFailure, "Flagging 5% of days is within the permitted bound: " + result.FailureSummary);
         }
+
+        /// <summary>Verifies both documented Fortran defects are registered with a manual reference, at least one expected failing metric and positive ceilings, so the envelope can
+        /// never be satisfied vacuously.</summary>
+        [TestMethod]
+        [TestCategory(TestCategories.SelfContained)]
+        public void KnownFortranDefects_AreRegisteredWithJustification()
+        {
+            foreach (int scenario in new[] { 3, 48 })
+            {
+                Assert.IsTrue(KnownFortranDefects.TryGet(scenario, out KnownFortranDefect? defect) && defect != null, $"Scenario {scenario:D2} should have a documented defect.");
+                Assert.IsFalse(string.IsNullOrWhiteSpace(defect!.Description), $"Scenario {scenario:D2} defect needs a description.");
+                StringAssert.Contains(defect.ManualReference, "section", $"Scenario {scenario:D2} defect needs a manual reference.");
+                Assert.IsTrue(defect.ExpectedFailingMetrics.Count > 0, $"Scenario {scenario:D2} defect needs at least one expected failing metric.");
+                Assert.IsTrue(defect.MaxMetricDifferenceML > 0.0, $"Scenario {scenario:D2} defect needs a positive metric ceiling.");
+            }
+
+            Assert.IsFalse(KnownFortranDefects.TryGet(1, out _), "Scenario 01 passes and must not be registered as a defect.");
+        }
+
+        /// <summary>Verifies a failure on a metric outside the documented set breaches the envelope, so a new problem in a known-defect scenario is not silently absorbed.</summary>
+        [TestMethod]
+        [TestCategory(TestCategories.SelfContained)]
+        public void KnownFortranDefects_UnexpectedFailingMetric_BreachesEnvelope()
+        {
+            KnownFortranDefects.TryGet(48, out KnownFortranDefect? defect);
+            ScenarioResult result = new ScenarioResult
+            {
+                Scenario = 48,
+                OverlapDays = 3653,
+                Metrics = new List<MetricResult>
+                {
+                    // Impact is expected to fail for this defect and is within the ceiling.
+                    new MetricResult { Name = "Impact", Tier = MetricTier.Fail, MaxAbs = 0.63, DayCount = 3653 },
+                    // LocalInflow is NOT part of the documented defect, so its failure must be reported.
+                    new MetricResult { Name = "LocalInflow", Tier = MetricTier.Fail, MaxAbs = 0.10, DayCount = 3653 },
+                },
+            };
+
+            IReadOnlyList<string> breaches = KnownFortranDefects.BreachesEnvelope(defect!, result);
+
+            Assert.AreEqual(1, breaches.Count, "Only the unexpected metric should breach the envelope.");
+            StringAssert.Contains(breaches[0], "LocalInflow");
+        }
+
+        /// <summary>Verifies a documented metric failing by more than its ceiling breaches the envelope, so a worsening defect is not silently absorbed.</summary>
+        [TestMethod]
+        [TestCategory(TestCategories.SelfContained)]
+        public void KnownFortranDefects_WorseningDifference_BreachesEnvelope()
+        {
+            KnownFortranDefects.TryGet(48, out KnownFortranDefect? defect);
+            ScenarioResult result = new ScenarioResult
+            {
+                Scenario = 48,
+                OverlapDays = 3653,
+                Metrics = new List<MetricResult>
+                {
+                    // Impact is an expected metric, but 2.0 ML is well beyond the 0.80 ML documented for this defect.
+                    new MetricResult { Name = "Impact", Tier = MetricTier.Fail, MaxAbs = 2.0, DayCount = 3653 },
+                },
+            };
+
+            IReadOnlyList<string> breaches = KnownFortranDefects.BreachesEnvelope(defect!, result);
+
+            Assert.AreEqual(1, breaches.Count);
+            StringAssert.Contains(breaches[0], "beyond the");
+        }
+
+        /// <summary>Verifies a failure that matches the documented defect exactly does not breach the envelope, so the scenario is tolerated while it behaves as recorded.</summary>
+        [TestMethod]
+        [TestCategory(TestCategories.SelfContained)]
+        public void KnownFortranDefects_FailureWithinEnvelope_IsTolerated()
+        {
+            KnownFortranDefects.TryGet(48, out KnownFortranDefect? defect);
+            ScenarioResult result = new ScenarioResult
+            {
+                Scenario = 48,
+                OverlapDays = 3653,
+                Metrics = new List<MetricResult>
+                {
+                    new MetricResult { Name = "Impact", Tier = MetricTier.Fail, MaxAbs = 0.6308, DayCount = 3653 },
+                    new MetricResult { Name = "DamReleasedFlow", Tier = MetricTier.Fail, MaxAbs = 0.6313, DayCount = 3653 },
+                    new MetricResult { Name = "Storage", Tier = MetricTier.Fail, MaxAbs = 0.6304, DayCount = 3653, CumulativeOffsetMax = 32.32 },
+                    new MetricResult { Name = "DownstreamFlow", Tier = MetricTier.Fail, MaxAbs = 0.6308, DayCount = 3653 },
+                    new MetricResult { Name = "LocalInflow", Tier = MetricTier.Pass, MaxAbs = 4.96e-04, DayCount = 3653 },
+                },
+            };
+
+            Assert.AreEqual(0, KnownFortranDefects.BreachesEnvelope(defect!, result).Count,
+                "A failure matching the documented defect must be tolerated.");
+        }
     }
 }

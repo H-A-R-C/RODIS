@@ -81,6 +81,94 @@ namespace RODISUnitTests.LegacyStediRegression
         public const int MinDaysForFractionGuard = 30;
     }
 
+    /// <summary>Describes a scenario that fails because of a defect in the Fortran STEDI 1.2 executable rather than in RODIS, together with the envelope within which that failure is tolerated.</summary>
+    public sealed class KnownFortranDefect
+    {
+        /// <summary>Gets the scenario number affected.</summary>
+        public int Scenario { get; init; }
+
+        /// <summary>Gets a short description of the defect and the RODIS behaviour it is measured against.</summary>
+        public string Description { get; init; } = string.Empty;
+
+        /// <summary>Gets the section of the STEDI user manual that documents the behaviour RODIS implements, which the executable does not.</summary>
+        public string ManualReference { get; init; } = string.Empty;
+
+        /// <summary>Gets the names of the metrics expected to fail. A failure on any metric outside this set is a new problem and is not tolerated.</summary>
+        public IReadOnlySet<string> ExpectedFailingMetrics { get; init; } = new HashSet<string>();
+
+        /// <summary>Gets the largest absolute daily difference tolerated on the expected metrics, in ML. A larger difference means the defect has worsened or something else has changed.</summary>
+        public double MaxMetricDifferenceML { get; init; }
+
+        /// <summary>Gets the largest carried storage offset tolerated for the scenario, in ML.</summary>
+        public double MaxCarriedStorageOffsetML { get; init; }
+    }
+
+    /// <summary>Registry of the scenarios whose failure is caused by a documented defect in the Fortran STEDI 1.2 executable, where RODIS follows the user manual and the executable does not.</summary>
+    public static class KnownFortranDefects
+    {
+        private static readonly Dictionary<int, KnownFortranDefect> Defects = new List<KnownFortranDefect>
+        {
+            new KnownFortranDefect
+            {
+                Scenario = 3,
+                Description = "Fortran interpolates the twelve monthly demand proportions into a smooth daily curve, with an apparent one-month phase lag, so a month does not deliver its "
+                            + "stated share of annual demand. RODIS applies the step function the manual specifies, dividing each month's volume by the actual number of days in that month.",
+                ManualReference = "STEDI user manual section 6.4: the demand proportions result in a step function at each change of month.",
+                ExpectedFailingMetrics = new HashSet<string> { "Impact", "Demand", "DamReleasedFlow", "Storage", "DownstreamFlow" },
+                MaxMetricDifferenceML = 0.25,          // observed worst 0.186 ML (Demand and Storage)
+                MaxCarriedStorageOffsetML = 8.0,       // observed 6.742 ML
+            },
+            new KnownFortranDefect
+            {
+                Scenario = 48,
+                Description = "Fortran applies no low-flow bypass at all when dams are entered as a volume distribution, releasing 0 ML across the run where the scenario specifies "
+                            + "0.16 ML/day through the Jul-Oct season. RODIS applies the bypass as specified. Fortran's own water balance closes with Q-bypass = 0 on every day, "
+                            + "so the release is genuinely absent rather than merely unreported.",
+                ManualReference = "STEDI user manual section 5.1 lists low-flow bypasses as available when entering dam details as a distribution, and section 4.4 defines the "
+                                + "ML/day/km2 capacity, season and minimum dam size that this scenario supplies.",
+                ExpectedFailingMetrics = new HashSet<string> { "Impact", "DamReleasedFlow", "Storage", "DownstreamFlow" },
+                MaxMetricDifferenceML = 0.80,          // observed worst 0.631 ML (DamReleasedFlow)
+                MaxCarriedStorageOffsetML = 40.0,      // observed 32.32 ML
+            },
+        }.ToDictionary(d => d.Scenario);
+
+        /// <summary>Returns the documented defect for a scenario, if one is registered.</summary>
+        /// <param name="scenario">Scenario number.</param>
+        /// <param name="defect">The registered defect, or null.</param>
+        /// <returns>True when the scenario has a documented Fortran defect.</returns>
+        public static bool TryGet(int scenario, out KnownFortranDefect? defect) => Defects.TryGetValue(scenario, out defect);
+
+        /// <summary>Checks a scenario result against its documented defect envelope and returns the reasons it falls outside, if any. An empty list means the scenario fails only in the
+        /// documented way and is therefore acceptable.</summary>
+        /// <param name="defect">The documented defect for this scenario.</param>
+        /// <param name="result">The comparison result to check.</param>
+        /// <returns>List of reasons the result exceeds the envelope; empty when it does not.</returns>
+        public static IReadOnlyList<string> BreachesEnvelope(KnownFortranDefect defect, ScenarioResult result)
+        {
+            List<string> breaches = new List<string>();
+
+            foreach (MetricResult metric in result.Metrics)
+            {
+                bool failing = metric.Tier == MetricTier.Fail || metric.Tier == MetricTier.FailExcessiveExplained;
+                if (failing && !defect.ExpectedFailingMetrics.Contains(metric.Name))
+                {
+                    breaches.Add($"{metric.Name} now fails but is not part of the documented defect (max_abs={metric.MaxAbs:0.###e+00} on {metric.WorstDate:yyyy-MM-dd})");
+                }
+                else if (failing && metric.MaxAbs > defect.MaxMetricDifferenceML)
+                {
+                    breaches.Add($"{metric.Name} differs by {metric.MaxAbs:0.###} ML, beyond the {defect.MaxMetricDifferenceML:0.###} ML documented for this defect");
+                }
+            }
+
+            if (result.MaxCarriedStorageOffset > defect.MaxCarriedStorageOffsetML)
+            {
+                breaches.Add($"carried storage offset {result.MaxCarriedStorageOffset:0.###} ML is beyond the {defect.MaxCarriedStorageOffsetML:0.###} ML documented for this defect");
+            }
+
+            return breaches;
+        }
+    }
+
     /// <summary>How a metric is compared: on its daily level, on the sum or difference of two daily levels, or on its day-to-day change (for cumulative quantities like storage).</summary>
     public enum ComparisonMode
     {

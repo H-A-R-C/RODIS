@@ -111,6 +111,19 @@ namespace RODISUnitTests.LegacyStediRegression
             lock (RollUp) RollUp.Add(result);
             TestContext.WriteLine(FormatScenarioTable(result));
 
+            if (KnownFortranDefects.TryGet(scenario, out KnownFortranDefect? defect) && defect != null)
+            {
+                // The scenario is expected to fail because the Fortran executable contradicts its own manual. Accept the failure only while it stays within the documented envelope,
+                // so a new or worsening problem in the same scenario still breaks the build.
+                IReadOnlyList<string> breaches = KnownFortranDefects.BreachesEnvelope(defect, result);
+                TestContext.WriteLine($"Scenario {scenario:D2} has a documented Fortran defect. {defect.Description} Reference: {defect.ManualReference}");
+
+                Assert.AreEqual(0, breaches.Count,
+                    $"Scenario {scenario:D2} no longer fails only in the documented way: {string.Join("; ", breaches)}. "
+                    + $"If this change is intended, update the envelope in KnownFortranDefects and record why.");
+                return;
+            }
+
             Assert.IsFalse(result.HasFailure, $"Scenario {scenario:D2} FAILED against Fortran STEDI 1.2: {result.FailureSummary}");
         }
 
@@ -164,7 +177,9 @@ namespace RODISUnitTests.LegacyStediRegression
 
             foreach (ScenarioResult r in RollUp.OrderBy(x => x.Scenario))
             {
-                string overall = r.HasFailure ? "FAIL" : r.HasSpillDiffs ? "PASS(spill)" : "PASS";
+                bool isKnownDefect = KnownFortranDefects.TryGet(r.Scenario, out KnownFortranDefect? knownDefect) && knownDefect != null
+                                  && KnownFortranDefects.BreachesEnvelope(knownDefect, r).Count == 0;
+                string overall = isKnownDefect ? "KNOWN(fortran)" : r.HasFailure ? "FAIL" : r.HasSpillDiffs ? "PASS(spill)" : "PASS";
                 sb.Append(CultureInfo.InvariantCulture, $"{r.Scenario:D2},{r.OverlapDays},{overall}");
 
                 foreach (MetricResult m in r.Metrics)
