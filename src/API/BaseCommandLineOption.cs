@@ -4,6 +4,7 @@
 
 namespace RODIS.CommandLineOptions
 {
+    using System.Reflection;
     using RODIS.JSON;
 
     /// <summary>Abstract base class for all RODIS command-line run options.</summary>
@@ -21,8 +22,20 @@ namespace RODIS.CommandLineOptions
         /// <summary>Name of calling program assembly.</summary>
         protected string ProgramName = typeof(Program).Assembly.GetName().Name;
 
-        /// <summary>Version number of calling program assembly.</summary>
-        protected string ProgramVersion = typeof(Program).Assembly.GetName().Version.ToString();
+        /// <summary>Gets the human-readable program version, including any prerelease label.</summary>
+        protected string ProgramVersion
+        {
+            get
+            {
+                Assembly assembly = Assembly.GetEntryAssembly() ?? Assembly.GetExecutingAssembly();
+
+                return assembly
+                    .GetCustomAttribute<AssemblyInformationalVersionAttribute>()?
+                    .InformationalVersion
+                    ?? assembly.GetName().Version?.ToString()
+                    ?? "unknown";
+            }
+        }
 
         /// <summary>Runs the command-line option with the specified argument path.</summary>
         /// <param name="argumentPath">Output path (if no SettingsType) or JSON settings file path.</param>
