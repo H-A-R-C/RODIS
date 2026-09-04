@@ -513,7 +513,7 @@ namespace RODIS.InputOutput
         {
             // TODO: Check with Kate that my interpretation of a week is correct
             // See REALM manual, version 6.28, page 70 or page 82 of the PDF file
-            // "O:\2. Technical\1. Software\REALM\realm-user-manual-version-6.28.pdf"
+            // See the REALM user manual for the source-file format specification.
 
             TimeSpan timeSpan = TimeSpan.Zero;
 

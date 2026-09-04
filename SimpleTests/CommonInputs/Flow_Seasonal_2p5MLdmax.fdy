@@ -1,13 +1,13 @@
-! GETDAT File Format
+﻿! GETDAT File Format
 ! File created on: 24/10/2025 11:06:37
 ! No. of columns :  1
 ! Output format  : (i8,F12.02)
 ! Column labels  : Date (YYYYMMDD) | SinFlow_2.5max(MLd) | 
 ! Timebase       : DAY
-! File read in GETDAT format: O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\01_ConstantInflow_SolveForImpact\00_Inputs\Climate_Constant_0Rain_0PET.cdy
-! Read in file O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\01_ConstantInflow_SolveForImpact\00_Inputs\Climate_Constant_0Rain_0PET.cdy
+! Source path removed for public distribution.
+! Source path removed for public distribution.
 ! Format used: GetDat
-! Data saved to O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\01_ConstantInflow_SolveForImpact\00_Inputs\Flow_Seasonal_2p5MLdmax.fdy
+! Source path removed for public distribution.
 19500101        0.00
 19500102        0.00
 19500103        0.00

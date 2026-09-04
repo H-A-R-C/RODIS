@@ -1,10 +1,10 @@
-! GETDAT File Format
+﻿! GETDAT File Format
 ! File created on: 28/10/2025 10:17
 ! No. of columns :  2
 ! Output format  : (i8,F12.02,F12.02)
 ! Column labels  : Date (YYYYMMDD) | SinIrrDemand(mmd) | Ones | 
 ! Timebase       : DAY
-! Read in file O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\00_Inputs\IrrDemandPattern_Seasonal.ddy
+! Source path removed for public distribution.
 ! Format used: GetDat
 19500101        6.91        1.00
 19500102        7.01        1.00

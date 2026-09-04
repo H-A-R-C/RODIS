@@ -1,11 +1,11 @@
-! GETDAT File Format
+﻿! GETDAT File Format
 ! File created on: 24/10/2025 14:58:14
 ! No. of columns :  2
 ! Output format  : (i8,F12.02,F12.02)
 ! Column labels  : Date (YYYYMMDD) | Rain_mmd | SinPET_10max(mmd) | 
 ! Timebase       : DAY
-! File read in GETDAT format: O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\00_Inputs\Climate_Constant_0Rain_SeasonalPET.cdy
-! Read in file O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\00_Inputs\Climate_Constant_0Rain_SeasonalPET.cdy
+! Source path removed for public distribution.
+! Source path removed for public distribution.
 ! Format used: GetDat
 19500101        0.00        6.91
 19500102        0.00        7.01

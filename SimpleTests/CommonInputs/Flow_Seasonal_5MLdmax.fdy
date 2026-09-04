@@ -1,11 +1,11 @@
-! GETDAT File Format
+﻿! GETDAT File Format
 ! File created on: 24/10/2025 14:40:07
 ! No. of columns :  1
 ! Output format  : (i8,F12.02)
 ! Column labels  : Date (YYYYMMDD) | SinFlow_5max(MLd) | 
 ! Timebase       : DAY
-! File read in GETDAT format: O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\00_Inputs\Flow_Seasonal_5MLdmax.fdy
-! Read in file O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\00_Inputs\Flow_Seasonal_5MLdmax.fdy
+! Source path removed for public distribution.
+! Source path removed for public distribution.
 ! Format used: GetDat
 19500101        0.00
 19500102        0.00

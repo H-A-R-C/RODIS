@@ -1,10 +1,10 @@
-! GETDAT File Format
+﻿! GETDAT File Format
 ! File created on: 24/10/2025 11:05:21
 ! No. of columns :  2
 ! Output format  : (i8,F12.02,F12.02)
 ! Column labels  : Date (YYYYMMDD) | SinRain_7max(mmd) | 0PET_mmd | 
 ! Timebase       : DAY
-! Data saved to O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\01_ConstantInflow_SolveForImpact\00_Inputs\Climate_Constant_SeasonalRain_0PET.cdy
+! Source path removed for public distribution.
 19500101        0.00        0.00
 19500102        0.00        0.00
 19500103        0.00        0.00

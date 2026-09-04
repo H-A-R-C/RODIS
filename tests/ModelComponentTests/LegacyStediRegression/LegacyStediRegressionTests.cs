@@ -1,16 +1,12 @@
 ﻿// ============================================================================
 // LegacyStediRegressionTests.cs
-//   MSTest fixture that validates RODIS legacy-STEDI runs against the Fortran STEDI 1.2 (SKM, 2012) reference outputs for every SimpleTests scenario.
+//   These tests require public RODIS outputs and separately held private
+//   Fortran STEDI reference outputs. Configure their locations through:
 //
-//   PRIMARY assertion    : RODIS .res.csv vs Fortran .fdy. Fails on an UNEXPLAINED exceedance, on a metric flagged across
-//                          too large a fraction of the record, or on a carried storage offset beyond the ExplainedGuards bound.
+//       RODIS_SIMPLETESTS_ROOT
+//       RODIS_STEDI_REFERENCE_ROOT
 //
-//   EVERY test here reads the 2_SimpleTests tree from the O: drive, so all are marked [TestCategory(TestCategories.RequiresSimpleTestsData)]. Exclude them
-//   when the drive is not mapped, e.g.:
-//       dotnet test --filter TestCategory!=RequiresSimpleTestsData
-//
-//   The roll-up CSV reports max_abs for EVERY metric, not just failing ones, so a flagged or informational metric can be judged on magnitude as well as on
-//   the number of days affected. It also reports the winterfill rate used to bound the accepted winterfill timing difference.
+//   When either location is unavailable, no data rows are generated.
 // ============================================================================
 
 using System.Globalization;
@@ -18,32 +14,63 @@ using System.Text;
 
 namespace RODISUnitTests.LegacyStediRegression
 {
-    /// <summary>Resolves the on-disk paths of the Fortran reference, RODIS output and optional March baseline for each SimpleTests scenario.</summary>
+    /// <summary>Regression tests comparing public RODIS SimpleTests outputs against private Fortran STEDI 1.2 reference outputs.</summary>
     public static class SimpleTestsPaths
     {
-        /// <summary>Gets the SimpleTests root directory, overridable via the RODIS_SIMPLETESTS_ROOT environment variable for CI or local runs.</summary>
-        public static string Root =>
-            Environment.GetEnvironmentVariable("RODIS_SIMPLETESTS_ROOT") ?? @"O:\2. Technical\1. Software\RODIS\2_SimpleTests";
+        /// <summary>Gets the public SimpleTests root configured through RODIS_SIMPLETESTS_ROOT.</summary>
+        internal static readonly string? Root =
+            Environment.GetEnvironmentVariable("RODIS_SIMPLETESTS_ROOT");
 
-        /// <summary>Gets a value indicating whether the SimpleTests root directory is currently reachable (used to skip drive-dependent tests gracefully).</summary>
-        public static bool IsAvailable => Directory.Exists(Root);
+        /// <summary>Gets the private Fortran-reference root configured through RODIS_STEDI_REFERENCE_ROOT.</summary>
+        internal static readonly string? StediReferenceRoot =
+            Environment.GetEnvironmentVariable("RODIS_STEDI_REFERENCE_ROOT");
 
-        /// <summary>Builds the scenario folder name for a scenario number (e.g. 7 -&gt; "Scenario07", 27 -&gt; "Scenario27").</summary>
+        /// <summary>Gets a value indicating whether both configured comparison-data roots are available.</summary>
+        public static bool IsAvailable =>
+            !string.IsNullOrWhiteSpace(Root)
+            && !string.IsNullOrWhiteSpace(StediReferenceRoot)
+            && Directory.Exists(Root)
+            && Directory.Exists(StediReferenceRoot);
+
+        /// <summary>Builds the scenario folder name for a scenario number, for example Scenario07.</summary>
         /// <param name="scenario">Scenario number (1-48).</param>
         /// <returns>Zero-padded scenario folder name.</returns>
         public static string Folder(int scenario) => $"Scenario{scenario:D2}";
 
-        /// <summary>Returns the full path to the Fortran STEDI 1.2 whole-catchment .fdy reference for the scenario.</summary>
+        /// <summary>Returns the full path to the RODIS whole-catchment result for a scenario.</summary>
         /// <param name="scenario">Scenario number (1-48).</param>
-        /// <returns>Full path to the Fortran .fdy file.</returns>
-        public static string FortranFdy(int scenario) =>
-            Path.Combine(Root, Folder(scenario), "1_OldSTEDI_outputs", $"LegacySTEDI_{Folder(scenario)}.fdy");
+        /// <returns>Full path to the RODIS result file.</returns>
+        public static string RodisRes(int scenario)
+        {
+            if (string.IsNullOrWhiteSpace(Root))
+            {
+                throw new InvalidOperationException(
+                    "RODIS_SIMPLETESTS_ROOT is not configured.");
+            }
 
-        /// <summary>Returns the full path to the RODIS whole-catchment .res.csv output for the scenario.</summary>
+            return Path.Combine(
+                Root,
+                Folder(scenario),
+                "RODISOutputs",
+                $"RODIS_RunSTEDILegacyVersion_{Folder(scenario)}.res.csv");
+        }
+
+        /// <summary>Returns the full path to the private Fortran STEDI reference for a scenario.</summary>
         /// <param name="scenario">Scenario number (1-48).</param>
-        /// <returns>Full path to the RODIS .res.csv file.</returns>
-        public static string RodisRes(int scenario) =>
-            Path.Combine(Root, Folder(scenario), "2_NewSTEDI_outputs", $"RODIS_RunSTEDILegacyVersion_{Folder(scenario)}.res.csv");
+        /// <returns>Full path to the Fortran reference file.</returns>
+        public static string FortranFdy(int scenario)
+        {
+            if (string.IsNullOrWhiteSpace(StediReferenceRoot))
+            {
+                throw new InvalidOperationException(
+                    "RODIS_STEDI_REFERENCE_ROOT is not configured.");
+            }
+
+            return Path.Combine(
+                StediReferenceRoot,
+                Folder(scenario),
+                $"LegacySTEDI_{Folder(scenario)}.fdy");
+        }
     }
 
     /// <summary>Regression and validation tests comparing RODIS legacy-STEDI outputs against the Fortran STEDI 1.2 reference (primary) and March STEDI2025 (optional).
@@ -146,9 +173,26 @@ namespace RODISUnitTests.LegacyStediRegression
             }
 
             string csv = sb.ToString();
-            try { File.WriteAllText(Path.Combine(SimpleTestsPaths.Root, $"LegacyStediRollUp_{DateTime.Now:yyyyMMdd_HHmmss}.csv"), csv); }
-            catch (IOException) { /* roll-up CSV is best-effort; the console copy below always succeeds */ }
-            catch (UnauthorizedAccessException) { /* ditto: do not fail the run because the share is read-only */ }
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(SimpleTestsPaths.Root))
+                {
+                    File.WriteAllText(
+                        Path.Combine(
+                            SimpleTestsPaths.Root,
+                            $"LegacyStediRollUp_{DateTime.Now:yyyyMMdd_HHmmss}.csv"),
+                        csv);
+                }
+            }
+            catch (IOException)
+            {
+                // The CSV is best-effort; the console copy below always succeeds.
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Do not fail the run because the output location is read-only.
+            }
 
             Console.WriteLine(Environment.NewLine + "===== Legacy STEDI roll-up (RODIS vs Fortran STEDI 1.2) =====" + Environment.NewLine + csv);
         }

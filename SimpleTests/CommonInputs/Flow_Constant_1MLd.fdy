@@ -1,11 +1,11 @@
-! GETDAT File Format
+﻿! GETDAT File Format
 ! File created on: 22/10/2025 16:36:16
 ! No. of columns :  1
 ! Output format  : (i8,F12.02)
 ! Column labels  : Date (YYYYMMDD) | UnimpactedFlow_MLd | 
 ! Timebase       : DAY
-! File read in GETDAT format: O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\01_ConstantInflow_SolveForImpact\00_Inputs\Flow_Constant_1MLd.fdy
-! Read in file O:\2. Technical\1. Software\STEDI2025\2_SimpleTests\01_ConstantInflow_SolveForImpact\00_Inputs\Flow_Constant_1MLd.fdy
+! Source path removed for public distribution.
+! Source path removed for public distribution.
 ! Format used: GetDat
 19500101        1.00
 19500102        1.00
