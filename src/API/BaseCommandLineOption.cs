@@ -19,6 +19,12 @@ namespace RODIS.CommandLineOptions
         /// <summary>Gets the settings type for JSON template export, or null if no settings file is needed.</summary>
         public abstract Type SettingsType { get; }
 
+        /// <summary>Gets the description of the command-line argument expected by this option.</summary>
+        public virtual string ArgumentDescription =>
+            this.SettingsType == null
+                ? "an output path"
+                : "a JSON settings file path";
+
         /// <summary>Name of calling program assembly.</summary>
         protected string ProgramName = typeof(Program).Assembly.GetName().Name;
 
@@ -55,10 +61,7 @@ namespace RODIS.CommandLineOptions
             // Description
             Console.WriteLine($"FLAG: -{this.CommandLineFlag}");
             Console.WriteLine($"DESCRIPTION: {this.OptionDescription}");
-
-            // Inform user if argument is output path or JSON settings file
-            string argumentDescription = this.SettingsType == null ? "an output path" : "a JSON settings file path";
-            Console.WriteLine($"Argument is {argumentDescription}");
+            Console.WriteLine($"Argument is {this.ArgumentDescription}");
         }
 
         /// <summary>Serialises a default-valued instance of this option's settings type to a JSON template file.</summary>

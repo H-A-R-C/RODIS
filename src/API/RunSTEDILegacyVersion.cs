@@ -21,6 +21,9 @@ namespace RODIS.CommandLineOptions
         /// <inheritdoc/>
         public override Type SettingsType => typeof(LegacySTEDISettings);
 
+        /// <inheritdoc/>
+        public override string ArgumentDescription => "a legacy STEDI .scn scenario file path";
+
         /// <summary>Reads legacy scenario file, builds dam network, and delegates execution to RODISEngine.</summary>
         /// <param name="argumentPath">Path to the legacy STEDI text scenario file.</param>
         public override void Run(string argumentPath)
