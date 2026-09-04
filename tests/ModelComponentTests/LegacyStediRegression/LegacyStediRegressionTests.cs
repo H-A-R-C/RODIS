@@ -88,18 +88,42 @@ namespace RODISUnitTests.LegacyStediRegression
         /// <returns>Sequence of single-element object arrays containing the scenario number.</returns>
         public static IEnumerable<object[]> Scenarios()
         {
-            if (!SimpleTestsPaths.IsAvailable) yield break;
+            if (!SimpleTestsPaths.IsAvailable)
+            {
+                yield return new object[] { 0 };
+                yield break;
+            }
 
-            for (int n = 1; n <= 48; n++)
-                if (File.Exists(SimpleTestsPaths.FortranFdy(n)) && File.Exists(SimpleTestsPaths.RodisRes(n)))
-                    yield return new object[] { n };
+            bool foundScenario = false;
+
+            for (int scenario = 1; scenario <= 48; scenario++)
+            {
+                if (File.Exists(SimpleTestsPaths.FortranFdy(scenario))
+                    && File.Exists(SimpleTestsPaths.RodisRes(scenario)))
+                {
+                    foundScenario = true;
+                    yield return new object[] { scenario };
+                }
+            }
+
+            if (!foundScenario)
+            {
+                yield return new object[] { 0 };
+            }
         }
 
         /// <summary>Formats a scenario number into a readable test name (e.g. "Scenario 27").</summary>
         /// <param name="methodInfo">The test method.</param>
         /// <param name="data">The data row (scenario number).</param>
         /// <returns>Display name for the test case.</returns>
-        public static string ScenarioName(System.Reflection.MethodInfo methodInfo, object[] data) => $"Scenario {(int)data[0]:D2}";
+        public static string ScenarioName(System.Reflection.MethodInfo methodInfo, object[] data)
+        {
+            int scenario = (int)data[0];
+
+            return scenario == 0
+                ? "Private Fortran references unavailable"
+                : $"Scenario {scenario:D2}";
+        }
 
         /// <summary>PRIMARY test: compares each scenario's RODIS output against the Fortran STEDI 1.2 reference. Fails on an unexplained daily difference, on a metric flagged across
         /// more than ExplainedGuards.MaxExplainedDayFraction of the record, or on a carried storage offset beyond ExplainedGuards.MaxCarriedStorageOffsetML.</summary>
@@ -109,6 +133,12 @@ namespace RODISUnitTests.LegacyStediRegression
         [DynamicData(nameof(Scenarios), DynamicDataSourceType.Method, DynamicDataDisplayName = nameof(ScenarioName))]
         public void Rodis_Matches_LegacyFortran(int scenario)
         {
+            if (scenario == 0)
+            {
+                Assert.Inconclusive("Private legacy STEDI regression data is unavailable. Set RODIS_SIMPLETESTS_ROOT and RODIS_STEDI_REFERENCE_ROOT to run the 48 Fortran comparison scenarios.");
+                return;
+            }
+
             var fortran = LegacyStediFdyReader.Read(SimpleTestsPaths.FortranFdy(scenario));
             var rodis = RodisResCsvReader.Read(SimpleTestsPaths.RodisRes(scenario));
             ScenarioResult result = LegacyStediComparer.Compare(scenario, fortran, rodis);
