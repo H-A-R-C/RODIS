@@ -32,7 +32,6 @@ RODIS can also work in reverse: given observed (with-dams) flow at a gauge, it b
 - **Winterfill pumping** — seasonal pumped inflow from an independent source
 - **Dam generation from a distribution** — dams synthesised from a volume histogram where individual dam details are unavailable
 - **Scenario chaining** — several development levels in one run, with results reported separately
-- **Monte Carlo simulation** — uncertainty in inputs and assumptions propagated to the reported metrics
 - **Legacy STEDI input** — existing `.scn` scenario files run unchanged
 
 ## Requirements
@@ -213,9 +212,15 @@ See:
 
 RODIS-generated example outputs are distributed on the same basis. Third-party STEDI software, documentation and reference outputs are not included in this repository.
 
-## Disclaimer
+### Disclaimer
 
-RODIS is provided as-is, without warranty of any kind. Results depend on the quality of the input data and on assumptions about dam characteristics, demand and connectivity that are often uncertain. Users are responsible for validating the model's suitability for their application.
+RODIS is provided as-is, without warranty of any kind, to the extent permitted by applicable law.
+
+RODIS is a hydrological modelling and analysis tool. Model results depend on the quality and completeness of the input data and on assumptions about dam characteristics, water demand, catchment inflows, climate inputs and dam connectivity. The synthetic test scenarios and comparisons with legacy STEDI demonstrate the behaviour of defined model configurations but do not establish that RODIS is suitable for every catchment, application or decision.
+
+Users are responsible for assessing whether RODIS is suitable for their intended purpose and for independently checking model inputs, assumptions, configuration and results. RODIS results should not be relied on as the sole basis for engineering design, regulatory, operational, investment or public safety decisions.
+
+Nothing in this disclaimer excludes, restricts or modifies any right or remedy, or any guarantee, warranty or other term, that cannot lawfully be excluded, restricted or modified under applicable law.
 
 ## Acknowledgements
 
