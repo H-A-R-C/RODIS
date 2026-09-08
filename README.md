@@ -111,6 +111,8 @@ RunAllScenarios.bat
 
 Each scenario writes to its own `RODISOutputs` directory. The committed outputs were produced by the version of RODIS tagged in this repository, so re-running should reproduce them; a difference indicates a change in model behaviour.
 
+See SimpleTests/TEST_CASES.md for a detailed catalogue of the 48 synthetic scenarios, their input conditions and the model features they exercise.
+
 ## Validation
 
 RODIS was validated against Fortran STEDI v1.2 using 48 scenarios and daily records of 3,653 to 3,744 days. Eleven quantities were compared: impact, unimpacted flow, net rainfall, demand, winterfill, spill, bypass, total dam-released flow, storage, local inflow and downstream flow.
